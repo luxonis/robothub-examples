@@ -1,0 +1,24 @@
+config_version = "2.0"
+
+[info]
+name = "Test name"
+description = "This is a test"
+
+[runtime]
+application = "app.py#ExampleApplication"
+workdir = "/app"
+
+[runtime.runs_on]
+type = "image"
+name = "ghcr.io/luxonis/robothub-app-v2@sha256:8bdbf0dc6c735fba957a5f4786aa7ad946b9d97553cfd26d54b80d2a51490871"
+
+[[configuration]]
+label = "Buffer Length (Seconds)"
+key = "buffer_len"
+title = "Buffer length"
+description = "Set the size of the buffers in seconds. The frame rate is 30 frames per second."
+field = "num_range"
+step = 1.0
+min = 0.0
+max = 60.0
+initial_value = 30.0
