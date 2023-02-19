@@ -1,7 +1,7 @@
 import blobconverter
 import cv2
 import numpy as np
-from depthai_sdk import AspectRatioResizeMode
+from depthai_sdk import ResizeMode
 from depthai_sdk.oak_outputs.normalize_bb import NormalizeBoundingBox
 
 import robothub_depthai
@@ -24,7 +24,7 @@ class Application(robothub_depthai.RobotHubApplication):
         for i, detection in enumerate(packet.img_detections.detections):
             expand_detection(detection)
             bbox = detection.xmin, detection.ymin, detection.xmax, detection.ymax
-            bbox = NormalizeBoundingBox((384, 384), AspectRatioResizeMode.LETTERBOX).normalize(packet.frame, bbox)
+            bbox = NormalizeBoundingBox((384, 384), ResizeMode.LETTERBOX).normalize(packet.frame, bbox)
 
             cropped_qr = packet.frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
 
