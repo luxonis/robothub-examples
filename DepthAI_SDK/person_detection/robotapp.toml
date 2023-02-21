@@ -13,10 +13,10 @@ type = "hub-os"
 version = "2023.041.1201"
 
 [[configuration]]
-label = "Buffer Length (Seconds)"
-key = "buffer_len"
-title = "Buffer length"
-description = "Set the size of the buffers in seconds. The frame rate is 30 frames per second."
+label = "Dummy config option"
+key = "config_dummy"
+title = "Dummy Option"
+description = "Config Option Example"
 field = "num_range"
 step = 1.0
 min = 0.0
