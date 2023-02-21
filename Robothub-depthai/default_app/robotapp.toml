@@ -10,5 +10,5 @@ application = "app.py#DefaultApplication"
 workdir = "/app"
 
 [runtime.runs_on]
-type = "image"
-name = "ghcr.io/luxonis/robothub-app-v2:2023.039.2206-regular"
+type = "hub-os"
+version = "2023.041.1201"
