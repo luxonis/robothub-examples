@@ -4,7 +4,6 @@ import os
 import contextlib
 from depthai_sdk import OakCamera, FramePacket
 
-
 class ExampleApplication(robothub.RobotHubApplication):
     def on_start(self):
         # This is the entrypoint of your App. 
@@ -95,41 +94,9 @@ class DaiDevice(robothub.RobotHubDevice):
         self.id = mx_id
         self.state = robothub.DeviceState.UNKNOWN
         self.cameras = {}
-        self.oak = None
+        self.oak = OakCamera(self.id)
         self.eeprom_data = None
         self.device_name = "UNKNOWN"
-
-    def _connect(self, reattempt_time = 1) -> None:
-        """Attempts to establish a connection with the device. Keeps attempting to connect forever, updates self.state accordingly"""
-        # This function includes a lot of optional logic designed to make the connection process more robust
-        log.debug('ENTRY')
-        self.state = robothub.DeviceState.CONNECTING
-        self.oak = OakCamera(device = self.id)
-        while not self.app.stop_event.is_set():
-            try:
-                with open(os.devnull, 'w') as devnull:
-                    with contextlib.redirect_stderr(devnull):
-                        self.oak._init_device()
-                self.state = robothub.DeviceState.CONNECTED
-                log.debug(f'Succesfully connected to device {self.id}')
-                return
-            except BaseException as err:
-                log.warning(f"Cannot connect to device {self.id}: {err}")
-            self.app.stop_event.wait(timeout = reattempt_time)
-        log.debug('EXITED without connecting')
-
-    def _disconnect(self) -> None:
-        """Intended to be used for a temporary disconnect to allow changing DAI pipeline etc."""
-        # Disconnects the device
-        log.debug('disconnecting device')
-        self.state = robothub.DeviceState.DISCONNECTED
- 
-        # suppress stdout of OakCamera.__exit__()
-        with open(os.devnull, 'w') as devnull:
-            with contextlib.redirect_stdout(devnull):
-                self.oak.__exit__(Exception, 'Disconnecting device', 'placeholder')
-
-        self.oak = OakCamera(self.id)
 
     def start(self, reattempt_time = 1) -> None:
         # Uses the depthai_sdk to load a pipeline to a connected device
@@ -233,25 +200,21 @@ class DaiDevice(robothub.RobotHubDevice):
     def get_device_info(self) -> None:
         """Saves camera sensors and device name"""
         log.debug('connecting device')
-        self._connect()
-        if self.state == robothub.DeviceState.CONNECTED:
-            self.cameras = self.oak._oak.device.getCameraSensorNames()
+        self.cameras = self.oak._oak.device.getCameraSensorNames()
+        try:
+            self.eeprom_data = self.oak._oak.device.readFactoryCalibration().getEepromData()
+        except:
             try:
-                self.eeprom_data = self.oak._oak.device.readFactoryCalibration().getEepromData()
+                self.eeprom_data = self.oak._oak.device.readCalibration().getEepromData()
             except:
-                try:
-                    self.eeprom_data = self.oak._oak.device.readCalibration().getEepromData()
+                try: 
+                    self.eeprom_data = self.oak._oak.device.readCalibration2().getEepromData()
                 except:
-                    try: 
-                        self.eeprom_data = self.oak._oak.device.readCalibration2().getEepromData()
-                    except:
-                        self.eeprom_data = None  # Could be due to some malfunction with the device, or simply device is disconnected currently.
-            try:
-                self.device_name = self.oak._oak.device.getDeviceName()
-            except:
-                pass
-            log.debug('disconnecting device')
-            self._disconnect()
+                    self.eeprom_data = None  # Could be due to some malfunction with the device, or simply device is disconnected currently.
+        try:
+            self.device_name = self.oak._oak.device.getDeviceName()
+        except:
+            pass
 
     def initialize_person_detection_stream(self, resolution = '400p', fps = 30, stream_id = 'person_detection', name = 'Person Detection') -> None:
         # Function designed to initialize a pipeline which will stream H264 encoded RGB video with visualized person detections
