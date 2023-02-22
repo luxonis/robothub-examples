@@ -32,7 +32,7 @@ def tracklet_removed(tracklet, coords2):
         print(f'Person moved {direction}')
 
 
-def callback(packet, visualizer):
+def callback(packet):
     for t in packet.daiTracklets.tracklets:
         # If new tracklet, save its centroid
         if t.status == Tracklet.TrackingStatus.NEW:
@@ -56,16 +56,16 @@ def callback(packet, visualizer):
             )
 
 
-class Application(robothub_depthai.RobotHubApplication):
+class ExampleApplication(robothub_depthai.RobotHubApplication):
     def on_start(self):
         for oak in self.unbooted_cameras:
             color = oak.create_camera('color', fps=10)
             nn = oak.create_nn('person-detection-retail-0013', color, tracker=True)
 
-            nn.config_nn(aspect_ratio_resize_mode='stretch')
+            nn.config_nn(resize_mode='stretch')
             nn.config_tracker(tracker_type=TrackerType.ZERO_TERM_COLOR_HISTOGRAM,
                               track_labels=[1],
                               assignment_policy=TrackerIdAssignmentPolicy.SMALLEST_ID)
 
             oak.create_stream(component=nn, unique_key=f'nn_stream_{oak.id}', name=f'Detections stream {oak.id}')
-            oak.callback(nn.out.tracker, callback=callback)
+            oak.callback(nn.out.tracker, callback=callback, enable_visualizer=True)
