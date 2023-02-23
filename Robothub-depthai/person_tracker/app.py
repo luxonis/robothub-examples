@@ -56,7 +56,7 @@ def callback(packet):
             )
 
 
-class ExampleApplication(robothub_depthai.RobotHubApplication):
+class Application(robothub_depthai.RobotHubApplication):
     def on_start(self):
         for oak in self.unbooted_cameras:
             color = oak.create_camera('color', fps=10)
