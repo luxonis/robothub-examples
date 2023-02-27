@@ -36,10 +36,8 @@ class ExampleApplication(robothub.RobotHubApplication):
 
         # And finnaly add a callback. App will constantly call it as long as it is running. If multiple callbacks are added, they will be called sequentially in a single thread. 
         robothub.add_loop_callback(self.report)
-    
-    def start_execution(self):
-        # This function is called only if on_start() returned succesfully. Should be used to start threads. Doesn't have to terminate.
-        # In this case, start_execution() will just start load pipeline to the device through depthai_sdk and run the polling thread 
+        
+        # Start the device and run the polling thread
         self.dai_device.start()
         self.run_polling_thread.start()
 
