@@ -11,8 +11,7 @@ class ExampleApplication(robothub.RobotHubApplication):
         #   - As a constructor for your App
         #   - To connect/initialize devices, download blobs if needed, initialize streams
         # on_start() must terminate
-        # If on_start() excepts, agent will endlessly restart the app
-        # If on_start() returns, start_execution() is called
+        # If on_start() excepts, agent will restart the app
 
         # In this App, we will log Machine ID and Name of the first available device (from robothub.DEVICES, which contains all devices assigned to the app)
         assigned_id = robothub.DEVICES[0].oak.get('serialNumber')
