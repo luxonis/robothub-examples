@@ -1,5 +1,7 @@
 ## Person detection
 
+This App visualizes detected people on top of a color stream.
+
 ### Requirements 
 - An "OAK-D type" device - e.g. OAK-D, OAK-D-Pro, OAK-D-S2, OAK-D-Poe or similar. OAK-FFC-nP type device can also work if a color sensor is inserted into slot A and a mono-pair is inserted into slots B and C.
 
