@@ -33,12 +33,17 @@ class ExampleApplication(robothub.RobotHubApplication):
         # Initialize a thread to poll the device -> As in depthai_sdk, polling the device automatically calls callbacks
         self.run_polling_thread = robothub.threading.Thread(target = self.polling_thread, name="PollingThread", daemon=False)
 
-        # And finnaly add a callback. App will constantly call it as long as it is running. If multiple callbacks are added, they will be called sequentially in a single thread. 
-        robothub.add_loop_callback(self.report)
-        
-        # Start the device and run the polling thread
+        # Initialize a report thread
+        self.run_report_thread  = robothub.threading.Thread(target = self.report_thread, name="ReportThread", daemon=False)
+
+        # Start the device and run the polling and report thread
         self.dai_device.start()
+        self.run_report_thread.start()
         self.run_polling_thread.start()
+        
+    def report_thread(self):
+        while not self.stop_event.is_set():
+            self.report()
 
     def report(self):
         # This is callback which will report device info & stats to the cloud. It needs to include a self.wait() for performance reasons.
