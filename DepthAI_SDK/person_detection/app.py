@@ -42,7 +42,7 @@ class ExampleApplication(robothub.RobotHubApplication):
         self.run_polling_thread.start()
         
     def report_thread(self):
-        while not self.stop_event.is_set():
+        while self.running:
             self.report()
 
     def report(self):
@@ -56,7 +56,7 @@ class ExampleApplication(robothub.RobotHubApplication):
     def polling_thread(self):
         # Periodically polls the device, indirectly calling self.dai_device.detection_cb() defined on line 272 which sends packets to Agent through a StreamHandle.publish_video_data() method from the RobotHub SDK
         log.debug('Starting device polling loop')
-        while not self.stop_event.is_set():
+        while self.running:
             self.dai_device.oak.poll()
             self.wait(0.01) # With this sleep we will poll at most 100 times a second, which is plenty, since our pipeline definitely won't be faster
 
@@ -103,7 +103,7 @@ class DaiDevice(robothub.RobotHubDevice):
     def start(self, reattempt_time = 1) -> None:
         # Uses the depthai_sdk to load a pipeline to a connected device
         log.debug('starting')
-        while not self.app.stop_event.is_set():
+        while self.app.running:
             try:
                 with open(os.devnull, 'w') as devnull:
                     with contextlib.redirect_stdout(devnull):
