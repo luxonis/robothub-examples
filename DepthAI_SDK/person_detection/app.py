@@ -33,12 +33,17 @@ class ExampleApplication(robothub.RobotHubApplication):
         # Initialize a thread to poll the device -> As in depthai_sdk, polling the device automatically calls callbacks
         self.run_polling_thread = robothub.threading.Thread(target = self.polling_thread, name="PollingThread", daemon=False)
 
-        # And finnaly add a callback. App will constantly call it as long as it is running. If multiple callbacks are added, they will be called sequentially in a single thread. 
-        robothub.add_loop_callback(self.report)
-        
-        # Start the device and run the polling thread
+        # Initialize a report thread
+        self.run_report_thread  = robothub.threading.Thread(target = self.report_thread, name="ReportThread", daemon=False)
+
+        # Start the device and run the polling and report thread
         self.dai_device.start()
+        self.run_report_thread.start()
         self.run_polling_thread.start()
+        
+    def report_thread(self):
+        while self.running:
+            self.report()
 
     def report(self):
         # This is callback which will report device info & stats to the cloud. It needs to include a self.wait() for performance reasons.
@@ -51,7 +56,7 @@ class ExampleApplication(robothub.RobotHubApplication):
     def polling_thread(self):
         # Periodically polls the device, indirectly calling self.dai_device.detection_cb() defined on line 272 which sends packets to Agent through a StreamHandle.publish_video_data() method from the RobotHub SDK
         log.debug('Starting device polling loop')
-        while not self.stop_event.is_set():
+        while self.running:
             self.dai_device.oak.poll()
             self.wait(0.01) # With this sleep we will poll at most 100 times a second, which is plenty, since our pipeline definitely won't be faster
 
@@ -98,7 +103,7 @@ class DaiDevice(robothub.RobotHubDevice):
     def start(self, reattempt_time = 1) -> None:
         # Uses the depthai_sdk to load a pipeline to a connected device
         log.debug('starting')
-        while not self.app.stop_event.is_set():
+        while self.app.running:
             try:
                 with open(os.devnull, 'w') as devnull:
                     with contextlib.redirect_stdout(devnull):
