@@ -1,0 +1,24 @@
+config_version = "2.0"
+
+[info]
+name = "Test name"
+description = "This is a test"
+
+[runtime]
+application = "app.py#ExampleApplication"
+workdir = "/app"
+
+[runtime.runs_on]
+type = "hub-os"
+version = "2023.041.1201"
+
+[[configuration]]
+label = ""
+key = "nn_threshold"
+title = "NN detection threshold"
+description = "Threshold for the neural network person detection (higher meand less likely to detect)"
+field = "num_range"
+step = 0.01
+min = 0.0
+max = 1
+initial_value = 0.1
