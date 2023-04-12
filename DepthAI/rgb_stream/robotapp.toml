@@ -1,8 +1,8 @@
 config_version = "2.0"
 
 [info]
-name = "Test name"
-description = "This is a test"
+name = "RGB Stream"
+description = "This app streams from the RGB sensor of each assigned device"
 
 [runtime]
 application = "app.py#ExampleApplication"
