@@ -1,0 +1,24 @@
+config_version = "2.0"
+
+[info]
+name = "Test name"
+description = "This is a test"
+
+[runtime]
+application = "app.py#ExampleApplication"
+workdir = "/app"
+
+[runtime.runs_on]
+type = "hub-os"
+version = "2023.041.1201"
+
+[[configuration]]
+label = "Stream FPS"
+key = "stream_fps"
+title = "Stream FPS"
+description = "Stream FPS"
+field = "num_range"
+step = 1.0
+min = 0.0
+max = 60.0
+initial_value = 30.0
