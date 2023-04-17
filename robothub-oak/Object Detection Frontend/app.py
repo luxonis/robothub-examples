@@ -26,7 +26,7 @@ class ObjectDetection(robothub.RobotHubApplication):
     def stream_frame_callback(self, frame):
         if self.take_picture_signal.is_set():
             self.take_picture_signal.clear()
-            print("Sending Detection!")
+            print("Sending Event!")
             frame.upload_as_detection(title = 'Object Detections')
 
     def start_execution(self):
