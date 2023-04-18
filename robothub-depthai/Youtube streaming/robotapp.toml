@@ -1,0 +1,39 @@
+config_version = "2.0"
+
+[info]
+name = "YouTube Streaming App"
+description = "App for YouTube streaming."
+
+[runtime]
+workdir = "/app"
+application = "app.py#StreamingApp"
+
+[runtime.runs_on]
+type = "custom"
+dockerfile = "Dockerfile"
+
+[[configuration]]
+key = "streaming_key"
+label = "YoutTube streaming key"
+field = "text"
+initial_value = ""
+prefix = ""
+
+[[configuration]]
+key = "fps"
+label = "FPS"
+field = "num_range"
+step = 1
+min = 5
+max = 30
+initial_value = 30
+
+[[configuration]]
+key = "bitrate"
+label = "Bitrate [kbps]"
+field = "num_range"
+step = 100
+min = 1000
+max = 9400
+initial_value = 4500
+
