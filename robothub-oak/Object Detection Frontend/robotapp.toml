@@ -11,4 +11,4 @@ workdir = "/app"
 
 [runtime.runs_on]
 type = "image"
-name = "ghcr.io/luxonis/robothub-app-v2:2023.107.1353-experimental-custom-dev"
+name = "ghcr.io/luxonis/robothub-app-v2:2023.108.0102-experimental-custom-dev"

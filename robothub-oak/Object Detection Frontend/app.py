@@ -9,7 +9,7 @@ class ObjectDetection(robothub.RobotHubApplication):
         
         # Create a YoloV6 object detection NN with color sensor as input 
         color = device.get_camera('color', resolution='1080p', fps=22)   
-        nn = device.create_neural_network('yolov6n_coco_640x640', color)
+        nn = device.create_neural_network('yolov6nr3_coco_640x352', color)
         nn.stream_to_hub(name=f'Object Detection Stream', unique_key='nn_stream')
         # Set a callback to the NN output
         nn.add_callback(self.stream_frame_callback)
