@@ -113,4 +113,9 @@ class ExampleApplication(robothub.RobotHubApplication):
             robothub.STREAMS.destroy_all_streams()
         except BaseException as e:
             log.debug(f'Destroy all streams excepted with: {e}')
+        for device in self.devices.values():
+            try:
+                device.close()
+            except BaseException as e:
+                log.debug(f'Device close failed with error: {e}')
 
