@@ -1,4 +1,5 @@
 config_version = "2.0"
+configuration = []
 
 [info]
 name = "Test name"
@@ -11,14 +12,3 @@ workdir = "/app"
 [runtime.runs_on]
 type = "hub-os"
 version = "2023.041.1201"
-
-[[configuration]]
-label = "Dummy config option"
-key = "config_dummy"
-title = "Dummy Option"
-description = "Config Option Example"
-field = "num_range"
-step = 1.0
-min = 0.0
-max = 60.0
-initial_value = 30.0

@@ -17,9 +17,6 @@ class ExampleApplication(robothub.RobotHubApplication):
         assigned_id = robothub.DEVICES[0].oak.get('serialNumber')
         log.info(f'Assigned device: {assigned_id}')
 
-        # Then we will log loaded configuration
-        log.info(f'Configuration: {robothub.CONFIGURATION}')
-
         # Then we will connect to the device with DepthAI
         self.dai_device = DaiDevice(self, assigned_id)
         # Use a method to get device name and connected sensors
@@ -218,7 +215,7 @@ class DaiDevice(robothub.RobotHubDevice):
         except:
             pass
 
-    def initialize_person_detection_stream(self, resolution = '400p', fps = 30, stream_id = 'person_detection', name = 'Person Detection') -> None:
+    def initialize_person_detection_stream(self, resolution = '1080p', fps = 10, stream_id = 'person_detection', name = 'Person Detection') -> None:
         # Function designed to initialize a pipeline which will stream H264 encoded RGB video with visualized person detections
 
         # 1. Some safety checks
