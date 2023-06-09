@@ -8,15 +8,3 @@ This application recognizes facial emotions (neutral, happy, sad, surprise, ange
 
 ### Usage 
 - Assign one device to the App and launch it, streams will be accessible in "Live View".
-
-### Troubleshooting Streaming Issues
-- If your stream does not start, try the following steps: Enable the Public Stream (to the right of the stream), then hover over the video player - a button will appear at the bottom right next to fullscreen. Click on it, and a link will be copied to your clipboard. Open a new private window and paste this link into it. The stream should start in this new window.
-
-
-
-
-
-
-
-
-
