@@ -1,0 +1,14 @@
+config_version = "2.0"
+configuration = []
+
+[info]
+name = "Magic Ivory Coral"
+description = "This is a generated description. Replace it with your own."
+
+[runtime]
+application = "app.py#Application"
+workdir = "/app"
+
+[runtime.runs_on]
+type = "custom"
+dockerfile = "Dockerfile"
