@@ -52,10 +52,6 @@ class Application(robothub.RobotHubApplication):
             emotion_results = np.array(rec.getFirstLayerFp16())
             # Find the index of the emotion with the highest score
             emotion_name = emotions[np.argmax(emotion_results)]
-            # Reset the visualizer
-            packet.visualizer.reset()
-            # Add a bounding box to the visualizer
-            packet.visualizer.add_bbox(bbox, color=None, thickness=None, bbox_style=None, label=None)
             # Add the name of the emotion to the visualizer
             packet.visualizer.add_text(emotion_name, position=TextPosition.BOTTOM_RIGHT)
             
