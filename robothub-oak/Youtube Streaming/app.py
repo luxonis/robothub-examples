@@ -7,6 +7,7 @@ import utils
 import subprocess as sp 
 from robothub_oak.packets import HubPacket
 
+
 # Defining the Application class, which inherits from RobotHubApplication in robothub
 class Application(robothub.RobotHubApplication): 
     def on_update(self, packet: HubPacket):
@@ -28,8 +29,10 @@ class Application(robothub.RobotHubApplication):
         # Check if streaming key is valid
         if not self.key or self.key == 'placeholder':
             raise Exception("Please define a valid streaming key.")
+        
+        command = utils.make_command(self.key) + ['-loglevel', 'quiet']  # IF YOU WANT TO SEE LOGS FROM ffmpeg you can use this conf:
+      #['-loglevel', 'quiet','-report'] or ['-loglevel', 'error'] 
 
-        command = utils.make_command(self.key)  # Generating a command for streaming
         if self.proc:
             self.proc.kill()  # Terminating the current subprocess if it exists
         self.proc = sp.Popen(command, stdin=sp.PIPE, stderr=None)  # Launching a new streaming subprocess
@@ -53,3 +56,4 @@ class Application(robothub.RobotHubApplication):
                 self.proc.stdin.close()  # Closing the stdin of the subprocess
                 self.proc.kill()  # Terminating the subprocess
         print("STREAM TERMINATED")
+
