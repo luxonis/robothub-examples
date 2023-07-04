@@ -95,6 +95,7 @@ class LineCrossApplication(robothub.RobotHubApplication):
                             background_color=(0, 0, 0),
                             position=depthai_sdk.TextPosition.TOP_MID)
         visualizer.add_line(self.LINE_P1, self.LINE_P2)
+        visualizer.detections(hide_label=True)
 
     # Helper functions
 
