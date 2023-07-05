@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Object Detection Livestream</title>
+    <link rel="stylesheet" href="style.css"/>
+</head>
+
+<body>
+<rh-layout>
+    <rh-tiles slot="header" alignment="center">
+        <img class="logo" src="assets/luxonis_logo.png" alt="Luxonis logo"/>
+    </rh-tiles>
+    <rh-card heading="Object Detection Stream" class-name="content">
+        <rh-tiles mode="column">
+            <rh-video stream-key="nn_stream"></rh-video>
+            <rh-tiles mode="row" class="actions">
+                <rh-button id="send-detection">Send Event</rh-button>
+            </rh-tiles>
+        </rh-tiles>
+    </rh-card>
+</rh-layout>
+<script src="main.js"></script>
+</body>
+
+</html>

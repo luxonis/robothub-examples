@@ -1,4 +1,4 @@
-## Object Detection Frontend 
+## Object Detection (with frontend)
 
 This App streams detections from a YoloV6 NN to the Frontend server and allows sending Events to the cloud with a button.
 

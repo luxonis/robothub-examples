@@ -1,15 +1,21 @@
-import robothub
-import robothub_oak
-from robothub_oak.manager import DEVICE_MANAGER
-# Auxiliary functions for generating a streaming command
-import utils 
 # Library for launching new applications or commands in your operating system
-import subprocess as sp 
+import subprocess as sp
+
+import robothub
+from robothub_oak.manager import DEVICE_MANAGER
 from robothub_oak.packets import HubPacket
+
+# Auxiliary functions for generating a streaming command
+import utils
 
 
 # Defining the Application class, which inherits from RobotHubApplication in robothub
-class Application(robothub.RobotHubApplication): 
+class Application(robothub.RobotHubApplication):
+    bitrate = None  # Bitrate for streaming
+    fps = None  # Frames per second for streaming
+    key = None  # Streaming key
+    proc = None  # Subprocess for streaming
+
     def on_update(self, packet: HubPacket):
         # Callback function when receiving a new frame from the camera 
         frame_data = packet.msg.getData()  # Retrieving frame data from the packet 
@@ -29,23 +35,25 @@ class Application(robothub.RobotHubApplication):
         # Check if streaming key is valid
         if not self.key or self.key == 'placeholder':
             raise Exception("Please define a valid streaming key.")
-        
-        command = utils.make_command(self.key) + ['-loglevel', 'quiet']  # IF YOU WANT TO SEE LOGS FROM ffmpeg you can use this conf:
-      #['-loglevel', 'quiet','-report'] or ['-loglevel', 'error'] 
+
+        command = utils.make_command(self.key) + ['-loglevel', 'quiet']  # If you want to see logs from ffmpeg, use the following arguments instead:
+        # ['-loglevel', 'quiet', '-report'] or ['-loglevel', 'error']
 
         if self.proc:
             self.proc.kill()  # Terminating the current subprocess if it exists
+
         self.proc = sp.Popen(command, stdin=sp.PIPE, stderr=None)  # Launching a new streaming subprocess
 
         devices = DEVICE_MANAGER.get_all_devices()  # Retrieving a list of all connected devices
         for device in devices:  # Loop over all devices
             color = device.get_camera('color', resolution='1080p', fps=30)  # Retrieving the device's color camera
-            color.add_callback(self.on_update, 'encoded')  # Adding a callback for receiving updated frames
             color.configure_encoder(h26x_bitrate_kbps=self.bitrate)  # Camera encoder configuration
+            color.add_callback(self.on_update)  # Adding a callback for receiving updated frames
 
-            nn = device.create_neural_network('person-detection-retail-0013', color)  # Creating a neural network for person detection
+            nn = device.create_neural_network('yolov6nr3_coco_640x352', color)  # Creating a neural network
             nn.stream_to_hub(name=f'NN stream {device.id}')  # Start streaming the neural network's results to the robothub
 
+    def start_execution(self):
         DEVICE_MANAGER.start()  # Starting the device manager
 
     def on_stop(self):
@@ -56,4 +64,3 @@ class Application(robothub.RobotHubApplication):
                 self.proc.stdin.close()  # Closing the stdin of the subprocess
                 self.proc.kill()  # Terminating the subprocess
         print("STREAM TERMINATED")
-
