@@ -16,7 +16,7 @@ dockerfile = "Dockerfile"
 key = "streaming_key"
 label = "YoutTube streaming key"
 field = "text"
-initial_value = ""  #WRITE YOUR YOUTUBE KEY HERE
+initial_value = ""  # Paste your streaming key here
 prefix = ""
 
 [[configuration]]

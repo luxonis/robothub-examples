@@ -1,16 +1,20 @@
-import time
+import contextlib
 import logging as log
+import os
+import time
+
 import depthai as dai
 import robothub
-import os
-import contextlib
+
 
 class UpdateFirmwareApp(robothub.RobotHubApplication):
+    bootloader = None
+
     def on_start(self):
         log.info(f'Connecting to assigned devices...')
 
         for device in robothub.DEVICES:
-            print("="*20)
+            print("=" * 20)
             mxid = device.oak["serialNumber"]
             name = device.oak["productName"]
             self.update_bl(mxid, name)
@@ -18,19 +22,17 @@ class UpdateFirmwareApp(robothub.RobotHubApplication):
         log.info('App has successfully finished execution, you may uninstall it.')
 
     def progress_cb(self, value):
-        print(f'Update progress: {100*value:.2f}%')
+        print(f'Update progress: {100 * value:.2f}%')
 
     def update_bl(self, mxid, name):
-        # connect to device, check if its PoE and flash updated bootloader if so
+        # Connect to device, check if its PoE and flash updated bootloader if so
 
         start_time = time.time()
         give_up_time = start_time + 20
-        
+
         connected = False
-        poe = False
         self.bootloader = None
-        bootloader_type = None
-        
+
         device_info = dai.DeviceInfo(mxid)
         while time.time() < give_up_time and self.running:
             try:
@@ -51,15 +53,20 @@ class UpdateFirmwareApp(robothub.RobotHubApplication):
                 bootloader_type = self.bootloader.getType()
                 self.bootloader.close()
                 time.sleep(0.1)
+
                 if bootloader_type == dai.DeviceBootloader.Type.NETWORK:
                     poe = True
                 elif bootloader_type == dai.DeviceBootloader.Type.USB:
                     poe = False
                 else:
-                    log.error(f'Device bootloader is type {bootloader_type} which is not type "NETWORK" or "USB". If device is PoE-type and you can\'t update the bootloader, please contact customer support')
+                    log.error(f'Device bootloader is type {bootloader_type} which is not type "NETWORK" or "USB". '
+                              f'If device is PoE-type and you can\'t update the bootloader, '
+                              f'please contact customer support')
                     poe = False
+
                 if poe:
-                    log.info(f'Device is PoE-type, installing latest bootloader version. Don\'t disconnect device or stop the App!')
+                    log.info(f'Device is PoE-type, installing latest bootloader version. '
+                             f'Don\'t disconnect device or stop the App!')
                     start_time = time.time()
                     give_up_time = start_time + 20
                     while time.time() < give_up_time and self.running:
@@ -71,16 +78,19 @@ class UpdateFirmwareApp(robothub.RobotHubApplication):
                             break
                         except BaseException as e:
                             # Device could not be connected to, wait 0.1 seconds and try again. 
-                            #log.info(f"Could not connect to device {name} with error \'{e}\', retrying...")
+                            # log.info(f"Could not connect to device {name} with error \'{e}\', retrying...")
                             self.wait(0.1)
                             continue
-                    self.bootloader.flashBootloader(memory=dai.DeviceBootloader.Memory.FLASH, type=dai.DeviceBootloader.Type.NETWORK, progressCallback = self.progress_cb)
+                    self.bootloader.flashBootloader(memory=dai.DeviceBootloader.Memory.FLASH,
+                                                    type=dai.DeviceBootloader.Type.NETWORK,
+                                                    progressCallback=self.progress_cb)
                     log.info(f'Successfully installed latest firmware on the device!')
                     self.bootloader.close()
                 else:
                     log.info(f'Device is NOT PoE-type, skipping...')
             else:
-                log.info(f'Device "{name}" could not be connected within 20s timeout. Please ensure device is connected correctly and try again.')
+                log.info(f'Device "{name}" could not be connected within 20s timeout. '
+                         f'Please ensure device is connected correctly and try again.')
 
     def on_stop(self):
         log.info('Stopping App')
@@ -92,4 +102,3 @@ class UpdateFirmwareApp(robothub.RobotHubApplication):
             except BaseException as e:
                 log.debug(f'Could not close device with error: {e}')
         log.info('App Stopped')
-

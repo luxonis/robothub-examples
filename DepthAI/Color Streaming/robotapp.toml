@@ -9,8 +9,8 @@ application = "app.py#ExampleApplication"
 workdir = "/app"
 
 [runtime.runs_on]
-type = "hub-os"
-version = "2023.041.1201"
+type = "image"
+version = "ghcr.io/luxonis/robothub-app-v2:2023.183.1356-regular"
 
 [[configuration]]
 label = "Stream FPS"
