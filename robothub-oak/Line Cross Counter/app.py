@@ -36,11 +36,11 @@ class LineCrossApplication(robothub.RobotHubApplication):
         for device in devices:
             # Define color camera and person detection model
             color = device.get_camera('color', resolution='1080p', fps=15)
-            nn = device.create_neural_network('yolov6n_coco_640x640', color, tracker=True)
+            nn = device.create_neural_network('mobilenet-ssd', color, tracker=True)
 
             # Configure tracker
             nn.configure_tracker(tracker_type=depthai.TrackerType.ZERO_TERM_COLOR_HISTOGRAM,
-                                 track_labels=[1],  # track people only
+                                 track_labels=['person'],  # track people only
                                  assignment_policy=depthai.TrackerIdAssignmentPolicy.SMALLEST_ID)
 
             # Define a stream to send the NN output to the RobotHub with a custom callback
