@@ -1,0 +1,14 @@
+config_version = "2.0"
+configuration = []
+
+[info]
+name = "Line Cross Counter app"
+description = "This app counts the number of times a line is crossed by people."
+
+[runtime]
+application = "app.py#LineCrossApplication"
+workdir = "/app"
+
+[runtime.runs_on]
+type = "custom"
+dockerfile = "Dockerfile"
