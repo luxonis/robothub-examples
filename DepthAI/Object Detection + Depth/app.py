@@ -1,20 +1,21 @@
-import blobconverter
-import numpy as np
 import time
+
 import depthai as dai
+import numpy as np
+import robothub_core
 
 
-
-class ObjectDetection(robothub.RobotHubApplication):
+class ObjectDetection(robothub_core.RobotHubApplication):
     def on_start(self):
-        fps = robothub.CONFIGURATION['det_fps']
+        fps = robothub_core.CONFIGURATION['det_fps']
         print(f'FPS set to {fps}, connecting to devices...')
 
         # connect to the device(s), build pipeline and upload it to the device
         self.connect(fps)
 
         # create polling thread and start it
-        run_polling_thread = robothub.threading.Thread(target = self.polling_thread, name="PollingThread", daemon=False)
+        run_polling_thread = robothub_core.threading.Thread(target=self.polling_thread, name="PollingThread",
+                                                            daemon=False)
         run_polling_thread.start()
 
     def connect(self, fps):
@@ -22,7 +23,7 @@ class ObjectDetection(robothub.RobotHubApplication):
         self.streams = dict()
         self.outQueues = dict()
 
-        for device in robothub.DEVICES:
+        for device in robothub_core.DEVICES:
             mxid = device.oak["serialNumber"]
             device_name = device.oak['productName']
 
@@ -44,8 +45,10 @@ class ObjectDetection(robothub.RobotHubApplication):
                 pipeline, out_queues = self.build_pipeline(mxid, fps)
                 self.devices[mxid].startPipeline(pipeline)
                 self.devices[mxid].setIrLaserDotProjectorBrightness(1200)
-                self.streams['color'] = robothub.STREAMS.create_video(mxid, f'stream_color', f'{device_name} - Object Detection Stream')
-                self.streams['depth'] = robothub.STREAMS.create_video(mxid, f'stream_depth', f'{device_name} - Depth Stream')
+                self.streams['color'] = robothub_core.STREAMS.create_video(mxid, f'stream_color',
+                                                                           f'{device_name} - Object Detection Stream')
+                self.streams['depth'] = robothub_core.STREAMS.create_video(mxid, f'stream_depth',
+                                                                           f'{device_name} - Depth Stream')
                 for name in out_queues:
                     self.outQueues[name] = self.devices[mxid].getOutputQueue(name=name, maxSize=4, blocking=False)
                 print(f'Device "{device_name}": Started 1080p Object Detection & Depth Streams')
@@ -91,7 +94,7 @@ class ObjectDetection(robothub.RobotHubApplication):
         # Stereo settings
         stereo.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_5x5)
         stereo.initialConfig.setLeftRightCheck(True)
-        #stereo.initialConfig.setSubpixel(True)
+        # stereo.initialConfig.setSubpixel(True)
         config = stereo.initialConfig.get()
         config.postProcessing.decimationFilter.decimationFactor = 1
         config.postProcessing.speckleFilter.enable = False
@@ -117,7 +120,7 @@ class ObjectDetection(robothub.RobotHubApplication):
         detectionNetwork.setNumClasses(80)
         detectionNetwork.setCoordinateSize(4)
         detectionNetwork.setIouThreshold(0.5)
-        
+
         detectionNetwork.setNumInferenceThreads(2)
         detectionNetwork.input.setBlocking(False)
 
@@ -173,35 +176,35 @@ class ObjectDetection(robothub.RobotHubApplication):
                     np_bbox = self.frameNorm([detection.xmin, detection.ymin, detection.xmax, detection.ymax])
                     bbox = [420 + int(np_bbox[0]), int(np_bbox[1]), 420 + int(np_bbox[2]), int(np_bbox[3])]
                     detections_metadata.append({
-                    'bbox': bbox,
-                    'label': capitalized_label,
-                    'color': [0, 242, 255],
-                })
-                metadata = {
-                'platform': 'robothub',
-                'frame_shape': [1920, 1080, 3],
-                'config': {
-                    'detection': {
-                        'thickness': 1,
-                        'fill_transparency': 0.15,
-                        'box_roundness': 1,
+                        'bbox': bbox,
+                        'label': capitalized_label,
                         'color': [0, 242, 255],
+                    })
+                metadata = {
+                    'platform': 'robothub',
+                    'frame_shape': [1920, 1080, 3],
+                    'config': {
+                        'detection': {
+                            'thickness': 1,
+                            'fill_transparency': 0.15,
+                            'box_roundness': 1,
+                            'color': [0, 242, 255],
+                        },
+                        'text': {
+                            'font_color': [0, 242, 255],
+                            'font_transparency': 0.5,
+                            'font_scale': 1.0,
+                            'font_thickness': 2,
+                            'bg_transparency': 0.5,
+                            'bg_color': [208, 239, 255],
+                        },
                     },
-                    'text': {
-                        'font_color': [0, 242, 255],
-                        'font_transparency': 0.5,
-                        'font_scale': 1.0,
-                        'font_thickness': 2,
-                        'bg_transparency': 0.5,
-                        'bg_color': [208, 239, 255],
-                    },
-                },
-                'objects': [
-                    {
-                        'type': 'detections',
-                        'detections': detections_metadata
-                    }
-                ]
+                    'objects': [
+                        {
+                            'type': 'detections',
+                            'detections': detections_metadata
+                        }
+                    ]
                 }
             else:
                 metadata = None
@@ -217,8 +220,8 @@ class ObjectDetection(robothub.RobotHubApplication):
             self.run_polling_thread.join()
         except BaseException as e:
             pass
-        try: 
-            robothub.STREAMS.destroy_all_streams()
+        try:
+            robothub_core.STREAMS.destroy_all_streams()
         except BaseException as e:
             pass
 
@@ -226,84 +229,84 @@ class ObjectDetection(robothub.RobotHubApplication):
 model_path = '/app/yolo_v6.blob'
 
 labelMap = [
-            "person",
-            "bicycle",
-            "car",
-            "motorbike",
-            "aeroplane",
-            "bus",
-            "train",
-            "truck",
-            "boat",
-            "traffic light",
-            "fire hydrant",
-            "stop sign",
-            "parking meter",
-            "bench",
-            "bird",
-            "cat",
-            "dog",
-            "horse",
-            "sheep",
-            "cow",
-            "elephant",
-            "bear",
-            "zebra",
-            "giraffe",
-            "backpack",
-            "umbrella",
-            "handbag",
-            "tie",
-            "suitcase",
-            "frisbee",
-            "skis",
-            "snowboard",
-            "sports ball",
-            "kite",
-            "baseball bat",
-            "baseball glove",
-            "skateboard",
-            "surfboard",
-            "tennis racket",
-            "bottle",
-            "wine glass",
-            "cup",
-            "fork",
-            "knife",
-            "spoon",
-            "bowl",
-            "banana",
-            "apple",
-            "sandwich",
-            "orange",
-            "broccoli",
-            "carrot",
-            "hot dog",
-            "pizza",
-            "donut",
-            "cake",
-            "chair",
-            "sofa",
-            "pottedplant",
-            "bed",
-            "diningtable",
-            "toilet",
-            "tvmonitor",
-            "laptop",
-            "mouse",
-            "remote",
-            "keyboard",
-            "cell phone",
-            "microwave",
-            "oven",
-            "toaster",
-            "sink",
-            "refrigerator",
-            "book",
-            "clock",
-            "vase",
-            "scissors",
-            "teddy bear",
-            "hair drier",
-            "toothbrush"
+    "person",
+    "bicycle",
+    "car",
+    "motorbike",
+    "aeroplane",
+    "bus",
+    "train",
+    "truck",
+    "boat",
+    "traffic light",
+    "fire hydrant",
+    "stop sign",
+    "parking meter",
+    "bench",
+    "bird",
+    "cat",
+    "dog",
+    "horse",
+    "sheep",
+    "cow",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe",
+    "backpack",
+    "umbrella",
+    "handbag",
+    "tie",
+    "suitcase",
+    "frisbee",
+    "skis",
+    "snowboard",
+    "sports ball",
+    "kite",
+    "baseball bat",
+    "baseball glove",
+    "skateboard",
+    "surfboard",
+    "tennis racket",
+    "bottle",
+    "wine glass",
+    "cup",
+    "fork",
+    "knife",
+    "spoon",
+    "bowl",
+    "banana",
+    "apple",
+    "sandwich",
+    "orange",
+    "broccoli",
+    "carrot",
+    "hot dog",
+    "pizza",
+    "donut",
+    "cake",
+    "chair",
+    "sofa",
+    "pottedplant",
+    "bed",
+    "diningtable",
+    "toilet",
+    "tvmonitor",
+    "laptop",
+    "mouse",
+    "remote",
+    "keyboard",
+    "cell phone",
+    "microwave",
+    "oven",
+    "toaster",
+    "sink",
+    "refrigerator",
+    "book",
+    "clock",
+    "vase",
+    "scissors",
+    "teddy bear",
+    "hair drier",
+    "toothbrush"
 ]

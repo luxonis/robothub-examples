@@ -4,16 +4,16 @@ import os
 import time
 
 import depthai as dai
-import robothub
+import robothub_core
 
 
-class UpdateFirmwareApp(robothub.RobotHubApplication):
+class UpdateFirmwareApp(robothub_core.RobotHubApplication):
     bootloader = None
 
     def on_start(self):
         log.info(f'Connecting to assigned devices...')
 
-        for device in robothub.DEVICES:
+        for device in robothub_core.DEVICES:
             print("=" * 20)
             mxid = device.oak["serialNumber"]
             name = device.oak["productName"]
