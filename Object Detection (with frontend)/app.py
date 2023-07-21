@@ -27,9 +27,6 @@ class ObjectDetection(BaseDataProcessor):
 
 
 class ExampleApplication(BaseApplication):
-    def __init__(self):
-        super().__init__()
-
     def setup_pipeline(self, device: OakCamera):
         """This method is the entrypoint for each device and is called upon connection."""
         color = device.create_camera(source="color", fps=30, resolution="1080p", encode="mjpeg")
