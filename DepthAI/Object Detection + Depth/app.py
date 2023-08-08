@@ -45,9 +45,9 @@ class ObjectDetection(robothub_core.RobotHubApplication):
                 pipeline, out_queues = self.build_pipeline(mxid, fps)
                 self.devices[mxid].startPipeline(pipeline)
                 self.devices[mxid].setIrLaserDotProjectorBrightness(1200)
-                self.streams['color'] = robothub_core.STREAMS.create_video(mxid, f'stream_color',
+                self.streams['color'] = robothub_core.STREAMS.create_video(mxid, f'stream_{mxid}_color',
                                                                            f'{device_name} - Object Detection Stream')
-                self.streams['depth'] = robothub_core.STREAMS.create_video(mxid, f'stream_depth',
+                self.streams['depth'] = robothub_core.STREAMS.create_video(mxid, f'stream_{mxid}_depth',
                                                                            f'{device_name} - Depth Stream')
                 for name in out_queues:
                     self.outQueues[name] = self.devices[mxid].getOutputQueue(name=name, maxSize=4, blocking=False)

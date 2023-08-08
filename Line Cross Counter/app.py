@@ -3,7 +3,7 @@ import depthai as dai
 from numpy import linalg as LA
 from depthai_sdk import OakCamera, TextPosition
 
-from robothub_oak.application import RobotHubApplication
+from robothub_oak.application import BaseApplication
 from robothub_oak import LiveView
 from robothub_oak.data_processors import BaseDataProcessor
 
@@ -56,7 +56,7 @@ class LineCrossingCounter(BaseDataProcessor):
                         self.right_to_left += 1
 
             self.previous_positions[tracklet_id] = current_position
-            live_view.add_bbox(bbox=bbox, label=detection.label)
+            live_view.add_rectangle(rectangle=bbox, label=detection.label)
 
         # Visualizations
         
@@ -97,7 +97,7 @@ class LineCrossingCounter(BaseDataProcessor):
         return self.angle_between_vectors(u, v)
 
 
-class ExampleApplication(RobotHubApplication):
+class LineCrossApplication(BaseApplication):
     def __init__(self):
         super().__init__()
         self.line_crossing_counter = LineCrossingCounter()
@@ -111,8 +111,6 @@ class ExampleApplication(RobotHubApplication):
                                     track_labels=[0],  # track people only
                                     assignment_policy=dai.TrackerIdAssignmentPolicy.SMALLEST_ID)
 
-        LiveView.create(device=device, component=color, title='Line Cross stream', unique_key=f'line_cross_stream', manual_publish=True)
+        LiveView.create(device=device, component=color, name='Line Cross stream', unique_key=f'line_cross_stream', manual_publish=True)
         
         device.sync([color.out.encoded, detection_nn.out.tracker], self.line_crossing_counter)
-
-    

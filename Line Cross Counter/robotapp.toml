@@ -10,5 +10,7 @@ application = "app.py#LineCrossApplication"
 workdir = "/app"
 
 [runtime.runs_on]
-type = "custom"
-dockerfile = "Dockerfile"
+type = "image"
+name = "ghcr.io/luxonis/robothub-app-v2:2023.218.1205-regular"
+# type = "custom"
+# dockerfile = "Dockerfile"

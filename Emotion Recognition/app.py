@@ -31,7 +31,7 @@ class EmotionRecognition(BaseDataProcessor):
         self.live_view.publish(packet.frame)
 
 
-class ExampleApplication(BaseApplication):
+class Application(BaseApplication):
     def setup_pipeline(self, device: OakCamera):
         """This method is the entrypoint for each device and is called upon connection."""
         color = device.create_camera(source="color", fps=30, resolution="1080p", encode="h264")

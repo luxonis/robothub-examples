@@ -7,7 +7,7 @@ from robothub_oak.data_processors import BaseDataProcessor
 from robothub_oak.events import send_image_event
 
 
-class ObjectDetection(BaseDataProcessor):
+class ObjectDetectionProcessor(BaseDataProcessor):
     def __init__(self, device_mxid: str):
         super().__init__()
         self.take_picture_signal = Event()
@@ -26,7 +26,7 @@ class ObjectDetection(BaseDataProcessor):
             self.take_picture_signal.set()
 
 
-class ExampleApplication(BaseApplication):
+class ObjectDetection(BaseApplication):
     def __init__(self):
         super().__init__()
 
@@ -37,5 +37,5 @@ class ExampleApplication(BaseApplication):
 
         LiveView.create(device=device, component=color, unique_key="nn_stream", name="Emotion recognition")
 
-        object_detection = ObjectDetection(device.device.getMxId())
+        object_detection = ObjectDetectionProcessor(device.device.getMxId())
         device.callback(nn.out.main, object_detection)

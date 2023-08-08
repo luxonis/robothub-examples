@@ -46,9 +46,8 @@ class ExampleApplication(robothub_core.RobotHubApplication):
             # check if the device has RGB sensor
             color = False
             if cameras:
-                for _camera in cameras:
-                    if _camera.name.upper() == 'RGB':
-                        color = True
+                if dai.CameraBoardSocket.CAM_A in cameras:
+                    color = True
                 if color:
                     # if it does build a pipeline and start it
                     pipeline = self.build_pipeline(mxid, fps)
