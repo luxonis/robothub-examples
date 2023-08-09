@@ -37,9 +37,6 @@ class Application(robothub.RobotHubApplication):
                                                           description=f'NN {device.get_device_name()}')
             self.streams[device.mxid]['NN'] = stream_handle
 
-        # Start the device manager
-        DEVICE_MANAGER.start()
-
     def on_emotion(self, packet):
         # Get detections and neural network data from the packet
         detections = packet.detections
