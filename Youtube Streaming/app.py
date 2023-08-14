@@ -1,24 +1,22 @@
 import subprocess as sp
+from typing import List
 
-import robothub_core
 from depthai_sdk import OakCamera
 from robothub_oak.application import BaseApplication
-from robothub_oak import LiveView
 from robothub_oak.data_processors import BaseDataProcessor
-
-import utils
 
 
 class YouTubeStreaming(BaseDataProcessor):
+    proc: sp.Popen = None  # Subprocess for streaming
+
     def __init__(self, key: str):
         super().__init__()
 
         if not key or key == 'placeholder':
             raise Exception('Please define a valid streaming key.')
 
-        self.proc = None  # Subprocess for streaming
-
-        command = utils.make_command(key) + ['-loglevel', 'quiet']  # If you want to see logs from ffmpeg, use the following arguments instead:
+        command = self.make_command(key) + ['-loglevel', 'quiet']
+        # If you want to see logs from ffmpeg, use the following arguments instead:
         # ['-loglevel', 'quiet', '-report'] or ['-loglevel', 'error']
 
         if self.proc:
@@ -31,15 +29,43 @@ class YouTubeStreaming(BaseDataProcessor):
         self.proc.stdin.write(frame_data)  # Passing frame data to the stdin of the streaming subprocess 
         self.proc.stdin.flush()  # Flushing stdin buffer
 
+    @staticmethod
+    def make_command(key: str) -> List[str]:
+        HLS_URL = f"https://a.upload.youtube.com/http_upload_hls?cid={key}&copy=0&file=stream.m3u8"
+
+        hls_command = ["ffmpeg",
+                       '-hide_banner',
+                       "-fflags", "+genpts",
+                       '-loglevel', 'info',
+                       '-use_wallclock_as_timestamps', 'true',
+                       '-thread_queue_size', '512',
+                       "-i", "-",
+                       "-f", "lavfi",
+                       '-thread_queue_size', '512',
+                       "-i", "anullsrc",
+                       "-c:v", "copy",
+                       "-c:a", "aac",
+                       "-f", "hls",
+                       "-hls_time", "2",
+                       "-hls_list_size", "4",
+                       "-http_persistent", "1",
+                       "-method", "PUT",
+                       HLS_URL]
+
+        return hls_command
+
 
 class Application(BaseApplication):
+    """
+    This is an example application that streams video to YouTube. It is intended to be used with a single device.
+    """
     def __init__(self):
         super().__init__()
 
-        # Extracting streaming settings from robothub.CONFIGURATION
-        self.bitrate = robothub_core.CONFIGURATION['bitrate']  # Bitrate for streaming
-        self.fps = robothub_core.CONFIGURATION['fps']  # Frames per second for streaming
-        self.key = robothub_core.CONFIGURATION['streaming_key']  # Streaming key        
+        # Extracting streaming settings from self.config
+        self.bitrate = self.config['bitrate']  # Bitrate for streaming
+        self.fps = self.config['fps']  # Frames per second for streaming
+        self.key = self.config['streaming_key']  # Streaming key
 
         self.youtube_streaming = YouTubeStreaming(self.key)
 
