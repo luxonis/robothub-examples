@@ -2,15 +2,13 @@ import numpy as np
 from depthai_sdk import OakCamera
 
 from robothub_oak import LiveView, BaseApplication
-from robothub_oak.data_processors import BaseDataProcessor
 
 # List of emotions to be recognized by the neural network
 EMOTIONS = ['neutral', 'happy', 'sad', 'surprise', 'anger']
 
 
-class EmotionRecognition(BaseDataProcessor):
+class EmotionRecognition:
     def __init__(self, live_view: LiveView):
-        super().__init__()
         self.live_view = live_view
 
     def process_packets(self, packet):
@@ -32,16 +30,16 @@ class EmotionRecognition(BaseDataProcessor):
 
 
 class Application(BaseApplication):
-    def setup_pipeline(self, device: OakCamera):
+    def setup_pipeline(self, oak: OakCamera):
         """This method is the entrypoint for each device and is called upon connection."""
-        color = device.create_camera(source="color", fps=30, resolution="1080p", encode="h264")
-        detection_nn = device.create_nn(model='face-detection-retail-0004', input=color)
-        recognition_nn = device.create_nn(model='emotions-recognition-retail-0003', input=detection_nn)
+        color = oak.create_camera(source="color", fps=30, resolution="1080p", encode="h264")
+        detection_nn = oak.create_nn(model='face-detection-retail-0004', input=color)
+        recognition_nn = oak.create_nn(model='emotions-recognition-retail-0003', input=detection_nn)
 
-        live_view = LiveView.create(device=device,
-                                    component=detection_nn,
+        live_view = LiveView.create(device=oak,
+                                    component=color,
                                     name="Emotion recognition",
                                     manual_publish=True)
         emotion_recognition = EmotionRecognition(live_view=live_view)
 
-        device.callback(recognition_nn.out.main, emotion_recognition)
+        oak.callback(recognition_nn.out.main, emotion_recognition.process_packets)

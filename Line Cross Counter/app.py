@@ -1,14 +1,12 @@
-import numpy as np
 import depthai as dai
+import numpy as np
+from depthai_sdk import OakCamera
 from numpy import linalg as LA
-from depthai_sdk import OakCamera, TextPosition
-
-from robothub_oak.application import BaseApplication
 from robothub_oak import LiveView
-from robothub_oak.data_processors import BaseDataProcessor
+from robothub_oak.application import BaseApplication
 
 
-class LineCrossingCounter(BaseDataProcessor):
+class LineCrossingCounter:
     # Define line using absolute coordinates, illustrated below as *'s.
     # -----------
     # |    *    |
@@ -26,11 +24,13 @@ class LineCrossingCounter(BaseDataProcessor):
     # Buffer for the algorithm
     previous_positions: dict = {}
 
+    def __init__(self, live_view: LiveView):
+        self.live_view = live_view
+
     def process_packets(self, packets):
         color_packet = packets['color']
         nn_packet = packets['3_out;0_video']
 
-        live_view = LiveView.get(unique_key='line_cross_stream')
         tracklets = nn_packet.daiTracklets.tracklets
         detections = nn_packet.detections
 
@@ -56,14 +56,14 @@ class LineCrossingCounter(BaseDataProcessor):
                         self.right_to_left += 1
 
             self.previous_positions[tracklet_id] = current_position
-            live_view.add_rectangle(rectangle=bbox, label=detection.label)
+            self.live_view.add_rectangle(rectangle=bbox, label=detection.label)
 
         # Visualizations
-        
-        live_view.add_text(f"Left to right: {self.left_to_right}, Right to left: {self.right_to_left}",
-                           coords=(100, 100))
-        live_view.add_line(self.LINE_P1, self.LINE_P2)
-        live_view.publish(color_packet.frame)
+
+        self.live_view.add_text(f"Left to right: {self.left_to_right}, Right to left: {self.right_to_left}",
+                                coords=(100, 100))
+        self.live_view.add_line(self.LINE_P1, self.LINE_P2)
+        self.live_view.publish(color_packet.frame)
 
         # Helper functions
 
@@ -98,19 +98,20 @@ class LineCrossingCounter(BaseDataProcessor):
 
 
 class LineCrossApplication(BaseApplication):
-    def __init__(self):
-        super().__init__()
-        self.line_crossing_counter = LineCrossingCounter()
-
-    def setup_pipeline(self, device: OakCamera):
+    def setup_pipeline(self, oak: OakCamera):
         """This method is the entrypoint for each device and is called upon connection."""
-        color = device.create_camera(source='color', fps=30, resolution='1080p', encode='h264')
-        detection_nn = device.create_nn(model='yolov6n_coco_640x640', input=color, tracker=True)
+        color = oak.create_camera(source='color', fps=30, encode='h264')
+        detection_nn = oak.create_nn(model='yolov6n_coco_640x640', input=color, tracker=True)
         detection_nn.config_nn(resize_mode='stretch')
         detection_nn.config_tracker(tracker_type=dai.TrackerType.ZERO_TERM_COLOR_HISTOGRAM,
                                     track_labels=[0],  # track people only
                                     assignment_policy=dai.TrackerIdAssignmentPolicy.SMALLEST_ID)
 
-        LiveView.create(device=device, component=color, name='Line Cross stream', unique_key=f'line_cross_stream', manual_publish=True)
-        
-        device.sync([color.out.encoded, detection_nn.out.tracker], self.line_crossing_counter)
+        live_view = LiveView.create(device=oak,
+                                    component=color,
+                                    name='Line Cross stream',
+                                    unique_key=f'line_cross_stream',
+                                    manual_publish=True)
+
+        cross_counter = LineCrossingCounter(live_view)
+        oak.sync([color.out.encoded, detection_nn.out.tracker], cross_counter.process_packets)

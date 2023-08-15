@@ -3,15 +3,12 @@ from typing import List
 
 from depthai_sdk import OakCamera
 from robothub_oak.application import BaseApplication
-from robothub_oak.data_processors import BaseDataProcessor
 
 
-class YouTubeStreaming(BaseDataProcessor):
+class YouTubeStreaming:
     proc: sp.Popen = None  # Subprocess for streaming
 
     def __init__(self, key: str):
-        super().__init__()
-
         if not key or key == 'placeholder':
             raise Exception('Please define a valid streaming key.')
 
@@ -73,4 +70,4 @@ class Application(BaseApplication):
         """This method is the entrypoint for each device and is called upon connection."""
         color = device.create_camera(source='color', fps=30, resolution='1080p', encode='h264')
         detection_nn = device.create_nn(model='yolov6nr3_coco_640x352', input=color)
-        device.callback(detection_nn.out.encoded, self.youtube_streaming)
+        device.callback(detection_nn.out.encoded, self.youtube_streaming.process_packets)
