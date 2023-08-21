@@ -1,6 +1,5 @@
 import numpy as np
 from depthai_sdk import OakCamera
-
 from robothub_oak import LiveView, BaseApplication
 
 # List of emotions to be recognized by the neural network
@@ -8,8 +7,8 @@ EMOTIONS = ['neutral', 'happy', 'sad', 'surprise', 'anger']
 
 
 class EmotionRecognition:
-    def __init__(self, live_view: LiveView):
-        self.live_view = live_view
+    def __init__(self):
+        self.live_view = None
 
     def process_packets(self, packet):
         detections = packet.detections  # detections from face detection model
@@ -30,16 +29,27 @@ class EmotionRecognition:
 
 
 class Application(BaseApplication):
+    def __init__(self):
+        super().__init__()
+        # Initialize emotion recognition processor to handle outputs
+        self.emotion_recognition_processor = EmotionRecognition()
+
     def setup_pipeline(self, oak: OakCamera):
-        """This method is the entrypoint for each device and is called upon connection."""
+        """
+        This method is the entrypoint for the device and is called upon connection.
+        Note: This method can be called multiple times if the device is disconnected and reconnected.
+        """
         color = oak.create_camera(source="color", fps=30, resolution="1080p", encode="h264")
         detection_nn = oak.create_nn(model='face-detection-retail-0004', input=color)
         recognition_nn = oak.create_nn(model='emotions-recognition-retail-0003', input=detection_nn)
 
+        # Create live view, manual_publish indicates that the live view frames will be published manually
         live_view = LiveView.create(device=oak,
                                     component=color,
                                     name="Emotion recognition",
                                     manual_publish=True)
-        emotion_recognition = EmotionRecognition(live_view=live_view)
 
-        oak.callback(recognition_nn.out.main, emotion_recognition.process_packets)
+        # Set live view for emotion recognition processor, so it can publish frames
+        self.emotion_recognition_processor.live_view = live_view
+
+        oak.callback(recognition_nn.out.main, self.emotion_recognition_processor.process_packets)

@@ -24,8 +24,8 @@ class LineCrossingCounter:
     # Buffer for the algorithm
     previous_positions: dict = {}
 
-    def __init__(self, live_view: LiveView):
-        self.live_view = live_view
+    def __init__(self):
+        self.live_view = None
 
     def process_packets(self, packets):
         color_packet = packets['color']
@@ -65,7 +65,7 @@ class LineCrossingCounter:
         self.live_view.add_line(self.LINE_P1, self.LINE_P2)
         self.live_view.publish(color_packet.frame)
 
-        # Helper functions
+    # Helper functions
 
     def get_roi_center(self, roi):
         """Calculate ROI center."""
@@ -98,6 +98,10 @@ class LineCrossingCounter:
 
 
 class LineCrossApplication(BaseApplication):
+    def __init__(self):
+        super().__init__()
+        self.line_cross_counter = LineCrossingCounter()
+
     def setup_pipeline(self, oak: OakCamera):
         """This method is the entrypoint for each device and is called upon connection."""
         color = oak.create_camera(source='color', fps=30, encode='h264')
@@ -113,5 +117,6 @@ class LineCrossApplication(BaseApplication):
                                     unique_key=f'line_cross_stream',
                                     manual_publish=True)
 
-        cross_counter = LineCrossingCounter(live_view)
-        oak.sync([color.out.encoded, detection_nn.out.tracker], cross_counter.process_packets)
+        self.line_cross_counter.live_view = live_view
+
+        oak.sync([color.out.encoded, detection_nn.out.tracker], self.line_cross_counter.process_packets)

@@ -7,9 +7,9 @@ from robothub_oak.events import send_image_event
 
 
 class ObjectDetectionProcessor:
-    def __init__(self, device_mxid: str):
+    def __init__(self):
         self.take_picture_signal = Event()
-        self.device_mxid = device_mxid
+        self.device_mxid = None
         robothub_core.COMMUNICATOR.on_frontend(notification=self.on_fe_notification)
 
     def process_packets(self, packet):
@@ -25,6 +25,10 @@ class ObjectDetectionProcessor:
 
 
 class ObjectDetection(BaseApplication):
+    def __init__(self):
+        super().__init__()
+        self.object_detection_processor = ObjectDetectionProcessor()
+
     def setup_pipeline(self, oak: OakCamera):
         """This method is the entrypoint for each device and is called upon connection."""
         color = oak.create_camera(source="color", fps=30, encode="mjpeg")
@@ -32,5 +36,5 @@ class ObjectDetection(BaseApplication):
 
         LiveView.create(device=oak, component=color, unique_key="nn_stream", name="Emotion recognition")
 
-        object_detection = ObjectDetectionProcessor(oak.device.getMxId())
-        oak.callback(nn.out.main, object_detection.process_packets)
+        self.object_detection_processor.device_mxid = oak.device.getMxId()
+        oak.callback(nn.out.main, self.object_detection_processor.process_packets)
