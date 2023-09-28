@@ -2,7 +2,7 @@ import subprocess as sp
 from typing import List
 
 from depthai_sdk import OakCamera
-from robothub_oak.application import BaseApplication
+from robothub.application import BaseApplication
 
 
 class YouTubeStreaming:

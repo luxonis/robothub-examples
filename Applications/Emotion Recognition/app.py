@@ -1,6 +1,6 @@
 import numpy as np
 from depthai_sdk import OakCamera
-from robothub_oak import LiveView, BaseApplication
+from robothub import LiveView, BaseApplication
 
 # List of emotions to be recognized by the neural network
 EMOTIONS = ['neutral', 'happy', 'sad', 'surprise', 'anger']

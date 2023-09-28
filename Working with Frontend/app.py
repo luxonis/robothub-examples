@@ -2,14 +2,14 @@ from threading import Event
 
 import robothub_core
 from depthai_sdk import OakCamera
-from robothub_oak import LiveView, BaseApplication
-from robothub_oak.events import send_image_event
+from robothub import LiveView, BaseApplication
+from robothub.events import send_image_event
 
 
 class ObjectDetectionProcessor:
-    def __init__(self):
+    def __init__(self, device_mxid: str):
         self.take_picture_signal = Event()
-        self.device_mxid = None
+        self.device_mxid = device_mxid
         robothub_core.COMMUNICATOR.on_frontend(notification=self.on_fe_notification)
 
     def process_packets(self, packet):
@@ -24,10 +24,9 @@ class ObjectDetectionProcessor:
             self.take_picture_signal.set()
 
 
-class ObjectDetection(BaseApplication):
+class Application(BaseApplication):
     def __init__(self):
         super().__init__()
-        self.object_detection_processor = ObjectDetectionProcessor()
 
     def setup_pipeline(self, oak: OakCamera):
         """This method is the entrypoint for each device and is called upon connection."""
@@ -36,5 +35,5 @@ class ObjectDetection(BaseApplication):
 
         LiveView.create(device=oak, component=color, unique_key="nn_stream", name="Emotion recognition")
 
-        self.object_detection_processor.device_mxid = oak.device.getMxId()
-        oak.callback(nn.out.main, self.object_detection_processor.process_packets)
+        object_detection = ObjectDetectionProcessor(oak.device.getMxId())
+        oak.callback(nn.out.main, object_detection.process_packets)
