@@ -7,8 +7,8 @@ EMOTIONS = ['neutral', 'happy', 'sad', 'surprise', 'anger']
 
 
 class EmotionRecognition:
-    def __init__(self):
-        self.live_view = None
+    def __init__(self, live_view):
+        self.live_view = live_view
 
     def process_packets(self, packet):
         detections = packet.detections  # detections from face detection model
@@ -29,11 +29,6 @@ class EmotionRecognition:
 
 
 class Application(BaseApplication):
-    def __init__(self):
-        super().__init__()
-        # Initialize emotion recognition processor to handle outputs
-        self.emotion_recognition_processor = EmotionRecognition()
-
     def setup_pipeline(self, oak: OakCamera):
         """
         This method is the entrypoint for the device and is called upon connection.
@@ -50,6 +45,5 @@ class Application(BaseApplication):
                                     manual_publish=True)
 
         # Set live view for emotion recognition processor, so it can publish frames
-        self.emotion_recognition_processor.live_view = live_view
-
-        oak.callback(recognition_nn.out.main, self.emotion_recognition_processor.process_packets)
+        emotion_recognition_processor = EmotionRecognition(live_view)
+        oak.callback(recognition_nn.out.main, emotion_recognition_processor.process_packets)
