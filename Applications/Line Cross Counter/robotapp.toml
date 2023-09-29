@@ -6,9 +6,9 @@ name = "Line Cross Counter app"
 description = "This app counts the number of times a line is crossed by people."
 
 [runtime]
-application = "app.py#LineCrossApplication"
+application = "app.py#Application"
 workdir = "/app"
 
 [runtime.runs_on]
 type = "image"
-name = "ghcr.io/luxonis/robothub-app-v2:2023.218.1205-regular"
+name = "ghcr.io/luxonis/robothub-app-v2:2023.272.0747-rvc2-regular"

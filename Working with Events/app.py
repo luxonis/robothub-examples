@@ -1,3 +1,5 @@
+import time
+
 from depthai_sdk import OakCamera
 from depthai_sdk.classes import DetectionPacket
 from robothub import BaseApplication, LiveView
@@ -7,21 +9,25 @@ from robothub.events import send_image_event
 class EventProcessor:
     def __init__(self, device_mxid):
         self.device_mxid = device_mxid
+        self.last_upload = None
 
     def process_packets(self, packet: DetectionPacket):
         for detection in packet.detections:
-            bbox_center = detection.centroid()
-            h, w = packet.frame.shape[:2]
+            current_time = time.time()
+            # 15 seconds cooldown
+            if self.last_upload and current_time - self.last_upload < 15:
+                return
 
-            # Check if the person is located in the ROI - the right half of the frame
-            if bbox_center[0] > w // 2 and detection.label == 'person':
+            # Check if the person is located in the frame
+            if detection.label == 'person':
+                self.last_upload = current_time
                 send_image_event(packet.frame, 'Person detected', self.device_mxid)
 
 
-class ExampleApplication(BaseApplication):
+class Application(BaseApplication):
     def setup_pipeline(self, oak: OakCamera):
         """This method is the entrypoint for the device and is called upon connection."""
-        color = oak.create_camera(source='color', fps=30, encode='h264')
+        color = oak.create_camera(source='color', fps=30, encode='mjpeg')
         nn = oak.create_nn('yolov5n_coco_416x416', input=color)
 
         LiveView.create(

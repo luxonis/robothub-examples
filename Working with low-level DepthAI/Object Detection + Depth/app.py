@@ -5,7 +5,7 @@ import numpy as np
 import robothub_core
 
 
-class ObjectDetection(robothub_core.RobotHubApplication):
+class Application(robothub_core.RobotHubApplication):
     def on_start(self):
         fps = robothub_core.CONFIGURATION['det_fps']
         print(f'FPS set to {fps}, connecting to devices...')

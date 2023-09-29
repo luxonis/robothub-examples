@@ -1,4 +1,4 @@
-FROM ghcr.io/luxonis/robothub-app-v2:2023.218.1205-regular
+FROM ghcr.io/luxonis/robothub-app-v2:2023.272.0747-rvc2-regular
 
 RUN apt-get update && \
     apt-get install -y ffmpeg && \

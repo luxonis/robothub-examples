@@ -6,9 +6,9 @@ name = "Bootloader App"
 description = "This App connects to assigned devices and if they are a PoE-based device, flashes newest firmware."
 
 [runtime]
-application = "app.py#UpdateFirmwareApp"
+application = "app.py#Application"
 workdir = "/app"
 
 [runtime.runs_on]
 type = "image"
-name = "ghcr.io/luxonis/robothub-app-v2:2023.218.1205-regular"
+name = "ghcr.io/luxonis/robothub-app-v2:2023.272.0747-rvc2-regular"

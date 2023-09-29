@@ -10,7 +10,7 @@ workdir = "/app"
 
 [runtime.runs_on]
 type = "image"
-name = "ghcr.io/luxonis/robothub-app-v2:2023.218.1205-regular"
+name = "ghcr.io/luxonis/robothub-app-v2:2023.272.0747-rvc2-regular"
 
 [[configuration]]
 label = "Stream FPS"

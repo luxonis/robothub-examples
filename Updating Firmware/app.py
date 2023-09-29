@@ -7,7 +7,7 @@ import depthai as dai
 import robothub_core
 
 
-class UpdateFirmwareApp(robothub_core.RobotHubApplication):
+class Application(robothub_core.RobotHubApplication):
     bootloader = None
 
     def on_start(self):

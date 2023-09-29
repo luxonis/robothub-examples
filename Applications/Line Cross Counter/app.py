@@ -97,7 +97,7 @@ class LineCrossingCounter:
         return self.angle_between_vectors(u, v)
 
 
-class LineCrossApplication(BaseApplication):
+class Application(BaseApplication):
     def setup_pipeline(self, oak: OakCamera):
         """This method is the entrypoint for each device and is called upon connection."""
         color = oak.create_camera(source='color', fps=30, encode='h264')
