@@ -33,7 +33,7 @@ class Application(BaseApplication):
         color = oak.create_camera(source="color", fps=30, encode="mjpeg")
         nn = oak.create_nn(model='yolov6nr3_coco_640x352', input=color)
 
-        LiveView.create(device=oak, component=color, unique_key="nn_stream", name="Emotion recognition")
+        LiveView.create(device=oak, component=color, unique_key="color_stream", name="Color stream")
 
         object_detection = ObjectDetectionProcessor(oak.device.getMxId())
         oak.callback(nn.out.main, object_detection.process_packets)
