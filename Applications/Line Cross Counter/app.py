@@ -100,12 +100,13 @@ class LineCrossingCounter:
 class Application(BaseApplication):
     def setup_pipeline(self, oak: OakCamera):
         """This method is the entrypoint for each device and is called upon connection."""
-        color = oak.create_camera(source='color', fps=30, encode='h264')
+        color = oak.create_camera(source='color', fps=15, encode='h264')
         detection_nn = oak.create_nn(model='yolov6n_coco_640x640', input=color, tracker=True)
         detection_nn.config_nn(resize_mode='stretch')
         detection_nn.config_tracker(tracker_type=dai.TrackerType.ZERO_TERM_COLOR_HISTOGRAM,
                                     track_labels=[0],  # track people only
-                                    assignment_policy=dai.TrackerIdAssignmentPolicy.SMALLEST_ID)
+                                    assignment_policy=dai.TrackerIdAssignmentPolicy.SMALLEST_ID,
+                                    forget_after_n_frames=5)
 
         live_view = LiveView.create(device=oak,
                                     component=color,
