@@ -66,8 +66,8 @@ class Application(BaseApplication):
 
         self.youtube_streaming = YouTubeStreaming(self.key)
 
-    def setup_pipeline(self, device: OakCamera):
+    def setup_pipeline(self, oak: OakCamera):
         """This method is the entrypoint for each device and is called upon connection."""
-        color = device.create_camera(source='color', fps=30, resolution='1080p', encode='h264')
-        detection_nn = device.create_nn(model='yolov6nr3_coco_640x352', input=color)
-        device.callback(detection_nn.out.encoded, self.youtube_streaming.process_packets)
+        color = oak.create_camera(source='color', fps=30, resolution='1080p', encode='h264')
+        detection_nn = oak.create_nn(model='yolov6nr3_coco_640x352', input=color)
+        oak.callback(detection_nn.out.encoded, self.youtube_streaming.process_packets)
