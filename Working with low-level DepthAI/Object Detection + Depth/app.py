@@ -14,7 +14,8 @@ class Application(robothub_core.RobotHubApplication):
         self.connect(fps)
 
         # create polling thread and start it
-        run_polling_thread = robothub_core.threading.Thread(target=self.polling_thread, name="PollingThread",
+        run_polling_thread = robothub_core.threading.Thread(target=self.polling_thread, 
+                                                            name="PollingThread",
                                                             daemon=False)
         run_polling_thread.start()
 
@@ -25,7 +26,7 @@ class Application(robothub_core.RobotHubApplication):
 
         for device in robothub_core.DEVICES:
             mxid = device.oak["serialNumber"]
-            device_name = device.oak['productName']
+            device_name = device.oak['productName'] or mxid
 
             start_time = time.time()
             give_up_time = start_time + 10
@@ -75,19 +76,19 @@ class Application(robothub_core.RobotHubApplication):
 
         # Left camera output
         left = pipeline.createMonoCamera()
-        left.setBoardSocket(dai.CameraBoardSocket.LEFT)
+        left.setBoardSocket(dai.CameraBoardSocket.CAM_B)
         left.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
         left.setFps(fps)
 
         # Right camera output
         right = pipeline.createMonoCamera()
-        right.setBoardSocket(dai.CameraBoardSocket.RIGHT)
+        right.setBoardSocket(dai.CameraBoardSocket.CAM_C)
         right.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
         right.setFps(fps)
 
         # Stereo
         stereo = pipeline.createStereoDepth()
-        stereo.setDepthAlign(dai.CameraBoardSocket.RGB)
+        stereo.setDepthAlign(dai.CameraBoardSocket.CAM_A)
         left.out.link(stereo.left)
         right.out.link(stereo.right)
 
@@ -100,6 +101,7 @@ class Application(robothub_core.RobotHubApplication):
         config.postProcessing.speckleFilter.enable = False
         config.postProcessing.speckleFilter.speckleRange = 50
         config.postProcessing.temporalFilter.enable = True
+        config.postProcessing.decimationFilter.decimationFactor = 1
         config.postProcessing.thresholdFilter.minRange = 400
         config.postProcessing.thresholdFilter.maxRange = 15000
         # config.postProcessing.spatialFilter.enable = True
