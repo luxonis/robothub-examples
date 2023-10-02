@@ -11,15 +11,18 @@ class LiveViewProcessor:
         # LiveView implements several methods for drawing on the frame
         # Methods:
         #   - add_rectangle(rectangle: tuple, label: str), rectangle is required
-        #   - add_line(p1: tuple, p2: tuple, color: tuple, thickness: int), p1 and p2 are required
+        #   - add_line(pt1: tuple, pt2: tuple, color: tuple, thickness: int), p1 and p2 are required
         #   - add_text(text: str, coords: tuple), text and coords are required
         for detection in packet.detections:
             bbox = [*detection.top_left, *detection.bottom_right]
             self.live_view.add_rectangle(bbox, label=detection.label)
 
         # All coordinates must be denormalized (relative to the frame size)
-        self.live_view.add_text(text='Hello, world!', coords=(10, 10))
-        self.live_view.add_line(p1=(10, 10), p2=(10, 100))
+        self.live_view.add_text(text='Hello, world!', coords=(50, 50))
+        self.live_view.add_line(pt1=(100, 100), pt2=(100, 200))
+
+        # Publish the frame (must be h264 encoded)
+        self.live_view.publish(packet.frame)
 
 
 class Application(BaseApplication):
@@ -31,7 +34,8 @@ class Application(BaseApplication):
         live_view = LiveView.create(
             device=oak,
             component=color,
-            name="Detection stream"
+            name="Detection stream",
+            manual_publish=True
         )
 
         live_view_processor = LiveViewProcessor(live_view)
