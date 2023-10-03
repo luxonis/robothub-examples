@@ -37,6 +37,13 @@ class LineCrossingCounter:
         # Iterate through all tracklets
         for detection, tracklet in zip(detections, tracklets):
             tracklet_id = tracklet.id
+            tracklet_status = tracklet.status
+
+            # If tracklet is lost, remove it from the buffer
+            if tracklet_status == dai.Tracklet.TrackingStatus.LOST:
+                self.previous_positions.pop(tracklet_id, None)
+                continue
+
             bbox = [*detection.top_left, *detection.bottom_right]
             # Get current and previous position of the tracklet
             h, w = nn_packet.frame.shape[:2]
@@ -105,7 +112,7 @@ class Application(BaseApplication):
         detection_nn.config_nn(resize_mode='stretch')
         detection_nn.config_tracker(tracker_type=dai.TrackerType.ZERO_TERM_COLOR_HISTOGRAM,
                                     track_labels=[0],  # track people only
-                                    assignment_policy=dai.TrackerIdAssignmentPolicy.SMALLEST_ID,
+                                    assignment_policy=dai.TrackerIdAssignmentPolicy.UNIQUE_ID,
                                     forget_after_n_frames=5)
 
         live_view = LiveView.create(device=oak,
