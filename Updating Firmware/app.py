@@ -11,6 +11,9 @@ class Application(robothub_core.RobotHubApplication):
     bootloader = None
 
     def on_start(self):
+        log.info('Starting App')
+
+    def start_execution(self):
         log.info(f'Connecting to assigned devices...')
 
         for device in robothub_core.DEVICES:
