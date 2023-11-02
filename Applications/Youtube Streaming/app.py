@@ -56,18 +56,16 @@ class Application(BaseApplication):
     """
     This is an example application that streams video to YouTube. It is intended to be used with a single device.
     """
+
     def __init__(self):
         super().__init__()
-
-        # Extracting streaming settings from self.config
-        self.bitrate = self.config['bitrate']  # Bitrate for streaming
-        self.fps = self.config['fps']  # Frames per second for streaming
-        self.key = self.config['streaming_key']  # Streaming key
-
-        self.youtube_streaming = YouTubeStreaming(self.key)
+        self.youtube_streaming = YouTubeStreaming(self.self.config['streaming_key'])
 
     def setup_pipeline(self, oak: OakCamera):
-        """This method is the entrypoint for each device and is called upon connection."""
-        color = oak.create_camera(source='color', fps=30, resolution='1080p', encode='h264')
+        """
+        Define your data pipeline. Can be called multiple times during runtime. Make sure that objects that have to be created only once
+        are defined either as static class variables or in the __init__ method of this class.
+        """
+        color = oak.create_camera(source='color', fps=self.config['fps'], resolution='1080p', encode='h264')
         detection_nn = oak.create_nn(model='yolov6nr3_coco_640x352', input=color)
         oak.callback(detection_nn.out.encoded, self.youtube_streaming.process_packets)

@@ -27,13 +27,3 @@ step = 1
 min = 5
 max = 30
 initial_value = 30
-
-[[configuration]]
-key = "bitrate"
-label = "Bitrate [kbps]"
-field = "num_range"
-step = 100
-min = 1000
-max = 9400
-initial_value = 4500
-
