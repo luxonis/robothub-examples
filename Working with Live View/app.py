@@ -3,9 +3,8 @@ from depthai_sdk.classes import DetectionPacket
 from robothub import BaseApplication, LiveView
 
 
-class LiveViewProcessor:
-    def __init__(self, live_view):
-        self.live_view = live_view
+class BusinessLogic:
+    live_view = None
 
     def process_packets(self, packet: DetectionPacket):
         # LiveView implements several methods for drawing on the frame
@@ -21,22 +20,17 @@ class LiveViewProcessor:
         self.live_view.add_text(text='Hello, world!', coords=(50, 50))
         self.live_view.add_line(pt1=(100, 100), pt2=(100, 200))
 
-        # Publish the frame (must be h264 encoded)
-        self.live_view.publish(packet.frame)
-
 
 class Application(BaseApplication):
+    business_logic = BusinessLogic()
+
     def setup_pipeline(self, oak: OakCamera):
-        """This method is the entrypoint for the device and is called upon connection."""
+        """
+        Define your data pipeline. Can be called multiple times during runtime. Make sure that objects that have to be created only once
+        are defined either as static class variables or in the __init__ method of this class.
+        """
         color = oak.create_camera(source='color', fps=30, encode='h264')
         nn = oak.create_nn('yolov5n_coco_416x416', input=color)
-
-        live_view = LiveView.create(
-            device=oak,
-            component=color,
-            name="Detection stream",
-            manual_publish=True
-        )
-
-        live_view_processor = LiveViewProcessor(live_view)
-        oak.callback(nn.out.main, live_view_processor.process_packets)
+        self.business_logic.live_view = LiveView.create(device=oak, component=color, name="Detection stream", manual_publish=False)
+        # define where you want to process data from the camera
+        oak.callback(nn.out.main, self.live_view_processor.process_packets)

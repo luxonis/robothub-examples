@@ -7,9 +7,9 @@ from robothub.events import send_image_event
 
 
 class ObjectDetectionProcessor:
-    def __init__(self, device_mxid: str):
+    def __init__(self):
         self.take_picture_signal = Event()
-        self.device_mxid = device_mxid
+        self.device_mxid = None
         robothub_core.COMMUNICATOR.on_frontend(notification=self.on_fe_notification)
 
     def process_packets(self, packet):
@@ -25,15 +25,17 @@ class ObjectDetectionProcessor:
 
 
 class Application(BaseApplication):
-    def __init__(self):
-        super().__init__()
+    object_detection = ObjectDetectionProcessor()
 
     def setup_pipeline(self, oak: OakCamera):
-        """This method is the entrypoint for each device and is called upon connection."""
+        """
+        Define your data pipeline. Can be called multiple times during runtime. Make sure that objects that have to be created only once
+        are defined either as static class variables or in the __init__ method of this class.
+        """
         color = oak.create_camera(source="color", fps=30, encode="mjpeg")
         nn = oak.create_nn(model='yolov6nr3_coco_640x352', input=color)
 
         LiveView.create(device=oak, component=color, unique_key="color_stream", name="Color stream")
+        self.object_detection.device_mxid = oak.device.getMxId()
 
-        object_detection = ObjectDetectionProcessor(oak.device.getMxId())
-        oak.callback(nn.out.main, object_detection.process_packets)
+        oak.callback(nn.out.main, self.object_detection.process_packets)
