@@ -2,8 +2,9 @@ import time
 
 from depthai_sdk import OakCamera
 from depthai_sdk.classes import DetectionPacket
-from robothub import BaseApplication, LiveView, CONFIGURATION
+from robothub import BaseApplication, LiveView
 from robothub.events import send_image_event
+from robothub_core import CONFIGURATION
 
 
 class EventProcessor:
