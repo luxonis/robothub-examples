@@ -33,4 +33,4 @@ class Application(BaseApplication):
         nn = oak.create_nn('yolov5n_coco_416x416', input=color)
         self.business_logic.live_view = LiveView.create(device=oak, component=color, name="Detection stream", manual_publish=False)
         # define where you want to process data from the camera
-        oak.callback(nn.out.main, self.live_view_processor.process_packets)
+        oak.callback(nn.out.main, self.business_logic.process_packets)

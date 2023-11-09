@@ -59,7 +59,7 @@ class Application(BaseApplication):
 
     def __init__(self):
         super().__init__()
-        self.youtube_streaming = YouTubeStreaming(self.self.config['streaming_key'])
+        self.youtube_streaming = YouTubeStreaming(self.config['streaming_key'])
 
     def setup_pipeline(self, oak: OakCamera):
         """
