@@ -1,9 +1,11 @@
-from robothub_oak.manager import DEVICE_MANAGER
-from robothub_oak import Device
-import traceback
 import robothub
+#import mod
 import uuid
 import time
+from robothub_oak.manager import DEVICE_MANAGER
+from robothub_oak import Device
+import psutil
+import traceback
 
 class CameraApp(robothub.RobotHubApplication):
     def _sensor_resolutions(self, device) -> dict[str, list[str]]:
@@ -107,7 +109,8 @@ class CameraApp(robothub.RobotHubApplication):
             device.spatialLocation = device.get_spatial_location_calculator(stereo)
             device.stereoControl = device.get_stereo_control(stereo)
 
-       
+        # device.pointcloud = device.get_pointcloud(color, stereo)
+        
         time.sleep(0.1) # Sleep to prevent duplicate stream error
 
 
@@ -154,6 +157,7 @@ class CameraApp(robothub.RobotHubApplication):
 
                     return [
                         {'id': 'ir-strength',           'data': device.conf['ir-strength']},
+                        #{'id': 'detection-threshold',   'data': 80},
                         {'id': 'temporal-filter',       'data': device.conf['temporal-filter']},
                         {'id': 'top-stream',            'data': self._order_first(device.streams['top'], supportedSterams)},
                         {'id': 'top-resolution',        'data': self._order_first(topResolution, supportedResolutions[topStream])},
@@ -233,3 +237,11 @@ class CameraApp(robothub.RobotHubApplication):
 
     def on_stop(self):
         DEVICE_MANAGER.stop()
+        current_process = psutil.Process()
+        children = current_process.children(recursive=True)
+
+        for child in children:
+            try:
+                child.terminate()
+            except psutil.NoSuchProcess:
+                pass

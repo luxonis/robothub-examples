@@ -6,3 +6,4 @@ RUN apt-get update -y && \
 RUN pip install --upgrade pip
 RUN pip install git+https://github.com/luxonis/depthai.git@camera-app#subdirectory=depthai_sdk
 RUN pip install --upgrade git+https://github.com/whoactuallycares/robothub-oak.git@camera-app
+RUN pip install psutil

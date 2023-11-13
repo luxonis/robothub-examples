@@ -214,6 +214,7 @@ const updateOverlay = (stream, overlay, event) => {
     if (overlay == 'Detections') {
         updateStreamSource(stream, event.value ? 'nn' : 'color')
         refreshVideo(getControl(`${stream}-video`))
+        updateStreamState(getControl(`${stream}-video`), 'Loading stream')
     }
 }
 
@@ -223,7 +224,7 @@ robothubApi.onConnectedWithApp(() => {
         // updateStreamKey(getControl('camera').selected.mxid)
         updateStreamStates('Connected')
     })
-    setupHoverDepth()
+    //setupHoverDepth()
 })
 
 let firstTimeCounter = 0
