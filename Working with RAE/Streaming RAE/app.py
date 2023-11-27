@@ -114,10 +114,3 @@ class Application(robothub.RobotHubApplication):
                 self.stream_handles[name].publish_video_data(bytes(color_frame), timestamp, metadata)
             except Exception as e:
                 print("ERROR",e)
-
-               
-                
-            
-            
-    
-   
