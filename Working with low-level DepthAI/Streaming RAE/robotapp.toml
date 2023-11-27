@@ -1,0 +1,17 @@
+config_version = "2.0"
+configuration = []
+
+[info]
+name = "RAE Streams Application"
+description = "RAE Streaming Application"
+
+[runtime]
+application = "app.py#Application"
+workdir = "/app"
+
+[runtime.frontend]
+redirectToIndex = true
+
+[runtime.runs_on]
+type = "image"
+name = "luxonis/rae-ros-robot:dai_ros_py"
