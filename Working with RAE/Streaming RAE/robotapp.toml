@@ -1,0 +1,17 @@
+config_version = "2.0"
+configuration = []
+
+[info]
+name = "RAE Streaming Application"
+description = "Streams all cameras"
+
+[runtime]
+application = "apps/streams.py#Application"
+workdir = "/app"
+
+[runtime.frontend]
+redirectToIndex = true
+
+[runtime.runs_on]
+type = "image"
+name = "luxonis/rae-ros-robot:rae_robothub_rvc3_9c55"
