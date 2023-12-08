@@ -1,0 +1,26 @@
+config_version = "2.0"
+
+[info]
+name = "Counter App"
+description = "App for counting line crossings."
+
+[runtime]
+application = "app.py#CounterApp"
+workdir = "/app"
+
+#[runtime.runs_on]
+#type = "image"
+#name = "ghcr.io/luxonis/robothub-app-v2:2023.326.2033-rvc3-regular"
+
+[runtime.runs_on]
+type = "custom"
+dockerfile = "Dockerfile"
+
+[[configuration]]
+label = "FPS"
+key = "fps"
+field = "num_range"
+step = 1
+min = 1
+max = 30
+initial_value = 8
