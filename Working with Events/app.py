@@ -7,33 +7,43 @@ from robothub.events import send_image_event
 from robothub_core import CONFIGURATION
 
 
-class EventProcessor:
+class BusinessLogic:
     def __init__(self):
-        self.device_mxid = None
-        self.last_upload = None
+        self.last_image_event_upload_seconds = time.time()
+        self.last_video_event_upload_seconds = time.time()
+        self.live_view = None
 
     def process_packets(self, packet: DetectionPacket):
         for detection in packet.detections:
-            current_time = time.time()
-            # 15 seconds cooldown
-            if self.last_upload and current_time - self.last_upload < CONFIGURATION["event_upload_interval"]:
-                return
-            # Check if the person is located in the frame
-            if detection.label == 'person':
-                self.last_upload = current_time
-                send_image_event(image=packet.frame, title='Person detected', device_id=self.device_mxid)
+            # visualize bounding box in the live view
+            bbox = [*detection.top_left, *detection.bottom_right]
+            self.live_view.add_rectangle(bbox, label=detection.label)
+
+            current_time_seconds = time.time()
+            # arbitrary condition for sending image events to RobotHub
+            if current_time_seconds - self.last_image_event_upload_seconds > CONFIGURATION["image_event_upload_interval_minutes"] * 60:
+                if detection.label == 'person':
+                    self.last_image_event_upload_seconds = current_time_seconds
+                    send_image_event(image=packet.frame, title='Person detected')
+            # arbitrary condition for sending video events to RobotHub
+            if current_time_seconds - self.last_video_event_upload_seconds > CONFIGURATION["video_event_upload_interval_minutes"] * 60:
+                if detection.label == 'person':
+                    self.last_video_event_upload_seconds = current_time_seconds
+                    self.live_view.save_video_event(before_seconds=60, after_seconds=60, title="Interesting video")
 
 
 class Application(BaseApplication):
-    event_processor = EventProcessor()
+    business_logic = BusinessLogic()
 
     def setup_pipeline(self, oak: OakCamera):
-        """
-        Define your data pipeline. Can be called multiple times during runtime. Make sure that objects that have to be created only once
-        are defined either as static class variables or in the __init__ method of this class.
-        """
-        color = oak.create_camera(source='color', fps=30, encode='mjpeg')
-        nn = oak.create_nn('yolov5n_coco_416x416', input=color)
-        LiveView.create(device=oak, component=color, name="Color stream")
-        self.event_processor.device_mxid = oak.device.getMxId()
-        oak.callback(nn.out.main, self.event_processor.process_packets)
+        """Define the pipeline using depthai-sdk."""
+
+        color = oak.create_camera(source='color', resolution="1080p", fps=30, encode='mjpeg')
+        nn = oak.create_nn(model='yolov5n_coco_416x416', input=color)
+        self.business_logic.live_view = LiveView.create(
+            device=oak,
+            component=color,
+            name="Color stream",
+            max_buffer_size=120
+        )
+        oak.callback(output=nn.out.main, callback=self.business_logic.process_packets)
