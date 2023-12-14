@@ -27,11 +27,14 @@ export const LineDetail = () => {
 
   return (
     selectedLine && (
-      <ToolbarItem bottom='10px' right='10px'>
+      <ToolbarItem bottom="10px" left="10px">
         <Card>
           <RowItem name="Type:" value={labelName} />
           <RowItem name="Crossings:" value={selectedLine.count.toString()} />
-          <RowItem name="Tracking enabled:" value={selectedLine.isDisabled ? "No" : "Yes"} />
+          <RowItem
+            name="Tracking enabled:"
+            value={selectedLine.isDisabled ? "No" : "Yes"}
+          />
           <RowItem name="Last cross:" value={lastCrossAtText} />
 
           <Card.Action onClick={handleClose} size="xs" fillWidth>
@@ -52,7 +55,10 @@ const RowItem = (props: RowItemProps) => {
   const { name, value } = props;
 
   return (
-    <StyledText style="text-xs" cssStyles={{ lineHeight: "7px", textAlign: 'left' }}>
+    <StyledText
+      style="text-xs"
+      cssStyles={{ lineHeight: "7px", textAlign: "left" }}
+    >
       {name} <b style={{ float: "right", marginLeft: "10px" }}>{value}</b>
     </StyledText>
   );

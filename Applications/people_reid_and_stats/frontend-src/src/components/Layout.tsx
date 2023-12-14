@@ -17,7 +17,6 @@ import {
 } from "@luxonis/theme/hooks/useMultiModal";
 import { ImportExportModal } from "./Modals/ImportExportModal";
 import { AppConfigurationModal } from "./Modals/AppConfigurationModal";
-// import { SettingsSvg } from "@luxonis/icons/Settings";
 import { DatabaseSvg } from "@luxonis/icons/Database";
 
 export type AppModalsContext = {
@@ -62,15 +61,12 @@ const Header = memo(
         title={<HeaderTitle />}
         extra={
           <>
-            {/* <Button type="secondary" iconEnd={<SettingsSvg />} onClick={() => modalContext.open("configurationModal", {})}>
-              Configuration
-            </Button> */}
             <Button
-              type="secondary"
+              type="primary"
               iconEnd={<DatabaseSvg />}
               onClick={() => modalContext.open("importExportModal", {})}
             >
-              Import/Export Lines
+              <b>Import / Export</b> Lines
             </Button>
 
             <MoreMenu>
@@ -103,14 +99,17 @@ const HeaderTitle = memo(() => {
 
   return (
     <Flex>
+      <img src="/logo192.png" width="48px" height="48px" alt="Luxonis logo" />
       <StyledText
         style="text-lg"
         weight="medium"
         cssStyles={{ marginRight: "5px" }}
       >
-        App Counter
+        <b>Luxonis</b>
+        <br />
+        People Reid and Stats
       </StyledText>
-      {getBadge()}
+      <Flex style={{ marginLeft: "18px" }}>{getBadge()}</Flex>
     </Flex>
   );
 });

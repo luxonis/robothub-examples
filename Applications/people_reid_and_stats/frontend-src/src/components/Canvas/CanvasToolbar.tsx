@@ -6,7 +6,7 @@ import { LabelSelector } from "./Toolbar/LabelSelector";
 import { CSSProperties, useMemo } from "react";
 import { LineOptions } from "./Toolbar/LineOptions";
 import { LineDetail } from "./Toolbar/LineDetail";
-import { HideCanvasButton } from './Toolbar/HideCanvasButtons';
+import { Faces } from "./Toolbar/Faces";
 
 export const CanvasToolbar = () => {
   const { isVideoReady } = useVideoStream();
@@ -40,8 +40,7 @@ export const CanvasToolbar = () => {
             <LineOptions />
             <LineDetail />
           </div>
-
-          <HideCanvasButton />
+          <Faces />
         </>
       )}
     </div>
