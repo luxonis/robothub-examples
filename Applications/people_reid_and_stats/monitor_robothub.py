@@ -47,8 +47,8 @@ class FeSlotData:
 
 
 class FeFaceSlots:
-    image_storage_path = Path("/app/frontend/event-images/")
-    fe_storage_path = Path("/event-images")
+    image_storage_path = Path("/public/event-images/")
+    fe_storage_path = Path(f"/files/{robothub_core.APP_INSTANCE_ID}/event-images")
     image_storage_path.mkdir(parents=True, exist_ok=True)
     gender_to_fe_conversion = {"Man": "male", "Woman": "female"}
 
