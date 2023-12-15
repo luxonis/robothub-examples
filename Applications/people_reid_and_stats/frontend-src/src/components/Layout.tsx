@@ -99,7 +99,12 @@ const HeaderTitle = memo(() => {
 
   return (
     <Flex>
-      <img src="/logo192.png" width="48px" height="48px" alt="Luxonis logo" />
+      <img
+        src={process.env.PUBLIC_URL + "/assets/logo.png"}
+        width="48px"
+        height="48px"
+        alt="Luxonis logo"
+      />
       <StyledText
         style="text-lg"
         weight="medium"

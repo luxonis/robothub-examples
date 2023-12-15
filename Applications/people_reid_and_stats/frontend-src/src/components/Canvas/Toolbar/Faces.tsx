@@ -124,7 +124,13 @@ export const Faces = () => {
               >
                 {getEmoji(face)}
               </StyledText>
-              <img src={face.img_path || IMG_PLACEHOLDER_PATH} height="100%" />
+              <img
+                src={
+                  process.env.PUBLIC_URL +
+                  (face.img_path || IMG_PLACEHOLDER_PATH)
+                }
+                height="100%"
+              />
               <Flex
                 style={{
                   position: "absolute",
