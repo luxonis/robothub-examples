@@ -44,7 +44,7 @@ NAME2TARGET = {
     ),
     "asample3": Target(
         host="petr@192.168.0.113",
-        app_id="0e3cc605-c43a-417c-a796-5a784d0568b1",
+        app_id="77de7d87-69fe-4fc4-a51c-b6064c0f6c9d",
         rh_home_dir="/home/robothub",
     ),
 }

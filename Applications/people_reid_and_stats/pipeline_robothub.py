@@ -22,7 +22,10 @@ def create_pipeline(oak: OakCamera, config: dict):
     rgb_input.setStreamName("rgb_input")
     rgb_input.out.link(rgb_sensor.inputControl)
     rgb_h264_encoder = create_h264_encoder(oak=oak, fps=config["fps"])
+    rgb_mjpeg_encoder = create_mjpeg_encoder(oak=oak, fps=config["fps"])
+    # link
     rgb_sensor.video.link(rgb_h264_encoder.input)
+    rgb_sensor.video.link(rgb_mjpeg_encoder.input)
     # rgb_sensor.initialControl.setManualFocus(100)
     image_manip = create_image_manip(pipeline=oak.pipeline, source=rgb_sensor.preview, resize=(640, 640))
     # config_sensor(rgb_sensor)
@@ -67,6 +70,7 @@ def create_pipeline(oak: OakCamera, config: dict):
 
     # outputs
     create_output(pipeline=oak.pipeline, node=rgb_h264_encoder.bitstream, stream_name="rgb_preview")
+    create_output(pipeline=oak.pipeline, node=rgb_mjpeg_encoder.bitstream, stream_name="rgb_mjpeg")
     create_output(pipeline=oak.pipeline, node=object_detection_nn.out, stream_name="object_detection_nn")
     create_output(pipeline=oak.pipeline, node=object_tracker.out, stream_name="object_tracker")
     create_output(pipeline=oak.pipeline, node=face_detection_nn.out, stream_name="face_detection_nn")
@@ -195,6 +199,13 @@ def create_h264_encoder(oak: OakCamera, fps):
     rh_encoder.setRateControlMode(dai.VideoEncoderProperties.RateControlMode.CBR)
     rh_encoder.setNumFramesPool(3)
     return rh_encoder
+
+
+def create_mjpeg_encoder(oak: OakCamera, fps: int):
+    encoder = oak.pipeline.createVideoEncoder()
+    encoder_profile = dai.VideoEncoderProperties.Profile.MJPEG
+    encoder.setDefaultProfilePreset(fps, encoder_profile)
+    return encoder
 
 
 

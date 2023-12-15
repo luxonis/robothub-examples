@@ -13,6 +13,15 @@ class FaceFeature:
     gender: str
     emotion: str
 
+    def __hash__(self):
+        # Use the hash of the immutable content for the object hash
+        return hash(self.bbox.absolute)
+
+    def __eq__(self, other):
+        # Two FaceFeature objects are equal if their features are equal
+        return (self.bbox.absolute[0] == other.bbox.absolute[0] and self.bbox.absolute[1] == other.bbox.absolute[1]
+                and self.bbox.absolute[2] == other.bbox.absolute[2] and self.bbox.absolute[3] == other.bbox.absolute[3])
+
 
 @dataclass
 class FaceData:
@@ -38,6 +47,7 @@ class PersonFigure:
 class PersonFiguresMessage:
     person_figures: list[PersonFigure]
     rgb_image: dai.ImgFrame
+    rgb_mjpeg_image: dai.ImgFrame
     sequence_number: int
 
 
@@ -50,3 +60,4 @@ class Person:
 class PeopleFacesMessage:
     people: list[Person]
     image: dai.ImgFrame
+    image_mjpeg: dai.ImgFrame

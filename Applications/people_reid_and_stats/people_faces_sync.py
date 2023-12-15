@@ -73,5 +73,5 @@ class PeopleFacesSync(BaseNode):
                 person.face_features = face_feature
 
     def __send_message(self, message: PersonFiguresMessage) -> None:
-        message = PeopleFacesMessage(people=list(self.__person_memory.values()), image=message.rgb_image)
+        message = PeopleFacesMessage(people=list(self.__person_memory.values()), image=message.rgb_image, image_mjpeg=message.rgb_mjpeg_image)
         self.send_message(message=message)

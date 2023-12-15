@@ -32,6 +32,7 @@ class CounterApp(BaseApplication):
         log.info(f"DepthAI version: {dai.__version__}")
         log.info(f"Oak started. getting queues...")
         rgb_preview = self.oak.device.getOutputQueue(name="rgb_preview", maxSize=5, blocking=False)
+        rgb_mjpeg = self.oak.device.getOutputQueue(name="rgb_mjpeg", maxSize=5, blocking=False)
         object_detections = self.oak.device.getOutputQueue(name="object_detection_nn", maxSize=5, blocking=False)
         face_detections = self.oak.device.getOutputQueue(name="face_detection_nn", maxSize=5, blocking=False)
         emotion_detections = self.oak.device.getOutputQueue(name="emotion_detection_nn", maxSize=20, blocking=False)
@@ -52,6 +53,9 @@ class CounterApp(BaseApplication):
             if rgb_preview.has():
                 rgb_frame: dai.ImgFrame = rgb_preview.get()
                 people_tracking_sync.rgb_frame_callback(rgb_frame=rgb_frame)
+            if rgb_mjpeg.has():
+                rgb_mjpeg_frame: dai.ImgFrame = rgb_mjpeg.get()
+                people_tracking_sync.rgb_mjpeg_frame_callback(rgb_mjpeg_frame=rgb_mjpeg_frame)
             if object_detections.has():
                 object_detections_frame: dai.ImgDetections = object_detections.get()
                 people_tracking_sync.people_detections_callback(people_detections_frame=object_detections_frame)
@@ -67,3 +71,6 @@ class CounterApp(BaseApplication):
     def start_execution(self):
         while self.running:
             time.sleep(0.5)
+
+    def on_configuration_changed(self, configuration_changes: dict) -> None:
+        log.info(f"CONFIGURATION CHANGES: {configuration_changes=} {self.config=}")

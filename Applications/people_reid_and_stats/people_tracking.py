@@ -19,6 +19,7 @@ class PeopleTracking(BaseNode):
 
     def tracking_callback(self, msgs: dict) -> None:
         rgb = msgs["rgb"]
+        rgb_mjpeg = msgs["rgb_mjpeg"]
         people_detections = msgs["people_detections"]
         object_tracker: dai.Tracklets = msgs["object_tracker"]
         person_figures = []
@@ -50,7 +51,8 @@ class PeopleTracking(BaseNode):
                                      confidence=tracklet.srcImgDetection.confidence)
             person_figure = PersonFigure(re_id=self.__re_id_memory.get(tracklet.id, -1), bbox=person_box, tracking_id=tracklet.id)
             person_figures.append(person_figure)
-        message = PersonFiguresMessage(person_figures=person_figures, rgb_image=rgb, sequence_number=object_tracker.getSequenceNum())
+        message = PersonFiguresMessage(person_figures=person_figures, rgb_image=rgb,
+                                       rgb_mjpeg_image=rgb_mjpeg, sequence_number=object_tracker.getSequenceNum())
         self.send_message(message=message)
 
     def __get_re_id(self):
