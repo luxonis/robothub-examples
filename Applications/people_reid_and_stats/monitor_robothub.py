@@ -5,6 +5,7 @@ import logging as log
 import numpy as np
 import robothub_core
 import time
+import uuid
 
 from base_node import BaseNode
 from geometry import clamp
@@ -41,6 +42,7 @@ class FeSlotData:
         self.face_features = face_features
         self.image = image
         self.person_id = person_id
+        self.image_name = str(uuid.uuid4())
         self.time_stamp = time.monotonic()
 
 
@@ -53,7 +55,7 @@ class FeFaceSlots:
     def __init__(self):
         self.__memory = {}
         self.__slots: dict[int, Optional[FeSlotData]] = {1: None, 2: None, 3: None, 4: None}  # FeSlotData
-        self.__save_slot_image: dict[int, bool] = {1: False, 2: False, 3: False, 4: False}
+        self.__save_slot_image: dict[FeSlotData, bool] = {}
         self.__last_slot_notification = time.monotonic()
 
     def add_candidate(self, person: Person, image_mjpeg: dai.ImgFrame):
@@ -61,6 +63,8 @@ class FeFaceSlots:
             return
         # not a new image - old face has not changed
         if person.face_features in self.__memory:
+            # remember that this is an old image and there is no need to save it to memory again
+            log.debug(f"Old face detected {self.__memory[person.face_features]}")
             return
         decoded_image = decode_image_from_mjpeg(image_mjpeg_encoded=image_mjpeg.getCvFrame())
         # create image crop
@@ -68,10 +72,25 @@ class FeFaceSlots:
 
         # reshape to 1:1
         cropped_face = reshape_image(image=cropped_face)
-        self.__memory[person.face_features] = FeSlotData(face_features=person.face_features,
+        fe_slot_data = FeSlotData(face_features=person.face_features,
                                                          image=cropped_face,
                                                          person_id=person.figure.tracking_id)
+        self.__remove_existing_old_id(fe_slot_data.person_id)
+        self.__memory[person.face_features] = fe_slot_data
+        log.debug(f"New face detected {fe_slot_data}")
+        log.debug(f"{self.__memory=}")
+        # remember that this is anew image for this face
+        self.__save_slot_image[fe_slot_data] = True
         self.__delete_old_faces()
+
+    def __remove_existing_old_id(self, id_):
+        to_delete = []
+        for face_features, slot_data in self.__memory.items():
+            slot_data: FeSlotData
+            if id_ == slot_data.person_id:
+                to_delete.append(face_features)
+        for d in to_delete:
+            self.__memory.pop(d)
 
     def __delete_old_faces(self):
         to_delete = []
@@ -102,7 +121,7 @@ class FeFaceSlots:
         for idx, value in self.__slots.items():
             if value is not None and face.person_id == value.person_id:
                 self.__slots[idx] = face
-                self.__save_slot_image[idx] = True
+                log.debug(f"Add face {face} to slot {idx} because this ID has a slot")
                 return
             # remember first empty position
             if value is None and which_is_none_idx is None:
@@ -115,63 +134,66 @@ class FeFaceSlots:
         # if not there, add it to either empty slot or replace the oldest
         if which_is_none_idx is not None:
             self.__slots[which_is_none_idx] = face
-            self.__save_slot_image[which_is_none_idx] = True
+            log.debug(f"Add face {face} to slot {oldest_idx} because its an empty slot")
             return
         # replace oldest one
         if oldest_idx is None:
             log.error(f"This is really weird. {oldest_idx=} should exist!! Investigate. {self.__slots=} {face=}")
             return
         self.__slots[oldest_idx] = face
-        self.__save_slot_image[oldest_idx] = True
+        log.debug(f"Add face {face} to slot {oldest_idx} because its the oldest one")
 
     def ___update_saved_images(self):
         all_images = self.image_storage_path.glob("*.jpg")
         current_data = []
+        log.debug(f"{self.__save_slot_image=}")
         for idx, data in self.__slots.items():
             if data is None:
                 continue
-            if self.__save_slot_image[idx]:
-                self.__save_slot_image[idx] = False
+            log.debug(f"{data=}")
+            if data in self.__save_slot_image:
                 data: FeSlotData
-                log.info(f"Writing into {self.image_storage_path}/{data.person_id}.jpg")
-                cv2.imwrite((self.image_storage_path / f"{data.person_id}.jpg").as_posix(), data.image)
+                write_to = (self.image_storage_path / f'{data.image_name}.jpg').as_posix()
+                log.debug(f"Writing into {write_to}")
+                cv2.imwrite(write_to, data.image)
 
-            current_data.append(f"{data.person_id}")
+            current_data.append(f"{data.image_name}")
+        # clear the memory which dictates what images to save
+        self.__save_slot_image.clear()
 
         log.debug(f"{current_data=}")
         for image in all_images:
             image: Path
             if image.stem not in current_data:
-                log.info(f"Unlinking {image}")
+                log.debug(f"Unlinking {image}")
                 image.unlink()
 
     def __display_slots(self):
         now = time.monotonic()
         if now - self.__last_slot_notification < 1:
             return
-        log.info(f"Preparing payload ...")
         payload = {"faces": {"face_1": {"img_path": "/public/event_images/face_1.jpg", "emotion": "happy", "age": 26, "gender": "male"},
                              "face_2": {"img_path": "/public/event_images/face_2.jpg", "emotion": "angry", "age": 26, "gender": "male"},
                              "face_3": {"img_path": "/public/event_images/face_3.jpg", "emotion": "neutral", "age": 26, "gender": "male"},
                              "face_4": {"img_path": "/public/event_images/face_4.jpg", "emotion": "neutral", "age": 26, "gender": "male"}
                              }}
         data = self.__slots[1]
-        face_1 = {"img_path": f"{self.fe_storage_path}/{data.person_id}.jpg",
+        face_1 = {"img_path": f"{self.fe_storage_path}/{data.image_name}.jpg",
                   "emotion": f"{data.face_features.emotion}",
                   "age": data.face_features.age,
                   "gender": self.gender_to_fe_conversion[data.face_features.gender]} if data is not None else {}
         data = self.__slots[2]
-        face_2 = {"img_path": f"{self.fe_storage_path}/{data.person_id}.jpg",
+        face_2 = {"img_path": f"{self.fe_storage_path}/{data.image_name}.jpg",
                   "emotion": f"{data.face_features.emotion}",
                   "age": data.face_features.age,
                   "gender": self.gender_to_fe_conversion[data.face_features.gender]} if data is not None else {}
         data = self.__slots[3]
-        face_3 = {"img_path": f"{self.fe_storage_path}/{data.person_id}.jpg",
+        face_3 = {"img_path": f"{self.fe_storage_path}/{data.image_name}.jpg",
                   "emotion": f"{data.face_features.emotion}",
                   "age": data.face_features.age,
                   "gender": self.gender_to_fe_conversion[data.face_features.gender]} if data is not None else {}
         data = self.__slots[4]
-        face_4 = {"img_path": f"{self.fe_storage_path}/{data.person_id}.jpg",
+        face_4 = {"img_path": f"{self.fe_storage_path}/{data.image_name}.jpg",
                   "emotion": f"{data.face_features.emotion}",
                   "age": data.face_features.age,
                   "gender": self.gender_to_fe_conversion[data.face_features.gender]} if data is not None else {}
@@ -179,7 +201,6 @@ class FeFaceSlots:
         payload["faces"]["face_2"] = face_2
         payload["faces"]["face_3"] = face_3
         payload["faces"]["face_4"] = face_4
-        log.info(f"{payload=}")
         robothub_core.COMMUNICATOR.notify(key="faces", payload=payload)
 
     def is_in_slot(self, face: FeSlotData):
@@ -199,7 +220,7 @@ class Monitor(BaseNode):
 
     def __callback(self, message: PeopleFacesMessage):
         self.__show_main_window(message=message)
-        # self.__show_people_faces(message=message)
+        self.__show_people_faces(message=message)
 
     def __show_main_window(self, message: PeopleFacesMessage) -> None:
         frame = message.image.getCvFrame()
@@ -223,9 +244,9 @@ class Monitor(BaseNode):
         self.live_view.set_bboxes(bboxes=bboxes)
         self.live_view.set_texts(texts=texts)
         self.live_view.publish(image_h264=frame)
-        self.__show_people_faces(message=message)
 
     def __show_people_faces(self, message: PeopleFacesMessage) -> None:
+        log.debug(f"---")
         for person in message.people:
             self.__fe_face_slots.add_candidate(person, message.image_mjpeg)
         self.__fe_face_slots.display_on_fe()
