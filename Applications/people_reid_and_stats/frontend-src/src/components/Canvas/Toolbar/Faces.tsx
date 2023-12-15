@@ -7,7 +7,8 @@ import { useEffect, useState } from "react";
 import { NotificationCallback } from "src/hooks/api.types";
 import { useVideoStream } from "src/hooks/videoStream";
 
-const IMG_PLACEHOLDER_PATH = "/placeholders/empty.jpg";
+const PUBLIC_URL = process.env.PUBLIC_URL;
+const IMG_PLACEHOLDER_PATH = PUBLIC_URL + "/placeholders/empty.jpg";
 
 type Gender = "male" | "female";
 type Emotion = "happy" | "angry" | "neutral" | "sad" | "surprise";
@@ -39,21 +40,21 @@ const COLORS: Record<Emotion, string> = {
 const TEST_FACES: Record<string, Face> = {
   face_1: {
     id: "1",
-    img_path: "/placeholders/cat.jpg",
+    img_path: PUBLIC_URL + "/placeholders/cat.jpg",
     emotion: "angry",
     age: 25,
     gender: "female",
   },
   face_2: {
     id: "2",
-    img_path: "/placeholders/cat.jpg",
+    img_path: PUBLIC_URL + "/placeholders/cat.jpg",
     emotion: "neutral",
     age: 63,
     gender: "male",
   },
   face_3: {
     id: "3",
-    img_path: "/placeholders/cat.jpg",
+    img_path: PUBLIC_URL + "/placeholders/cat.jpg",
     emotion: "happy",
     age: 6,
     gender: "female",
@@ -92,7 +93,7 @@ export const Faces = () => {
   }, []);
 
   return (
-    <ToolbarItem top="0px" right="0px">
+    <ToolbarItem top="0px" right="0px" ignoreStreamWidth>
       <Flex
         style={{
           height: canvas.height,
@@ -124,13 +125,7 @@ export const Faces = () => {
               >
                 {getEmoji(face)}
               </StyledText>
-              <img
-                src={
-                  process.env.PUBLIC_URL +
-                  (face.img_path || IMG_PLACEHOLDER_PATH)
-                }
-                height="100%"
-              />
+              <img src={face.img_path || IMG_PLACEHOLDER_PATH} height="100%" />
               <Flex
                 style={{
                   position: "absolute",

@@ -13,17 +13,18 @@ interface ToolbarItemProps extends HTMLProps<HTMLDivElement> {
   left?: string;
   bottom?: string;
   right?: string;
+  ignoreStreamWidth?: boolean;
 }
 
 export const ToolbarItem = forwardRef<HTMLDivElement, ToolbarItemProps>(
   (props, ref) => {
-    const { top, left, bottom, right } = props;
-    const { width, height } = useCanvas();
+    const { top, left, bottom, right, ignoreStreamWidth } = props;
+    const { width, height, offset } = useCanvas();
 
     const wrapperStyle = useMemo(() => {
       return {
         position: "absolute",
-        width: width + "px",
+        width: ignoreStreamWidth ? `calc(100vw - ${offset.x}px)` : width + "px",
         height: height + "px",
         pointerEvents: "none",
       } as CSSProperties;

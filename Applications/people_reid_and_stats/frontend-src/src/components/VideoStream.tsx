@@ -45,11 +45,6 @@ export const VideoStream = React.forwardRef<HTMLDivElement, VideoStreamProps>(
       [webrtcSignal]
     );
 
-    // const aspectRatio = useMemo(
-    //   () => dimensions.width / dimensions.height,
-    //   [dimensions]
-    // );
-
     const handleResize = useCallback(() => {
       if (videoRef.current) {
         const { width, height, x, y } =

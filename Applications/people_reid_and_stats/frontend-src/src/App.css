@@ -1,9 +1,9 @@
-div[data-is=page-content] {
+div[data-is="page-content"] {
   padding-bottom: 0;
   overflow: hidden;
   background-color: rgb(5, 5, 5);
 }
 
-div[data-is=aspect-ratio-wrapper] {
+/* div[data-is=aspect-ratio-wrapper] {
   text-align: -webkit-center;
-}
+} */
