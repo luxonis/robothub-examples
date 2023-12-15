@@ -45,12 +45,15 @@ class FeSlotData:
 
 
 class FeFaceSlots:
-    image_storage_path = Path("/public/event-images/")
+    image_storage_path = Path("/app/frontend/event-images/")
+    fe_storage_path = Path("/event-images")
     image_storage_path.mkdir(parents=True, exist_ok=True)
+    gender_to_fe_conversion = {"Man": "male", "Woman": "female"}
 
     def __init__(self):
         self.__memory = {}
         self.__slots: dict[int, Optional[FeSlotData]] = {1: None, 2: None, 3: None, 4: None}  # FeSlotData
+        self.__save_slot_image: dict[int, bool] = {1: False, 2: False, 3: False, 4: False}
         self.__last_slot_notification = time.monotonic()
 
     def add_candidate(self, person: Person, image_mjpeg: dai.ImgFrame):
@@ -99,6 +102,7 @@ class FeFaceSlots:
         for idx, value in self.__slots.items():
             if value is not None and face.person_id == value.person_id:
                 self.__slots[idx] = face
+                self.__save_slot_image[idx] = True
                 return
             # remember first empty position
             if value is None and which_is_none_idx is None:
@@ -111,20 +115,23 @@ class FeFaceSlots:
         # if not there, add it to either empty slot or replace the oldest
         if which_is_none_idx is not None:
             self.__slots[which_is_none_idx] = face
+            self.__save_slot_image[which_is_none_idx] = True
             return
         # replace oldest one
         if oldest_idx is None:
             log.error(f"This is really weird. {oldest_idx=} should exist!! Investigate. {self.__slots=} {face=}")
             return
         self.__slots[oldest_idx] = face
+        self.__save_slot_image[oldest_idx] = True
 
     def ___update_saved_images(self):
         all_images = self.image_storage_path.glob("*.jpg")
         current_data = []
-        for _, data in self.__slots.items():
+        for idx, data in self.__slots.items():
             if data is None:
                 continue
-            if not (self.image_storage_path / f"{data.person_id}.jpg").exists():
+            if self.__save_slot_image[idx]:
+                self.__save_slot_image[idx] = False
                 data: FeSlotData
                 log.info(f"Writing into {self.image_storage_path}/{data.person_id}.jpg")
                 cv2.imwrite((self.image_storage_path / f"{data.person_id}.jpg").as_posix(), data.image)
@@ -149,25 +156,25 @@ class FeFaceSlots:
                              "face_4": {"img_path": "/public/event_images/face_4.jpg", "emotion": "neutral", "age": 26, "gender": "male"}
                              }}
         data = self.__slots[1]
-        face_1 = {"img_path": f"{self.image_storage_path}/{data.person_id}.jpg",
+        face_1 = {"img_path": f"{self.fe_storage_path}/{data.person_id}.jpg",
                   "emotion": f"{data.face_features.emotion}",
                   "age": data.face_features.age,
-                  "gender": data.face_features.gender} if data is not None else {}
+                  "gender": self.gender_to_fe_conversion[data.face_features.gender]} if data is not None else {}
         data = self.__slots[2]
-        face_2 = {"img_path": f"{self.image_storage_path}/{data.person_id}.jpg",
+        face_2 = {"img_path": f"{self.fe_storage_path}/{data.person_id}.jpg",
                   "emotion": f"{data.face_features.emotion}",
                   "age": data.face_features.age,
-                  "gender": data.face_features.gender} if data is not None else {}
+                  "gender": self.gender_to_fe_conversion[data.face_features.gender]} if data is not None else {}
         data = self.__slots[3]
-        face_3 = {"img_path": f"{self.image_storage_path}/{data.person_id}.jpg",
+        face_3 = {"img_path": f"{self.fe_storage_path}/{data.person_id}.jpg",
                   "emotion": f"{data.face_features.emotion}",
                   "age": data.face_features.age,
-                  "gender": data.face_features.gender} if data is not None else {}
+                  "gender": self.gender_to_fe_conversion[data.face_features.gender]} if data is not None else {}
         data = self.__slots[4]
-        face_4 = {"img_path": f"{self.image_storage_path}/{data.person_id}.jpg",
+        face_4 = {"img_path": f"{self.fe_storage_path}/{data.person_id}.jpg",
                   "emotion": f"{data.face_features.emotion}",
                   "age": data.face_features.age,
-                  "gender": data.face_features.gender} if data is not None else {}
+                  "gender": self.gender_to_fe_conversion[data.face_features.gender]} if data is not None else {}
         payload["faces"]["face_1"] = face_1
         payload["faces"]["face_2"] = face_2
         payload["faces"]["face_3"] = face_3
