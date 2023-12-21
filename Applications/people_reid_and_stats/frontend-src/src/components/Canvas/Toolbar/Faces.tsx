@@ -103,10 +103,10 @@ export const Faces = () => {
         }}
         direction="column"
       >
-        {Object.values(faces).map((face) => {
+        {Object.values(faces).map((face, index) => {
           return (
             <Box
-              key={face.id}
+              key={index}
               style={{
                 position: "relative",
                 borderRadius: "10%",
@@ -120,9 +120,10 @@ export const Faces = () => {
                 style="display-lg"
                 cssStyles={{
                   fontSize: "2vw",
+                  lineHeight: 0,
                   position: "absolute",
-                  left: "5px",
-                  top: "calc(2vw - 30px)",
+                  left: "1%",
+                  top: "15%",
                 }}
               >
                 {getEmoji(face)}
