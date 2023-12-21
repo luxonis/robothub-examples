@@ -1,10 +1,10 @@
 import { Button } from "@luxonis/theme/components/general/Button";
-import { TRACK_LABELS } from "../utils";
+// import { TRACK_LABELS } from "../utils";
 import { useToolbar } from "../../../hooks/toolbar";
 import { TrackLabel } from "../types";
 import { Flex } from "@luxonis/theme/components/general/Flex";
 import { CSSProperties, useCallback } from "react";
-import { Badge } from "@luxonis/theme/components/general/Badge";
+// import { Badge } from "@luxonis/theme/components/general/Badge";
 import { ToolbarItem } from "./ToolbarItem";
 import { StyledText } from "@luxonis/theme/components/general/StyledText";
 import { minifyNumber } from "src/utils/format";
@@ -21,14 +21,14 @@ const infoNumberStyle: CSSProperties = {
 };
 
 export const LabelSelector = () => {
-  const { setSelectedLabel, selectedLabel, linesStats } = useToolbar();
+  const { selectedLabel, linesStats } = useToolbar();
 
-  const getLabelDetections = useCallback(
-    (label: TrackLabel) => {
-      return minifyNumber(linesStats.detections[label.id] ?? 0);
-    },
-    [linesStats]
-  );
+  // const getLabelDetections = useCallback(
+  //   (label: TrackLabel) => {
+  //     return minifyNumber(linesStats.detections[label.id] ?? 0);
+  //   },
+  //   [linesStats]
+  // );
 
   const getTotalDetections = useCallback(
     () =>
@@ -80,7 +80,7 @@ export const LabelSelector = () => {
           </Button>
         </Flex>
 
-        <Flex style={{ marginLeft: "8px", ...wrapperStyle }}>
+        {/* <Flex style={{ marginLeft: "8px", ...wrapperStyle }}>
           {TRACK_LABELS.map((label, index) => (
             <Button
               key={index}
@@ -92,7 +92,7 @@ export const LabelSelector = () => {
               {label.name}
             </Button>
           ))}
-        </Flex>
+        </Flex> */}
       </Flex>
     </ToolbarItem>
   );

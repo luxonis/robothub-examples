@@ -2,19 +2,19 @@ import { Card } from "@luxonis/theme/components/general/Card";
 import { StyledText } from "@luxonis/theme/components/general/StyledText";
 import { useToolbar } from "src/hooks/toolbar";
 import { ToolbarItem } from "./ToolbarItem";
-import { TRACK_LABELS } from "../utils";
+// import { TRACK_LABELS } from "../utils";
 import { useMemo } from "react";
 import { timeAgo } from "src/utils/format";
 
 export const LineDetail = () => {
   const { selectedLine, setSelectedLine } = useToolbar();
 
-  const labelName = useMemo(() => {
-    const labelId = selectedLine?.trackLabelId;
-    if (!labelId) return "";
-    const trackLabel = TRACK_LABELS.find((f) => f.id === labelId);
-    return trackLabel ? trackLabel.name : "";
-  }, [selectedLine]);
+  // const labelName = useMemo(() => {
+  //   const labelId = selectedLine?.trackLabelId;
+  //   if (!labelId) return "";
+  //   const trackLabel = TRACK_LABELS.find((f) => f.id === labelId);
+  //   return trackLabel ? trackLabel.name : "";
+  // }, [selectedLine]);
 
   const lastCrossAtText = useMemo(() => {
     if (!selectedLine || !selectedLine.lastCrossAt) return "---";
@@ -29,7 +29,7 @@ export const LineDetail = () => {
     selectedLine && (
       <ToolbarItem bottom="10px" left="10px">
         <Card>
-          <RowItem name="Type:" value={labelName} />
+          {/* <RowItem name="Type:" value={labelName} /> */}
           <RowItem name="Crossings:" value={selectedLine.count.toString()} />
           <RowItem
             name="Tracking enabled:"

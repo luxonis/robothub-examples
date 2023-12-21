@@ -109,18 +109,20 @@ export const Faces = () => {
               key={face.id}
               style={{
                 position: "relative",
-                borderRadius: "10px",
-                border: `5px solid ${getColor(face)}`,
+                borderRadius: "10%",
+                border: `0.4vw solid ${getColor(face)}`,
                 height: `${canvas.height / 4 - 14}px`,
                 marginTop: "10px",
+                overflow: "hidden",
               }}
             >
               <StyledText
                 style="display-lg"
                 cssStyles={{
+                  fontSize: "2vw",
                   position: "absolute",
-                  left: "0",
-                  bottom: "50px",
+                  left: "5px",
+                  top: "calc(2vw - 30px)",
                 }}
               >
                 {getEmoji(face)}
@@ -133,7 +135,8 @@ export const Faces = () => {
                   right: 0,
                   background: "white",
                   width: "100%",
-                  padding: "10px",
+                  padding: "0.4vw",
+                  lineHeight: "2px",
                 }}
               >
                 <div
@@ -155,11 +158,19 @@ export const Faces = () => {
                   <StyledText
                     style="text-xl"
                     weight="bold"
-                    cssStyles={{ textTransform: "capitalize", color: "black" }}
+                    cssStyles={{
+                      fontSize: "1vw",
+                      textTransform: "capitalize",
+                      color: "#1D1D1D",
+                      lineHeight: "1em",
+                    }}
                   >
                     {getTitle(face)}
                   </StyledText>
-                  <StyledText style="text-sm">
+                  <StyledText
+                    style="text-sm"
+                    cssStyles={{ fontSize: "0.7vw", lineHeight: "1em" }}
+                  >
                     {face.id ? `#${face.id}` : ""}
                   </StyledText>
                 </Flex>
