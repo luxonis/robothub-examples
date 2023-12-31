@@ -11,7 +11,7 @@ from base_node import BaseNode
 from geometry import clamp
 from messages import Person, PeopleFacesMessage
 from pathlib import Path
-from streams import LiveView
+from streams import LiveView, OverlayData
 from typing import Optional
 
 
@@ -33,7 +33,7 @@ def emotion_to_emoji(emotion: str) -> str:
         return Smileys.NEUTRAL
     elif emotion == "surprise":
         return Smileys.SURPRISE
-    elif emotion == "anger":
+    elif emotion == "angry":
         return Smileys.ANGRY
 
 
@@ -210,12 +210,79 @@ class FeFaceSlots:
         return False
 
 
+class FaceStats:
+    average_age = 0
+    male_percentage = 0
+    female_percentage = 0
+    neutral_percentage = 0
+    happy_percentage = 0
+    angry_percentage = 0
+    surprised_percentage = 0
+    sad_percentage = 0
+
+    age: list[int] = []
+    male_count: int = 0
+    female_count: int = 0
+    neutral_count: int = 0
+    happy_count: int = 0
+    angry_count: int = 0
+    surprised_count: int = 0
+    sad_count: int = 0
+
+    def update_stats(self, person: Person):
+        if person.face_features is None:
+            return
+        face_features = person.face_features
+        if len(self.age) > 2000:
+            self.age = self.age[-1000:]
+        self.age.append(face_features.age)
+        self.average_age = sum(self.age) / len(self.age)
+        if face_features.gender == "Man":
+            self.male_count += 1
+        else:
+            self.female_count += 1
+        gender_sum = self.male_count + self.female_count
+        self.male_percentage = self.male_count / gender_sum * 100
+        self.female_percentage = self.female_count / gender_sum * 100
+        if face_features.emotion == "neutral":
+            self.neutral_count += 1
+        elif face_features.emotion == "happy":
+            self.happy_count += 1
+        elif face_features.emotion == "angry":
+            self.angry_count += 1
+        elif face_features.emotion == "surprised":
+            self.surprised_count += 1
+        elif face_features.emotion == "sad":
+            self.sad_count += 1
+        emotions_sum = self.neutral_count + self.happy_count + self.angry_count + self.surprised_count + self.sad_count
+        self.neutral_percentage = self.neutral_count / emotions_sum * 100
+        self.happy_percentage = self.happy_count / emotions_sum * 100
+        self.angry_percentage = self.angry_count / emotions_sum * 100
+        self.surprised_percentage = self.surprised_count / emotions_sum * 100
+        self.sad_percentage = self.sad_count / emotions_sum * 100
+
+        if emotions_sum > 1_000_000:
+            divisor = 100
+            self.neutral_count = self.neutral_count // divisor
+            self.happy_count = self.happy_count // divisor
+            self.angry_count = self.angry_count // divisor
+            self.surprised_count = self.surprised_count // divisor
+            self.sad_count = self.sad_count // divisor
+
+    def get_stats_text(self) -> str:
+
+        text = (f"Avg age: {self.average_age:.1f} Males: {self.male_percentage:.1f}% Female: {self.female_percentage:.1f}%"
+                f" {Smileys.HAPPY}:{self.happy_percentage:.1f}% {Smileys.NEUTRAL}:{self.neutral_percentage:.1f}% {Smileys.SURPRISE}:"
+                f"{self.surprised_percentage:.1f}% {Smileys.ANGRY}:{self.angry_percentage:.1f}% {Smileys.SAD}:{self.sad_percentage:.1f}%")
+        return text
+
+
 class Monitor(BaseNode):
     def __init__(self, input_node: BaseNode):
         super().__init__()
         input_node.set_callback(self.__callback)
         self.__fe_face_slots = FeFaceSlots()
-        self.__window_names = {}  # id + window name
+        self.__face_stats = FaceStats()
         self.live_view = LiveView(camera_serial="1234DCS1234", unique_key="color", description="Counter App")
 
     def __callback(self, message: PeopleFacesMessage):
@@ -224,14 +291,14 @@ class Monitor(BaseNode):
 
     def __show_main_window(self, message: PeopleFacesMessage) -> None:
         frame = message.image.getCvFrame()
-        bboxes = []
+        overlay_data: OverlayData = []
         texts = []
         for person in message.people:
             figure = person.figure.bbox
-            bboxes.append(figure)
             text = f"ID: {person.figure.tracking_id} "
 
             if person.face_features is not None:
+                self.__face_stats.update_stats(person=person)
                 # face = person.face_features.bbox
                 # img.draw_rectangle(image=frame, bottom_left=(int(face.xmin * 1920), int(face.ymax * 1080)),
                 #                    top_right=(int(face.xmax * 1920), int(face.ymin * 1080)), color=(0, 255, 255))
@@ -239,10 +306,13 @@ class Monitor(BaseNode):
                 # position = (figure.xmin + figure.xmax) // 2, figure.ymin
                 # frame = img.draw_smiley(frame=frame, position=position, smiley=emotion_to_emoji(person.face_features.emotion))
 
+            overlay_data.append((figure, text, (255, 255, 0)))
             texts.append((text, (figure.xmin + 5, figure.ymax - 5)))
+        texts = [(self.__face_stats.get_stats_text(), (129, 38))]
 
-        self.live_view.set_bboxes(bboxes=bboxes)
-        self.live_view.set_texts(texts=texts)
+        self.live_view.set_bboxes(overlay_data=overlay_data)
+        self.live_view.set_texts(texts)
+        # self.live_view.set_texts(texts=texts)
         self.live_view.publish(image_h264=frame)
 
     def __show_people_faces(self, message: PeopleFacesMessage) -> None:

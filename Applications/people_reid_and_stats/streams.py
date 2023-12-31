@@ -21,7 +21,10 @@ def destroy_stream_handle(stream_handle: StreamHandle):
     STREAMS.destroy(stream=stream_handle)
 
 
-def publish_stream(stream_handle, bboxes: list[BoundingBox], rois: LiveViewRois, texts: LiveViewTexts, h264_encoded,
+OverlayData = list[tuple[BoundingBox, str, tuple[int, int, int]]]  # bbox, label, color
+
+
+def publish_stream(stream_handle, overlay_data: OverlayData, rois: LiveViewRois, texts: LiveViewTexts, h264_encoded,
                    frame_width: int, frame_height: int):
 
     timestamp = int(time.time() * 1_000)
@@ -36,23 +39,23 @@ def publish_stream(stream_handle, bboxes: list[BoundingBox], rois: LiveViewRois,
             },
             "detection": {
                 "thickness": 1,
-                "fill_transparency": 0.05,
-                "box_roundness": 0,
-                "color": [0, 255, 0],
-                "bbox_style": 0,
+                "fill_transparency": 0.2,
+                "box_roundness": 20,
+                "color": [0, 0, 255],
+                "bbox_style": 1,
                 "line_width": 0.5,
                 "line_height": 0.5,
                 "hide_label": False,
-                "label_position": 0,
+                "label_position": 30,
                 "label_padding": 10
             },
             'text': {
-                'font_color': [255, 255, 0],
-                'font_transparency': 0.5,
-                'font_scale': 1.0,
+                'font_color': [0, 0, 0],
+                'font_transparency': 1.,
+                'font_scale': 1.6,
                 'font_thickness': 2,
-                'bg_transparency': 0.5,
-                'bg_color': [0, 0, 0]
+                'bg_transparency': 1.,
+                'bg_color': [249, 249, 249]
             }
         },
         "objects": [
@@ -64,10 +67,11 @@ def publish_stream(stream_handle, bboxes: list[BoundingBox], rois: LiveViewRois,
     }
     live_view_ratio_w = frame_width / IMAGE_WIDTH
     live_view_ratio_h = frame_height / IMAGE_HEIGHT
-    for bbox in bboxes:
+    for overlay_data in overlay_data:
+        bbox, label, color = overlay_data
         metadata["objects"][0]["detections"].append({'bbox': [bbox.xmin * live_view_ratio_w, bbox.ymin * live_view_ratio_h,
                                                               bbox.xmax * live_view_ratio_w, bbox.ymax * live_view_ratio_h],
-                                                     'label': 'Person', 'color': [255, 0, 255]})
+                                                     'label': label, 'color': color})
     for roi, label in rois:
         xmin, ymin, xmax, ymax = roi
         metadata["objects"][0]["detections"].append({'bbox': [xmin * live_view_ratio_w, ymin * live_view_ratio_h,
@@ -95,12 +99,12 @@ class LiveView:
         self.direction_of_travel = "None"
 
         self.stream_handle = create_stream_handle(camera_serial=camera_serial, unique_key=unique_key, description=description)
-        self.bboxes: list[BoundingBox] = []
+        self.overlay_data: OverlayData = []
         self.texts: LiveViewTexts = []
         self.rois: LiveViewRois = []
 
-    def set_bboxes(self, bboxes: list[BoundingBox]) -> None:
-        self.bboxes = bboxes
+    def set_bboxes(self, overlay_data: OverlayData) -> None:
+        self.overlay_data = overlay_data
 
     def set_rois(self, rois: LiveViewRois) -> None:
         self.rois = rois
@@ -109,7 +113,7 @@ class LiveView:
         self.texts = texts
 
     def publish(self, image_h264) -> None:
-        publish_stream(stream_handle=self.stream_handle, bboxes=self.bboxes, rois=self.rois, texts=self.texts, h264_encoded=image_h264,
+        publish_stream(stream_handle=self.stream_handle, overlay_data=self.overlay_data, rois=self.rois, texts=self.texts, h264_encoded=image_h264,
                        frame_width=self.frame_width, frame_height=self.frame_height)
 
     def destroy(self) -> None:

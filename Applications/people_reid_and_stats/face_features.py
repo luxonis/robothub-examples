@@ -5,7 +5,7 @@ from base_node import BaseNode
 from geometry import BoundingBox
 from messages import FaceData, FaceFeature
 
-EMOTIONS = ['neutral', 'happy', 'sad', 'surprise', 'anger']
+EMOTIONS = ['neutral', 'happy', 'sad', 'surprise', 'angry']
 
 
 class FaceFeatures(BaseNode):
