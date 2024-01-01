@@ -21,7 +21,7 @@ type Face = {
   age?: number;
 };
 
-const EMOJIS: Record<Emotion, string> = {
+export const EMOJIS: Record<Emotion, string> = {
   happy: "😁",
   angry: "😠",
   sad: "🙁",

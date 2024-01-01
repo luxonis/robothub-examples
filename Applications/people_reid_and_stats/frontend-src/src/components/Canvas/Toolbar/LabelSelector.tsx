@@ -1,34 +1,92 @@
-import { Button } from "@luxonis/theme/components/general/Button";
-// import { TRACK_LABELS } from "../utils";
 import { useToolbar } from "../../../hooks/toolbar";
-import { TrackLabel } from "../types";
 import { Flex } from "@luxonis/theme/components/general/Flex";
-import { CSSProperties, useCallback } from "react";
-// import { Badge } from "@luxonis/theme/components/general/Badge";
+import {
+  CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { ToolbarItem } from "./ToolbarItem";
-import { StyledText } from "@luxonis/theme/components/general/StyledText";
 import { minifyNumber } from "src/utils/format";
-
-const wrapperStyle: CSSProperties = {
-  gap: 0,
-  borderRadius: "5px",
-  overflow: "hidden",
-};
+import { EMOJIS } from "./Faces";
+import { useVideoStream } from "src/hooks/videoStream";
+import { useCanvas } from "src/hooks/canvas";
+import { NotificationCallback } from "src/hooks/api.types";
 
 const infoNumberStyle: CSSProperties = {
   float: "right",
   marginLeft: "10px",
 };
 
-export const LabelSelector = () => {
-  const { selectedLabel, linesStats } = useToolbar();
+type Stats = {
+  age: number;
+  males: number;
+  females: number;
+  happy: number;
+  neutral: number;
+  surprise: number;
+  angry: number;
+  sad: number;
+};
 
-  // const getLabelDetections = useCallback(
-  //   (label: TrackLabel) => {
-  //     return minifyNumber(linesStats.detections[label.id] ?? 0);
-  //   },
-  //   [linesStats]
-  // );
+const TEST_STATS: Stats = {
+  age: 52.1,
+  males: 92.2,
+  females: 7.8,
+  happy: 0.0,
+  neutral: 0.0,
+  surprise: 0.0,
+  angry: 0.0,
+  sad: 0.0,
+};
+
+export const LabelSelector = () => {
+  const { width } = useCanvas();
+  const { isDev } = useVideoStream();
+  const { linesStats } = useToolbar();
+  const [stats, setStats] = useState<Stats>({
+    age: 0,
+    males: 0,
+    females: 0,
+    happy: 0,
+    neutral: 0,
+    surprise: 0,
+    angry: 0,
+    sad: 0,
+  });
+
+  const wrapperStyle: CSSProperties = useMemo(
+    () => ({
+      gap: 0,
+      borderRadius: "5px",
+      width: `${width - 10}px`,
+      background: "white",
+      display: "flex",
+      justifyContent: "space-between",
+      padding: "5px 10px",
+      flexDirection: "row",
+      overflow: "hidden",
+    }),
+    [width]
+  );
+
+  useEffect(() => {
+    if (isDev) {
+      setStats(TEST_STATS);
+      return;
+    }
+
+    const handler: NotificationCallback = (notification) => {
+      const payload: any = notification.payload;
+      if (payload && payload.stats) {
+        setStats(payload.stats);
+      }
+    };
+
+    window.robothubApi.onNotificationWithKey("faces", handler);
+    return window.robothubApi.offNotificationWithKey("faces");
+  }, []);
 
   const getTotalDetections = useCallback(
     () =>
@@ -38,61 +96,60 @@ export const LabelSelector = () => {
     [linesStats]
   );
 
-  const getButtonStyle = (label?: TrackLabel) => {
-    const styles: CSSProperties = {
-      border: 0,
-      color: "black",
-      borderRadius: 0,
-      backgroundColor: "#fafafa",
-    };
-
-    if (label) {
-      styles.backgroundColor =
-        selectedLabel?.id === label?.id ? "#e0e0e0" : "#fafafa";
-    }
-
-    return styles;
-  };
-
   return (
     <ToolbarItem left="10px" top="10px">
-      <Flex>
-        <Flex style={wrapperStyle}>
-          <Button type="primary" style={getButtonStyle()} onClick={() => {}}>
-            <StyledText
-              style="text-xs"
-              align="left"
-              cssStyles={{ lineHeight: "14px" }}
-            >
-              Total Crossings
-              <b style={infoNumberStyle}>{getTotalDetections()}</b>
-              <br></br>
-              Lines
-              <b
-                style={{
-                  ...infoNumberStyle,
-                  color: linesStats.total >= 20 ? "red" : "black",
-                }}
-              >
-                {linesStats.total}
-              </b>
-            </StyledText>
-          </Button>
-        </Flex>
+      <Flex style={wrapperStyle}>
+        <div>
+          Total Crossings
+          <b style={infoNumberStyle}>{getTotalDetections()}</b>
+        </div>
 
-        {/* <Flex style={{ marginLeft: "8px", ...wrapperStyle }}>
-          {TRACK_LABELS.map((label, index) => (
-            <Button
-              key={index}
-              type="primary"
-              style={getButtonStyle(label)}
-              onClick={() => setSelectedLabel(label)}
-            >
-              <Badge color={label.color}>{getLabelDetections(label)}</Badge>
-              {label.name}
-            </Button>
-          ))}
-        </Flex> */}
+        <div>
+          Lines:
+          <b
+            style={{
+              ...infoNumberStyle,
+              color: linesStats.total >= 20 ? "red" : "black",
+            }}
+          >
+            {linesStats.total}
+          </b>
+        </div>
+
+        <div>
+          Avg. Age:
+          <b style={infoNumberStyle}>{stats.age}</b>
+        </div>
+
+        <div>
+          Males:
+          <b style={infoNumberStyle}>{stats.males}%</b>
+        </div>
+
+        <div>
+          Females:
+          <b style={infoNumberStyle}>{stats.females}%</b>
+        </div>
+
+        <div>
+          {EMOJIS.happy}:<b style={infoNumberStyle}>{stats.happy}%</b>
+        </div>
+
+        <div>
+          {EMOJIS.neutral}:<b style={infoNumberStyle}>{stats.neutral}%</b>
+        </div>
+
+        <div>
+          {EMOJIS.surprise}:<b style={infoNumberStyle}>{stats.surprise}%</b>
+        </div>
+
+        <div>
+          {EMOJIS.angry}:<b style={infoNumberStyle}>{stats.angry}%</b>
+        </div>
+
+        <div>
+          {EMOJIS.sad}:<b style={infoNumberStyle}>{stats.sad}%</b>
+        </div>
       </Flex>
     </ToolbarItem>
   );

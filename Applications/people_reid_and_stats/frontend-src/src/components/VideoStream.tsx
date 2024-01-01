@@ -1,11 +1,5 @@
 import { VideoPlayer } from "@luxonis/theme/components/general/VideoPlayer/VideoPlayer";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { defaultVideoStreamRendererFactory } from "@luxonis/common-fe/video-renderer";
 import { useWebRtcStream } from "../hooks/webrtc";
 import { Canvas } from "./Canvas/Canvas";
@@ -69,9 +63,7 @@ export const VideoStream = React.forwardRef<HTMLDivElement, VideoStreamProps>(
 
     return (
       <div data-is="aspect-ratio-wrapper">
-        {/* Make this better, value 90 is kinda hardcoded, may not work in other ratios */}
-        {/* 1.778 -> 16 / 9 */}
-        <AspectRatio style={{ maxWidth: `${1.778 * 90}vh` }}>
+        <AspectRatio style={{ maxWidth: `85vw` }}>
           <div ref={videoRef}>
             <VideoPlayer
               streamKey={uniqueKey}
