@@ -1,0 +1,8 @@
+# Ignore IDEA IDE files
+/.idea/
+# Ignore media files
+/.media/
+# Ignore virtual environment
+/.venv/
+# Ignore tasks script
+/tasks.py

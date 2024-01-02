@@ -1,0 +1,199 @@
+config_version = "2.0"
+
+[info]
+name = "Cups"
+description = ""
+
+[runtime]
+application = "main_robothub.py#Application"
+workdir = "/app"
+
+[runtime.runs_on]
+type = "custom"
+dockerfile = "Dockerfile"
+
+[[configuration]]
+visual = "section"
+title = "App configuration"
+
+[[configuration]]
+key = "logging_level"
+label = "Logging Level"
+field = "choice"
+style = "dropdown"
+
+  [[configuration.options]]
+  key = "debug"
+  label = "Debug"
+
+  [[configuration.options]]
+  key = "info"
+  label = "Info"
+  default = true
+
+  [[configuration.options]]
+  key = "warning"
+  label = "Warning"
+
+  [[configuration.options]]
+  key = "error"
+  label = "Error"
+
+  [[configuration.options]]
+  key = "critical"
+  label = "Critical"
+
+[[configuration]]
+key = "fps"
+label = "FPS"
+field = "num_range"
+step = 1
+min = 1
+max = 30
+initial_value = 5
+
+[[configuration]]
+key = "auto_exposure_roi"
+label = "Auto Exposure Area"
+field = "text"
+prefix = "x, y, width, height (pixels)"
+initial_value = "0,0,1,1"
+
+[[configuration]]
+visual = "section"
+title = "Circle processing configuration"
+
+[[configuration]]
+key = "circle_history_length"
+label = "Circle History Length"
+field = "num_range"
+step = 1
+min = 2
+max = 300
+initial_value = 50
+
+[[configuration]]
+key = "circle_presence_threshold"
+label = "Circle Presence Threshold"
+field = "num_range"
+step = 0.1
+min = 0
+max = 1
+initial_value = 0.8
+
+[[configuration]]
+key = "circle_radius_tolerance"
+label = "Circle Radius Tolerance"
+field = "num_range"
+step = 0.1
+min = 0
+max = 1
+initial_value = 0.2
+
+[[configuration]]
+key = "circle_distance_tolerance"
+label = "Circle Distance Tolerance"
+field = "num_range"
+step = 1
+min = 0
+max = 100
+initial_value = 20
+
+[[configuration]]
+visual = "section"
+title = "Displayed text configuration"
+
+[[configuration]]
+key = "visible_circles_string"
+label = "Visible Circles String"
+field = "text"
+prefix = ""
+initial_value = "Cups: {}"
+
+[[configuration]]
+key = "removed_circles_string"
+label = "Removed Circles String"
+field = "text"
+prefix = ""
+initial_value = "Removed cups: {}"
+
+[[configuration]]
+key = "average_time_visible_circles_string"
+label = "Average Time of Visible Circles String"
+field = "text"
+prefix = ""
+initial_value = "Cups AVG time: {}"
+
+[[configuration]]
+key = "average_time_all_circles_string"
+label = "Average Time of All Circles String"
+field = "text"
+prefix = ""
+initial_value = "All cups AVG time: {}"
+
+[[configuration]]
+visual = "section"
+title = "OpenCV configuration"
+
+[[configuration]]
+key = "hough_circles_dp"
+label = "HoughCircles DP"
+field = "num_range"
+step = 0.1
+min = 1
+max = 2
+initial_value = 1.2
+
+[[configuration]]
+key = "hough_circles_min_dist"
+label = "HoughCircles Min Dist"
+field = "num_range"
+step = 1
+min = 1
+max = 200
+initial_value = 75
+
+[[configuration]]
+key = "hough_circles_param_1"
+label = "HoughCircles Param 1"
+field = "num_range"
+step = 1
+min = 1
+max = 500
+initial_value = 150
+
+[[configuration]]
+key = "hough_circles_param_2"
+label = "HoughCircles Param 2"
+field = "num_range"
+step = 1
+min = 1
+max = 500
+initial_value = 100
+
+[[configuration]]
+key = "hough_circles_max_radius"
+label = "HoughCircles Max Radius"
+field = "num_range"
+step = 1
+min = 0
+max = 150
+initial_value = 0
+
+[[configuration]]
+key = "hough_circles_min_radius"
+label = "HoughCircles Min Radius"
+field = "num_range"
+step = 1
+min = 0
+max = 150
+initial_value = 0
+
+[[configuration]]
+key = "open_cv_median_blur_kernel_size"
+label = "OpenCV Median Blur Kernel Size"
+field = "num_range"
+step = 1
+min = 5
+max = 100
+initial_value = 9
