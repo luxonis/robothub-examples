@@ -5,6 +5,7 @@ import json
 
 from depthai_sdk import OakCamera
 from depthai_sdk.components.nn_helper import getBlob, isUrl, Path, getSupportedModels
+from robothub_core import CONFIGURATION
 from string import Template
 
 
@@ -104,7 +105,7 @@ def create_object_detecting_nn(pipeline: dai.Pipeline, model: str, source: dai.N
     node.setAnchors(nn_metadata["anchors"])
     node.setAnchorMasks(nn_metadata["anchor_masks"])
     node.setIouThreshold(nn_metadata["iou_threshold"])
-    node.setConfidenceThreshold(nn_metadata["confidence_threshold"])
+    node.setConfidenceThreshold(CONFIGURATION["confidence_threshold"])
     node.input.setBlocking(False)
     blob = dai.OpenVINO.Blob(Path("yolov6n_coco_640x640.blob").resolve())
     node.setBlob(blob)

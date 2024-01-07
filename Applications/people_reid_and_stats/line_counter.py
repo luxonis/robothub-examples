@@ -21,6 +21,10 @@ class LineCounter(BaseNode):
         self.cam_height = IMAGE_HEIGHT
 
         self.previous_positions: dict = {}
+        self.last_counted_at = {}
+        self.lost_counter = {}
+        self.repeated_count_threshold_seconds = 2
+        self.lost_counter_threshold = 2
 
     @deco.measure_average_performance
     @deco.measure_call_frequency
@@ -36,8 +40,10 @@ class LineCounter(BaseNode):
             tracklet_id = tracklet.id
             tracklet_status = tracklet.status
 
-            if tracklet_status == dai.Tracklet.TrackingStatus.LOST or tracklet_status == dai.Tracklet.TrackingStatus.REMOVED:
+            if self.lost_long_time(tracklet_status, tracklet_id) or tracklet_status == dai.Tracklet.TrackingStatus.REMOVED:
                 self.previous_positions[tracklet_id] = None
+                self.last_counted_at.pop(tracklet_id, None)
+                self.lost_counter.pop(tracklet_id, None)
                 continue
 
             h, w = 1080, 1920
@@ -62,10 +68,25 @@ class LineCounter(BaseNode):
                     line_point_2 = [x2, y2]
                     points = [line_point_1, line_point_2, previous_position, current_position]
                     if self.intersect(*points):
+                        now = time.perf_counter()
+                        # avoid repeated counts when object middle lies on the counting line
+                        if tracklet_id in self.last_counted_at:
+                            if now - self.last_counted_at[tracklet_id] < self.repeated_count_threshold_seconds:
+                                continue
+                        self.last_counted_at[tracklet_id] = now
                         line["count"] += 1
                         line["lastCrossAt"] = time.time()
 
             self.previous_positions[tracklet_id] = current_position
+
+    def lost_long_time(self, tracklet_status, tracklet_id) -> bool:
+        if tracklet_status != dai.Tracklet.TrackingStatus.LOST:
+            self.lost_counter[tracklet_id] = 0
+            return False
+        if tracklet_id not in self.lost_counter:
+            self.lost_counter[tracklet_id] = 0
+        self.lost_counter[tracklet_id] += 1
+        return self.lost_counter[tracklet_id] > self.lost_counter_threshold
 
     def get_roi_center(self, roi):
         """Calculate ROI center."""

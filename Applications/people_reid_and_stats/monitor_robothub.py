@@ -101,7 +101,7 @@ class FeFaceSlots:
         for face in to_delete:
             self.__memory.pop(face)
 
-    def display_on_fe(self):
+    def prepare_fe_data(self):
         # sort to get the newest faces first
         l = list(self.__memory.values())
         l.sort(key=lambda x: x.time_stamp, reverse=True)
@@ -110,7 +110,6 @@ class FeFaceSlots:
             top_face: FeSlotData
             self.__add_face_to_slot(face=top_face)
         self.___update_saved_images()
-        self.__display_slots()
 
     def __add_face_to_slot(self, face: FeSlotData):
         """Add new top faces to the FE slots."""
@@ -168,7 +167,7 @@ class FeFaceSlots:
                 log.debug(f"Unlinking {image}")
                 image.unlink()
 
-    def __display_slots(self):
+    def get_face_slots_payload(self):
         now = time.monotonic()
         if now - self.__last_slot_notification < 1:
             return
@@ -201,7 +200,7 @@ class FeFaceSlots:
         payload["faces"]["face_2"] = face_2
         payload["faces"]["face_3"] = face_3
         payload["faces"]["face_4"] = face_4
-        robothub_core.COMMUNICATOR.notify(key="faces", payload=payload)
+        return payload
 
     def is_in_slot(self, face: FeSlotData):
         for value in self.__slots.values():
@@ -250,7 +249,7 @@ class FaceStats:
             self.happy_count += 1
         elif face_features.emotion == "angry":
             self.angry_count += 1
-        elif face_features.emotion == "surprised":
+        elif face_features.emotion == "surprise":
             self.surprised_count += 1
         elif face_features.emotion == "sad":
             self.sad_count += 1
@@ -276,6 +275,12 @@ class FaceStats:
                 f"{self.surprised_percentage:.1f}% {Smileys.ANGRY}:{self.angry_percentage:.1f}% {Smileys.SAD}:{self.sad_percentage:.1f}%")
         return text
 
+    def get_fe_payload(self):
+        stats = {"age": f"{self.average_age:.1f}", "males": f"{self.male_percentage:.1f}", "females": f"{self.female_percentage:.1f}",
+                 "neutral": f"{self.neutral_percentage:.1f}", "happy": f"{self.happy_percentage:.1f}", "angry": f"{self.angry_percentage:.1f}",
+                 "surprise": f"{self.surprised_percentage:.1f}", "sad": f"{self.sad_percentage:.1f}"}
+        return stats
+
 
 class Monitor(BaseNode):
     def __init__(self, input_node: BaseNode):
@@ -287,12 +292,19 @@ class Monitor(BaseNode):
 
     def __callback(self, message: PeopleFacesMessage):
         self.__show_main_window(message=message)
-        self.__show_people_faces(message=message)
+        self.__update_people_faces(message=message)
+        fe_stats = self.__face_stats.get_fe_payload()
+        fe_face_data = self.__fe_face_slots.get_face_slots_payload()
+        if fe_face_data is not None and fe_stats is not None:
+            fe_payload = fe_face_data
+            fe_payload["stats"] = fe_stats
+            self.notify_fe(payload=fe_payload)
 
     def __show_main_window(self, message: PeopleFacesMessage) -> None:
         frame = message.image.getCvFrame()
         overlay_data: OverlayData = []
         texts = []
+        stats = {}
         for person in message.people:
             figure = person.figure.bbox
             text = f"ID: {person.figure.tracking_id} "
@@ -308,18 +320,20 @@ class Monitor(BaseNode):
 
             overlay_data.append((figure, text, (255, 255, 0)))
             texts.append((text, (figure.xmin + 5, figure.ymax - 5)))
-        texts = [(self.__face_stats.get_stats_text(), (129, 38))]
 
         self.live_view.set_bboxes(overlay_data=overlay_data)
         self.live_view.set_texts(texts)
         # self.live_view.set_texts(texts=texts)
         self.live_view.publish(image_h264=frame)
 
-    def __show_people_faces(self, message: PeopleFacesMessage) -> None:
+    def notify_fe(self, payload: dict) -> None:
+        robothub_core.COMMUNICATOR.notify(key="faces", payload=payload)
+
+    def __update_people_faces(self, message: PeopleFacesMessage) -> None:
         log.debug(f"---")
         for person in message.people:
             self.__fe_face_slots.add_candidate(person, message.image_mjpeg)
-        self.__fe_face_slots.display_on_fe()
+        self.__fe_face_slots.prepare_fe_data()
 
 
 def decode_image_from_mjpeg(image_mjpeg_encoded) -> np.ndarray:
