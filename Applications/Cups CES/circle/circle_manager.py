@@ -1,3 +1,4 @@
+import cv2
 import logging as log
 import time
 import numpy as np
@@ -7,6 +8,7 @@ from circle import circle_helper
 from circle.circle import Circle
 from circle.circle_list import CircleList
 from circle.circle_processor import CircleProcessor
+from depthai_sdk import FramePacket
 from overlay.overlay_manager import OverlayManager
 
 
@@ -17,12 +19,18 @@ class CircleManager:
         self._disappeared_circles_duration: List[int] = []
         self._circle_processor: CircleProcessor = CircleProcessor()
         self.overlay_manager: OverlayManager = overlay_manager
+        self._refresh_rate_seconds = 1.
+        self._last_refresh_time = time.monotonic()
 
     def refresh_circles(self, image_frame: np.ndarray):
-        # Process image frame and update circles
-        self.update_circles(self._circle_processor.process_circles(image_frame))
+        now = time.monotonic()
 
-        log.debug(f"Disappeared circles: {self._disappeared_circles_duration}")
+        if now - self._last_refresh_time >= self._refresh_rate_seconds:
+            self._last_refresh_time = now
+            # Process image frame and update circles
+            self.update_circles(self._circle_processor.process_circles(image_frame))
+
+            log.debug(f"Disappeared circles: {self._disappeared_circles_duration}")
 
         # Refresh overlay
         self.overlay_manager.refresh_overlay(
