@@ -21,6 +21,8 @@ class CircleManager:
         self.overlay_manager: OverlayManager = overlay_manager
         self._refresh_rate_seconds = 1.
         self._last_refresh_time = time.monotonic()
+        self._thermal_frame: np.ndarray = None
+        self._colored_thermal_frame = None
 
     def refresh_circles(self, image_frame: np.ndarray):
         now = time.monotonic()
@@ -35,6 +37,8 @@ class CircleManager:
         # Refresh overlay
         self.overlay_manager.refresh_overlay(
             image_frame,
+            self._thermal_frame,
+            self._colored_thermal_frame,
             self.circle_list.get_active_circles(),
             self._disappeared_circles_duration.copy()
         )
@@ -100,3 +104,7 @@ class CircleManager:
 
         # Merge active and not active circles
         self.circle_list = CircleList(active_circles + not_active_circles)
+
+    def update_thermal_frame(self, thermal_frame: np.ndarray, colored_thermal_frame: np.ndarray) -> None:
+        self._thermal_frame = thermal_frame
+        self._colored_thermal_frame = colored_thermal_frame

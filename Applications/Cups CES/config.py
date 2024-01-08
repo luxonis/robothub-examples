@@ -7,14 +7,14 @@ App configuration
 """
 # Logging level
 LOGGING_LEVEL = 1  # 0 - DEBUG, 1 - INFO, 2 - WARNING, 3 - ERROR, 4 - CRITICAL
-FPS = 2
+FPS = 4
 AUTO_EXPOSURE_ROI = "0.2,0.2,0.8,0.8"
 
 """
 Circle processing configuration
 """
 # Limit history of circle presence
-CIRCLE_HISTORY_LENGTH = 10  # min 2
+CIRCLE_HISTORY_LENGTH = 3  # min 2
 # Percentage of circle presence to consider it as present
 CIRCLE_PRESENCE_THRESHOLD = 0.8  # in %
 # Percentage of circle radius allowed difference for calculating similarity
@@ -40,7 +40,7 @@ OpenCV configuration
 """
 # HoughCircles parameters
 HOUGH_CIRCLES_DP = 1.2
-HOUGH_CIRCLES_MIN_DIST = 75
+HOUGH_CIRCLES_MIN_DIST = 100
 HOUGH_CIRCLES_PARAM_1 = 150
 HOUGH_CIRCLES_PARAM_2 = 100
 HOUGH_CIRCLES_MAX_RADIUS = 0

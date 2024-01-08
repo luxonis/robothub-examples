@@ -13,6 +13,7 @@ from circle.circle_manager import CircleManager
 from helpers import init_logger
 from overlay.overlay_display_standalone import OverlayDisplayerStandalone
 from overlay.overlay_manager import OverlayManager
+from thermal_data import ThermalData, ThermalMock
 
 init_logger()
 
@@ -22,6 +23,7 @@ class CupsApp:
     oak: OakCamera = None
     running: bool = True
     circle_manager: CircleManager = CircleManager(OverlayManager(OverlayDisplayerStandalone()))
+    thermal_data: ThermalData = ThermalData()
 
     def run(self):
         self.connect()
@@ -40,12 +42,15 @@ class CupsApp:
     def start_pipeline(self):
         self.oak.start(blocking=False)
         # get dai queues
-        thermal_out: dai.DataOutputQueue = self.oak.device.getOutputQueue(name="thermal", maxSize=5, blocking=False)
+        # TODO: use thermal output here and comment out ThermalMock()
+        # thermal_out: dai.DataOutputQueue = self.oak.device.getOutputQueue(name="thermal", maxSize=5, blocking=False)
+        thermal_mock = ThermalMock()
         while self.running:
             time.sleep(0.001)
             self.poll()
             # poll depthai queues
-            thermal_packet: dai.ADa = thermal_out.tryGet()
+            # thermal_packet: FramePacket = thermal_out.tryGet()
+            thermal_packet = thermal_mock.tryGet()
             if thermal_packet is not None:
                 self.process_thermal(thermal_packet)
 
@@ -53,7 +58,7 @@ class CupsApp:
         try:
             self.oak.poll()
         except Exception as e:
-            log.error(f"Polling failed: {e}")
+            log.exception(f"Polling failed: {e}")
             log.info(f"Terminating program...")
             self.oak.__exit__(1, 2, 3)
             self.oak = None
@@ -66,8 +71,11 @@ class CupsApp:
         cv2.imshow("Circles", image_frame)
         # cv2.waitKey(1)
 
-    def process_thermal(self, thermal_packet: FramePacket):
-        pass
+    def process_thermal(self, thermal_packet: dai.ImgFrame):
+        thermal_frame = thermal_packet.getCvFrame()
+        self.thermal_data.update_frame(thermal_frame=thermal_frame)
+        self.circle_manager.update_thermal_frame(thermal_frame=self.thermal_data.thermal_frame,
+                                                 colored_thermal_frame=self.thermal_data.colored_frame)
 
     def init_control_queue(self, color_camera: CameraComponent):
         cam_control = self.oak.pipeline.createXLinkIn()

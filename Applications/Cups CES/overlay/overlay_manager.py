@@ -13,7 +13,8 @@ class OverlayManager:
         self._image: Optional[np.ndarray] = None
         self._displayer: Optional[OverlayDisplayer] = displayer
 
-    def refresh_overlay(self, image: np.ndarray, circles: CircleList, disappeared_circles_duration: List[int]) -> None:
+    def refresh_overlay(self, image: np.ndarray, thermal_frame, colored_thermal_frame,
+                        circles: CircleList, disappeared_circles_duration: List[int]) -> None:
         self._image = image
 
         active_circles_count = len(circles)
@@ -30,6 +31,7 @@ class OverlayManager:
         )
 
         self._displayer.display_circles(self._image, circles)
+        self._displayer.display_thermal(self._image, thermal_frame, colored_thermal_frame, circles)
         self._displayer.display_info(
             self._image,
             f"{config.VISIBLE_CIRCLES_STRING.format(active_circles_count)}\n"

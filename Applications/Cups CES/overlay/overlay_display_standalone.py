@@ -17,7 +17,6 @@ class OverlayDisplayerStandalone(OverlayDisplayer):
     def display_info(self, image, text) -> None:
         font_scale = 1
         thickness = 2
-        nr_lines = 4
 
         text_size, _ = cv2.getTextSize(text, config.OPEN_CV_FONT, font_scale, thickness)
         line_height = text_size[1] + 10
@@ -39,7 +38,7 @@ class OverlayDisplayerStandalone(OverlayDisplayer):
         text_position = (int(x - text_size[0] / 2), int(y + text_size[1] / 2))
 
         cv2.putText(image, text, text_position, config.OPEN_CV_FONT,
-                   font_scale, (255, 255, 255), font_thickness, cv2.LINE_AA)
+                    font_scale, (255, 255, 255), font_thickness, cv2.LINE_AA)
 
     def process_circle(self, image: np.ndarray, circle: Circle) -> None:
         (x, y), r = circle.center_coordinates, circle.radius
@@ -103,3 +102,35 @@ class OverlayDisplayerStandalone(OverlayDisplayer):
         img = cv2.circle(img, (top_left_x + radius, bottom_right_y - radius), radius, color, -1)
 
         return img
+
+    def display_thermal(self, image: np.ndarray, thermal: np.ndarray, colored_thermal, circles: CircleList) -> np.ndarray:
+        for circle in circles:
+            center = circle.center_coordinates
+            x, y = center
+            radius = circle.radius
+
+            # Create a mask for the circular area
+            mask = np.zeros_like(colored_thermal, dtype=np.uint8)
+            cv2.circle(mask, center, radius, 255, -1)
+
+            # Extract the circular region of interest (ROI) from the thermal image
+            thermal_roi = cv2.bitwise_and(colored_thermal, mask)
+            average_temp = cv2.mean(thermal, mask=mask[:, :, 0])[0]
+            self.place_text_in_circle(x, y + 25, f"{average_temp:.0f}deg", image)
+
+            # Invert the mask to get the area outside the circle
+            inverted_mask = cv2.bitwise_not(mask)
+
+            # Retain original image data outside the circle
+            outside_circle = cv2.bitwise_and(image, inverted_mask)
+
+            # Combine the thermal data inside the circle with the original data outside
+            combined_roi = cv2.add(thermal_roi, outside_circle)
+
+            # Overlay the combined ROI onto the original image
+            alpha = 0.5
+            image[y - radius:y + radius, x - radius:x + radius] = cv2.addWeighted(image[y - radius:y + radius, x - radius:x + radius],
+                                                                                  1 - alpha,
+                                                                                  combined_roi[y - radius:y + radius, x - radius:x + radius],
+                                                                                  alpha, 0)
+        return image
