@@ -17,6 +17,7 @@ import { NotificationCallback } from "src/hooks/api.types";
 const infoNumberStyle: CSSProperties = {
   float: "right",
   marginLeft: "10px",
+  color: "black",
 };
 
 type Stats = {
@@ -34,11 +35,11 @@ const TEST_STATS: Stats = {
   age: 52.1,
   males: 92.2,
   females: 7.8,
-  happy: 0.0,
-  neutral: 0.0,
-  surprise: 0.0,
-  angry: 0.0,
-  sad: 0.0,
+  happy: 24.1,
+  neutral: 62.3,
+  surprise: 12.3,
+  angry: 52.5,
+  sad: 42.2,
 };
 
 export const LabelSelector = () => {
@@ -64,9 +65,12 @@ export const LabelSelector = () => {
       background: "white",
       display: "flex",
       justifyContent: "space-between",
-      padding: "5px 10px",
+      padding: "10px 10px",
       flexDirection: "row",
       overflow: "hidden",
+      fontSize: "1.3vw",
+      fontWeight: "600",
+      color: "#454545",
     }),
     [width]
   );
