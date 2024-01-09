@@ -318,7 +318,7 @@ class Monitor(BaseNode):
                 # position = (figure.xmin + figure.xmax) // 2, figure.ymin
                 # frame = img.draw_smiley(frame=frame, position=position, smiley=emotion_to_emoji(person.face_features.emotion))
 
-            overlay_data.append((figure, text, (255, 255, 0)))
+            overlay_data.append((figure, text, (0, 0, 0)))
             texts.append((text, (figure.xmin + 5, figure.ymax - 5)))
 
         self.live_view.set_bboxes(overlay_data=overlay_data)
