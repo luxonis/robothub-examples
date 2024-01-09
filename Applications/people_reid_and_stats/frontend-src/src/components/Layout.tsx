@@ -112,7 +112,7 @@ const HeaderTitle = memo(() => {
       >
         <b>Luxonis</b>
         <br />
-        People Reid and Stats
+        consumer demographic & sentiment analysis
       </StyledText>
       <Flex style={{ marginLeft: "18px" }}>{getBadge()}</Flex>
     </Flex>
