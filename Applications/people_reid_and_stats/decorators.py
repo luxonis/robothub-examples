@@ -49,7 +49,7 @@ def measure_average_performance(func: Callable[..., Any]) -> Callable[..., Any]:
             list_of_durations[func].append(run_time)
 
             now = perf_counter()
-            if now - last_report_at[func] > 1 * 60 * 1 and list_of_durations[func]:
+            if now - last_report_at[func] > 1 * 60 * 5 and list_of_durations[func]:
                 average_duration = sum(list_of_durations[func]) / len(list_of_durations[func])
                 log.info("*" * 30)
                 log.info(f"Performance stats for {func.__name__}:")
@@ -80,7 +80,7 @@ def measure_call_frequency(func: Callable[..., Any]) -> Callable[..., Any]:
         time_from_last_call = start_time - last_call_at
         last_call_at = start_time
         call_frequency_memory[func].append(time_from_last_call)
-        if start_time - last_report_call_frequency_at > 1 * 60 * 1 and call_frequency_memory[func]:
+        if start_time - last_report_call_frequency_at > 1 * 60 * 5 and call_frequency_memory[func]:
             average_call_time = sum(call_frequency_memory[func]) / len(call_frequency_memory[func])
             maximal_call_time = max(call_frequency_memory[func])
             log.info("*" * 50)

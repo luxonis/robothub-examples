@@ -38,13 +38,13 @@ def publish_stream(stream_handle, overlay_data: OverlayData, rois: LiveViewRois,
                 "clickable": True
             },
             "detection": {
-                "thickness": 1,
-                "fill_transparency": 0.2,
+                "thickness": 2,
+                "fill_transparency": 0.5,
                 "box_roundness": 20,
                 "color": [255, 255, 255],
                 "bbox_style": 1,
-                "line_width": 0.5,
-                "line_height": 0.5,
+                "line_width": 0.8,
+                "line_height": 0.8,
                 "hide_label": False,
                 "label_position": 30,
                 "label_padding": 10

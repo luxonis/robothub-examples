@@ -11,6 +11,7 @@ from people_faces_sync import PeopleFacesSync
 from people_tracking import PeopleTracking
 from people_tracking_sync import PeopleTrackingSync
 from pipeline_robothub import create_pipeline
+from recorder import Recorder
 from robothub import BaseApplication
 
 
@@ -47,6 +48,7 @@ class CounterApp(BaseApplication):
         people_faces_sync = PeopleFacesSync(people_tracking=people_tracking, face_features=face_features)
         #
         monitor = Monitor(input_node=people_faces_sync)
+        video_recorder = Recorder(input_node=people_faces_sync)
 
         log.info(f"Polling starting...")
         while self.running:
