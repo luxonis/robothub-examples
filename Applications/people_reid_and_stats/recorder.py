@@ -21,7 +21,7 @@ class Recorder(BaseNode):
         super().__init__()
         input_node.set_callback(self.__callback)
         self.__timer = IntervalTimer()
-        self.__buffer = deque(maxlen=CONFIGURATION["fps"] * 60 * CONFIGURATION["recording_length"])
+        self.__buffer = deque(maxlen=CONFIGURATION["fps"] * 60)
 
     def __callback(self, message: PeopleFacesMessage):
         self.__buffer.append(message.image)
@@ -34,7 +34,7 @@ class Recorder(BaseNode):
 
     def __should_record(self, person: Person) -> bool:
         return (person.face_features is not None
-                and self.__timer.event_time_elapsed(event="record", seconds=60 * CONFIGURATION["record_frequency_minutes"]))
+                and self.__timer.event_time_elapsed(event="record", seconds=60 * 5))
 
     def __record_video(self) -> None:
         thread = threading.Thread(target=self.__record_video_thread, daemon=True, name="recording_thread")
@@ -44,7 +44,7 @@ class Recorder(BaseNode):
         record_id = str(uuid.uuid4())
         self.__timer.update_timestamp(event=record_id)
         log.info(f"Recording {record_id}")
-        while not self.__timer.event_time_elapsed(event=record_id, seconds=CONFIGURATION["recording_length"] * 60 - 10):
+        while not self.__timer.event_time_elapsed(event=record_id, seconds=50):
             time.sleep(1.)
         self.__save_video(name=record_id)
 
