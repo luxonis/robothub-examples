@@ -10,7 +10,7 @@ workdir = "/app"
 
 [runtime.runs_on]
 type = "image"
-name = "ghcr.io/luxonis/robothub-app-v2:2023.326.2033-rvc2-regular"
+name = "ghcr.io/luxonis/robothub-app-v2:2024.022.1650-rvc2-regular"
 
 [[configuration]]
 visual = "section"
