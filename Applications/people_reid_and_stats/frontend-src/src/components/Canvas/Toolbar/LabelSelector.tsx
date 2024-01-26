@@ -1,14 +1,6 @@
 import { useToolbar } from "../../../hooks/toolbar";
 import { Flex } from "@luxonis/theme/components/general/Flex";
-import {
-  CSSProperties,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import { ToolbarItem } from "./ToolbarItem";
-import { minifyNumber } from "src/utils/format";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { EMOJIS } from "./Faces";
 import { useVideoStream } from "src/hooks/videoStream";
 import { useCanvas } from "src/hooks/canvas";
@@ -16,8 +8,14 @@ import { NotificationCallback } from "src/hooks/api.types";
 
 const infoNumberStyle: CSSProperties = {
   float: "right",
-  marginLeft: "10px",
   color: "black",
+};
+
+const emojiStyle: CSSProperties = {
+  fontSize: "3.5vw",
+  display: "block",
+  width: "5vw",
+  height: "5vw",
 };
 
 type Stats = {
@@ -60,17 +58,18 @@ export const LabelSelector = () => {
   const wrapperStyle: CSSProperties = useMemo(
     () => ({
       gap: 0,
-      borderRadius: "5px",
-      width: `${width - 10}px`,
-      background: "white",
+      width: "100%",
+      marginTop: "5px",
+      backgroundColor: "white",
       display: "flex",
-      justifyContent: "space-between",
-      padding: "10px 10px",
+      justifyContent: "space-around",
+      padding: "20px 20px",
       flexDirection: "row",
       overflow: "hidden",
-      fontSize: "1.3vw",
+      fontSize: "1.8vw",
       fontWeight: "600",
-      color: "#454545",
+      textAlign: "center",
+      paddingRight: "50px",
     }),
     [width]
   );
@@ -92,69 +91,85 @@ export const LabelSelector = () => {
     return window.robothubApi.offNotificationWithKey("faces");
   }, []);
 
-  const getTotalDetections = useCallback(
-    () =>
-      minifyNumber(
-        Object.values(linesStats.detections).reduce((acc, val) => acc + val, 0)
-      ),
-    [linesStats]
-  );
+  // const getTotalDetections = useCallback(
+  //   () =>
+  //     minifyNumber(
+  //       Object.values(linesStats.detections).reduce((acc, val) => acc + val, 0)
+  //     ),
+  //   [linesStats]
+  // );
 
   return (
-    <ToolbarItem left="10px" top="10px">
+    <>
       <Flex style={wrapperStyle}>
-        <div>
-          Total Crossings
-          <b style={infoNumberStyle}>{getTotalDetections()}</b>
+        <div
+          style={{ width: "0.1vw", height: "100%", background: "#cfcfcf" }}
+        ></div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <b style={{ ...infoNumberStyle, fontSize: "2.8vw" }}>{stats.age}</b>
+          <span style={{ fontSize: "1.2vw" }}>Average Age</span>
         </div>
 
-        <div>
-          Lines:
-          <b
-            style={{
-              ...infoNumberStyle,
-              color: linesStats.total >= 20 ? "red" : "black",
-            }}
-          >
-            {linesStats.total}
-          </b>
+        <div style={{ display: "flex", justifyContent: "center", gap: "2vw" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <b style={{ ...infoNumberStyle, color: "#299FE9" }}>
+              {stats.males}%
+            </b>
+            <img
+              src={process.env.PUBLIC_URL + "/assets/male.png"}
+              style={{ width: "5vw", height: "5vw" }}
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <b style={{ ...infoNumberStyle, color: "#F32C7D" }}>
+              {stats.females}%
+            </b>
+            <img
+              src={process.env.PUBLIC_URL + "/assets/female.png"}
+              style={{ width: "5vw", height: "5vw" }}
+            />
+          </div>
         </div>
 
-        <div>
-          Avg. Age:
-          <b style={infoNumberStyle}>{stats.age}</b>
-        </div>
+        <div
+          style={{ width: "0.1vw", height: "100%", background: "#cfcfcf" }}
+        ></div>
 
-        <div>
-          Males:
-          <b style={infoNumberStyle}>{stats.males}%</b>
-        </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: "3vw" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {stats.happy}%<br />
+            <span style={emojiStyle}>{EMOJIS.happy}</span>
+          </div>
 
-        <div>
-          Females:
-          <b style={infoNumberStyle}>{stats.females}%</b>
-        </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {stats.neutral}%<br />
+            <span style={emojiStyle}>{EMOJIS.neutral}</span>
+          </div>
 
-        <div>
-          {EMOJIS.happy}:<b style={infoNumberStyle}>{stats.happy}%</b>
-        </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {stats.surprise}%<br />
+            <span style={emojiStyle}>{EMOJIS.surprise}</span>
+          </div>
 
-        <div>
-          {EMOJIS.neutral}:<b style={infoNumberStyle}>{stats.neutral}%</b>
-        </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {stats.angry}%<br />
+            <span style={emojiStyle}>{EMOJIS.angry}</span>
+          </div>
 
-        <div>
-          {EMOJIS.surprise}:<b style={infoNumberStyle}>{stats.surprise}%</b>
-        </div>
-
-        <div>
-          {EMOJIS.angry}:<b style={infoNumberStyle}>{stats.angry}%</b>
-        </div>
-
-        <div>
-          {EMOJIS.sad}:<b style={infoNumberStyle}>{stats.sad}%</b>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {stats.sad}%<br />
+            <span style={emojiStyle}>{EMOJIS.sad}</span>
+          </div>
         </div>
       </Flex>
-    </ToolbarItem>
+    </>
   );
 };

@@ -2,11 +2,10 @@ import { useVideoStream } from "src/hooks/videoStream";
 import { useCanvas } from "../../hooks/canvas";
 import { Spinner } from "./Toolbar/Spinner";
 import { useToolbar } from "src/hooks/toolbar";
-import { LabelSelector } from "./Toolbar/LabelSelector";
 import { CSSProperties, useMemo } from "react";
 import { LineOptions } from "./Toolbar/LineOptions";
 import { LineDetail } from "./Toolbar/LineDetail";
-import { Faces } from "./Toolbar/Faces";
+import { Faces } from './Toolbar/Faces';
 
 export const CanvasToolbar = () => {
   const { isVideoReady } = useVideoStream();
@@ -36,7 +35,6 @@ export const CanvasToolbar = () => {
       ) : (
         <>
           <div style={visibleStyle}>
-            <LabelSelector />
             <LineOptions />
             <LineDetail />
           </div>

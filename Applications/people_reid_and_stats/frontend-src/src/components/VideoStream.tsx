@@ -8,7 +8,6 @@ import { Vector2d } from "konva/lib/types";
 import { CanvasToolbar } from "./Canvas/CanvasToolbar";
 import { ToolbarProvider } from "../providers/ToolbarProvider";
 import { useVideoStream } from "../hooks/videoStream";
-import { AspectRatio } from "react-aspect-ratio";
 
 type VideoStreamProps = {
   uniqueKey: string;
@@ -63,7 +62,7 @@ export const VideoStream = React.forwardRef<HTMLDivElement, VideoStreamProps>(
 
     return (
       <div data-is="aspect-ratio-wrapper">
-        <AspectRatio style={{ maxWidth: `85vw` }}>
+        <div style={{ maxWidth: "146vh" }}>
           <div ref={videoRef}>
             <VideoPlayer
               streamKey={uniqueKey}
@@ -84,7 +83,7 @@ export const VideoStream = React.forwardRef<HTMLDivElement, VideoStreamProps>(
               </ToolbarProvider>
             </CanvasProvider>
           </div>
-        </AspectRatio>
+        </div>
       </div>
     );
   }

@@ -1,9 +1,20 @@
 div[data-is="page-content"] {
   padding-bottom: 0;
-  overflow: hidden;
+  height: 100%;
   background-color: rgb(5, 5, 5);
+  /* background-color: red; */
 }
 
+div[data-is="video-player"] canvas {
+  /* height: 81vh !important; */
+  /* width: 100% !important; */
+}
+
+/* Center video stream */
 /* div[data-is=aspect-ratio-wrapper] {
   text-align: -webkit-center;
 } */
+
+.h-full {
+  height: 100%;
+}

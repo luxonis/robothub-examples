@@ -1,15 +1,9 @@
 import { Layout as ThemeLayout } from "@luxonis/theme/components/general/Layout";
 import { Outlet } from "@remix-run/react";
-import { PageHeader } from "@luxonis/theme/components/general/PageHeader";
 import { StyledText } from "@luxonis/theme/components/general/StyledText";
-import { Badge } from "@luxonis/theme/components/general/Badge";
-import { Flex } from "@luxonis/theme/components/general/Flex";
 import { useVideoStream } from "src/hooks/videoStream";
 import { VideoStreamProvider } from "src/providers/VideoStreamProvider";
-import { MoreMenu } from "@luxonis/theme/components/general/MoreMenu";
-import { RobotSvg } from "@luxonis/icons/Robot";
 import { memo } from "react";
-import { Button } from "@luxonis/theme/components/general/Button";
 import {
   ModalContext,
   MultiModalContextProvider,
@@ -17,7 +11,8 @@ import {
 } from "@luxonis/theme/hooks/useMultiModal";
 import { ImportExportModal } from "./Modals/ImportExportModal";
 import { AppConfigurationModal } from "./Modals/AppConfigurationModal";
-import { DatabaseSvg } from "@luxonis/icons/Database";
+import { LabelSelector } from "./Canvas/Toolbar/LabelSelector";
+import { Box } from "@luxonis/theme/components/general/Box";
 
 export type AppModalsContext = {
   importExportModal: Record<string, never>;
@@ -30,9 +25,18 @@ export const Layout = () => {
   return (
     <ThemeLayout mainMenu={[]} showMainMenu={false}>
       <VideoStreamProvider>
-        <Header modalContext={modalContext} />
-
-        <Outlet />
+        <div
+          style={{
+            width: "100vw",
+            height: "100vh",
+            display: "flex",
+            overflow: "hidden",
+            flexDirection: "column",
+          }}
+        >
+          <Header modalContext={modalContext} />
+          <Outlet />
+        </div>
 
         <MultiModalContextProvider context={modalContext}>
           <ImportExportModal />
@@ -44,77 +48,78 @@ export const Layout = () => {
 };
 
 const Header = memo(
-  ({ modalContext }: { modalContext: ModalContext<AppModalsContext> }) => {
+  ({}: { modalContext: ModalContext<AppModalsContext> }) => {
     const { appConfig } = useVideoStream();
 
-    const handleRobotHubRedirect = () => {
-      if (!appConfig) return;
-      const { robotId, robotAppId } = appConfig;
+    // const handleRobotHubRedirect = () => {
+    //   if (!appConfig) return;
+    //   const { robotId, robotAppId } = appConfig;
 
-      window.open(
-        `https://robothub.luxonis.com/robots/${robotId}/perception-apps/${robotAppId}`
-      );
-    };
+    //   window.open(
+    //     `https://robothub.luxonis.com/robots/${robotId}/perception-apps/${robotAppId}`
+    //   );
+    // };
 
     return (
-      <PageHeader
-        title={<HeaderTitle />}
-        extra={
-          <>
-            <Button
-              type="primary"
-              iconEnd={<DatabaseSvg />}
-              onClick={() => modalContext.open("importExportModal", {})}
-            >
-              <b>Import / Export</b> Lines
-            </Button>
-
-            <MoreMenu>
-              <MoreMenu.Item
-                text="App In RobotHub"
-                icon={<RobotSvg />}
-                onClick={handleRobotHubRedirect}
+      <div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-around",
+          }}
+        >
+          <Box
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              alignSelf: "center",
+              marginTop: "auto",
+              marginBottom: "auto",
+              padding: "15px",
+            }}
+          >
+            <div style={{ width: "15vh" }}>
+              <img
+                style={{ objectFit: "contain", display: "block" }}
+                src={process.env.PUBLIC_URL + "/assets/qr-code.png"}
+                alt="Luxonis website"
               />
-            </MoreMenu>
-          </>
-        }
-      />
+            </div>
+          </Box>
+          <div
+            style={{
+              width: "35vh",
+              textAlign: "center",
+              alignSelf: "center",
+              padding: "15px",
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <img
+              style={{ objectFit: "contain", display: "inline-block" }}
+              src={process.env.PUBLIC_URL + "/assets/luxonis_logo.png"}
+              alt="Luxonis logo"
+            />
+            <StyledText
+              style="text-md"
+              cssStyles={{
+                textAlign: "center",
+                fontSize: "1vw",
+                fontWeight: "600",
+                marginTop: '5%'
+              }}
+            >
+              <div>Consumer demographic</div>
+              <div>•</div>
+              <div>Sentiment analysis</div>
+            </StyledText>
+          </div>
+
+          <LabelSelector />
+        </div>
+      </div>
     );
   }
 );
-
-const HeaderTitle = memo(() => {
-  const { status } = useVideoStream();
-
-  const getBadge = () => {
-    switch (status) {
-      case "connecting":
-        return <Badge color="orange">Connecting</Badge>;
-      case "running":
-        return <Badge color="success">Running</Badge>;
-      case "stopped":
-        return <Badge color="error">Stopped</Badge>; // Not working currently
-    }
-  };
-
-  return (
-    <Flex>
-      <img
-        src={process.env.PUBLIC_URL + "/assets/logo.png"}
-        width="48px"
-        height="48px"
-        alt="Luxonis logo"
-      />
-      <StyledText
-        style="text-lg"
-        weight="medium"
-        cssStyles={{ marginRight: "5px" }}
-      >
-        <b>Luxonis</b>
-        <br />
-        consumer demographic & sentiment analysis
-      </StyledText>
-      <Flex style={{ marginLeft: "18px" }}>{getBadge()}</Flex>
-    </Flex>
-  );
-});
