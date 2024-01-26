@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Luxonis Camera</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./--index.css" />
+  <script src="three.min.js"></script>
+  <script src="OrbitControls.js"></script>
+  <script src="GLTFLoader.js"></script>
+</head>
+
+<body>
+  <rh-promo-bar position="top">
+    <style>
+      .rh-bar {
+        position: relative !important;
+      }
+    </style>
+  </rh-promo-bar>
+  <div id="maincontainer">
+    <div id="settingscontainer">
+      <rh-text color="primary" size="xl" weight="bold">
+        Camera
+      </rh-text>
+      </br>
+      <rh-select id="camera" control>
+      </rh-select>
+      </br>
+      <rh-text color="primary" size="xl" weight="bold">
+        General
+      </rh-text>
+      </br>
+      <rh-text color="primary">
+        IR Projector Strength:
+      </rh-text>
+      <rh-slider id="ir-strength" step="1" min="0" max="1200" control>
+      </rh-slider>
+      <rh-text color="primary">
+        Temporal filter:
+      </rh-text>
+      <rh-toggle id="temporal-filter" control>
+      </rh-toggle>
+    </div>
+    <rh-tiles width-ratio="1:1" mode="row">
+      <rh-card class="videos">
+        <rh-tiles>
+          <rh-tiles mode="row" class="video-controls">
+            <rh-select id="top-stream" control>
+            </rh-select>
+            <rh-select id="top-resolution" control>
+            </rh-select>
+            <div class="overlay-toggle">
+              <rh-text>
+                Detections
+              </rh-text>
+              <rh-toggle id="top-overlay" control>
+              </rh-toggle>
+            </div>
+          </rh-tiles>
+          <div id="top-container" class="video-overlay-container">
+            <div class="video-rounder">
+              <rh-video stream-key="empty-stream/0" id="top-video"></rh-video>
+            </div>
+            <div class="stream-status">
+              <rh-text color="primary" size="xl" weight="semibold">
+                Loading stream
+              </rh-text>
+              <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+            <div class="depth-tooltip">
+              0.00 m
+            </div>
+          </div>
+        </rh-tiles>
+      </rh-card>
+      <rh-card class="videos">
+        <rh-tiles>
+          <rh-tiles mode="row" class="video-controls">
+            <rh-select id="bot-stream" control>
+            </rh-select>
+            <rh-select id="bot-resolution" control>
+            </rh-select>
+            <div class="overlay-toggle">
+              <rh-text>
+                Colormap
+              </rh-text>
+              <rh-toggle id="bot-overlay" control>
+              </rh-toggle>
+            </div>
+          </rh-tiles>
+          <div id="bot-container" class="video-overlay-container">
+            <div class="video-rounder">
+              <rh-video stream-key="empty-stream/0" id="bot-video"></rh-video>
+            </div>
+            <div class="stream-status">
+              <rh-text color="primary" size="xl" weight="semibold">
+                Loading stream
+              </rh-text>
+              <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+            <div class="depth-tooltip">
+              0.00 m
+            </div>
+          </div>
+        </rh-tiles>
+      </rh-card>
+    </rh-tiles>
+    <!-- <rh-card id="canvas">
+      <canvas id="viewport3d"></canvas>
+    </rh-card> -->
+  </div>
+  <script src="./--elements.js"></script>
+  <script src="./pointcloud.js"></script>
+  <script src="./main.js"></script>
+</body>
+
+</html>
