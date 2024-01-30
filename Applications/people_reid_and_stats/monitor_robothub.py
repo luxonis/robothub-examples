@@ -54,7 +54,7 @@ class FeFaceSlots:
 
     def __init__(self):
         self.__memory = {}
-        self.__slots: dict[int, Optional[FeSlotData]] = {1: None, 2: None, 3: None, 4: None}  # FeSlotData
+        self.__slots: dict[int, Optional[FeSlotData]] = {1: None, 2: None, 3: None}  # FeSlotData
         self.__save_slot_image: dict[FeSlotData, bool] = {}
         self.__last_slot_notification = time.monotonic()
 
@@ -73,8 +73,8 @@ class FeFaceSlots:
         # reshape to 1:1
         cropped_face = reshape_image(image=cropped_face)
         fe_slot_data = FeSlotData(face_features=person.face_features,
-                                                         image=cropped_face,
-                                                         person_id=person.figure.tracking_id)
+                                  image=cropped_face,
+                                  person_id=person.figure.tracking_id)
         self.__remove_existing_old_id(fe_slot_data.person_id)
         self.__memory[person.face_features] = fe_slot_data
         log.debug(f"New face detected {fe_slot_data}")
@@ -105,8 +105,8 @@ class FeFaceSlots:
         # sort to get the newest faces first
         l = list(self.__memory.values())
         l.sort(key=lambda x: x.time_stamp, reverse=True)
-        top_4 = l[0:4]
-        for top_face in top_4:
+        top_3 = l[0:3]
+        for top_face in top_3:
             top_face: FeSlotData
             self.__add_face_to_slot(face=top_face)
         self.___update_saved_images()
@@ -143,7 +143,6 @@ class FeFaceSlots:
         log.debug(f"Add face {face} to slot {oldest_idx} because its the oldest one")
 
     def ___update_saved_images(self):
-        all_images = self.image_storage_path.glob("*.jpg")
         current_data = []
         log.debug(f"{self.__save_slot_image=}")
         for idx, data in self.__slots.items():
@@ -161,6 +160,7 @@ class FeFaceSlots:
         self.__save_slot_image.clear()
 
         log.debug(f"{current_data=}")
+        all_images = self.image_storage_path.glob("*.jpg")
         for image in all_images:
             image: Path
             if image.stem not in current_data:
@@ -173,8 +173,7 @@ class FeFaceSlots:
             return
         payload = {"faces": {"face_1": {"img_path": "/public/event_images/face_1.jpg", "emotion": "happy", "age": 26, "gender": "male"},
                              "face_2": {"img_path": "/public/event_images/face_2.jpg", "emotion": "angry", "age": 26, "gender": "male"},
-                             "face_3": {"img_path": "/public/event_images/face_3.jpg", "emotion": "neutral", "age": 26, "gender": "male"},
-                             "face_4": {"img_path": "/public/event_images/face_4.jpg", "emotion": "neutral", "age": 26, "gender": "male"}
+                             "face_3": {"img_path": "/public/event_images/face_3.jpg", "emotion": "neutral", "age": 26, "gender": "male"}
                              }}
         data = self.__slots[1]
         face_1 = {"img_path": f"{self.fe_storage_path}/{data.image_name}.jpg",
@@ -191,15 +190,10 @@ class FeFaceSlots:
                   "emotion": f"{data.face_features.emotion}",
                   "age": data.face_features.age,
                   "gender": self.gender_to_fe_conversion[data.face_features.gender]} if data is not None else {}
-        data = self.__slots[4]
-        face_4 = {"img_path": f"{self.fe_storage_path}/{data.image_name}.jpg",
-                  "emotion": f"{data.face_features.emotion}",
-                  "age": data.face_features.age,
-                  "gender": self.gender_to_fe_conversion[data.face_features.gender]} if data is not None else {}
         payload["faces"]["face_1"] = face_1
         payload["faces"]["face_2"] = face_2
         payload["faces"]["face_3"] = face_3
-        payload["faces"]["face_4"] = face_4
+        log.debug(f"{payload=}")
         return payload
 
     def is_in_slot(self, face: FeSlotData):

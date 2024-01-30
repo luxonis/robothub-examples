@@ -1,10 +1,9 @@
 
-import blobconverter
 import depthai as dai
 import json
 
 from depthai_sdk import OakCamera
-from depthai_sdk.components.nn_helper import getBlob, isUrl, Path, getSupportedModels
+from depthai_sdk.components.nn_helper import Path
 from robothub_core import CONFIGURATION
 from string import Template
 

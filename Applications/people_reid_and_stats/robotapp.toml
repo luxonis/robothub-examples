@@ -8,13 +8,13 @@ description = "App for counting line crossings."
 application = "app.py#CounterApp"
 workdir = "/app"
 
-#[runtime.runs_on]
-#type = "image"
-#name = "ghcr.io/luxonis/robothub-app-v2:2023.326.2033-rvc3-regular"
-
 [runtime.runs_on]
-type = "custom"
-dockerfile = "Dockerfile"
+type = "image"
+name = "ghcr.io/luxonis/rh_runtime_ces_app:main"
+
+#[runtime.runs_on]
+#type = "custom"
+#dockerfile = "Dockerfile"
 
 [[configuration]]
 label = "FPS"
@@ -35,12 +35,18 @@ max = 1
 initial_value = 0.7
 
 [[configuration]]
+label = "Recording"
+key = "recording_enabled"
+field = "boolean"
+initial_value = true
+
+[[configuration]]
 label = "Recording length [minutes]"
 key = "recording_length"
 field = "num_range"
 step = 1
 min = 1
-max = 10
+max = 5
 initial_value = 1
 
 [[configuration]]
@@ -48,9 +54,9 @@ label = "Recording frequency [minutes]"
 key = "record_frequency_minutes"
 field = "num_range"
 step = 2
-min = 3
+min = 6
 max = 61
-initial_value = 3
+initial_value = 10
 
 # thermal camera
 # gaze estimation as local app
