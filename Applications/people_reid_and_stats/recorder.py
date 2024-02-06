@@ -1,4 +1,3 @@
-import av
 import logging as log
 import threading
 import time
