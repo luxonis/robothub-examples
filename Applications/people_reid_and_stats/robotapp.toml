@@ -80,10 +80,10 @@ field = "boolean"
 initial_value = false
 
 [[configuration]]
-label = "Subdirectory to store images(Always under /home/robothub/)"
+label = "Subdirectory to store images (Always stored to /home/robothub/data/container/common/{subdirectory})"
 key = "video_storage_location"
 field = "text"
-initial_value = "videos"
+initial_value = "robothub-videos"
 prefix = ""
 
 # thermal camera

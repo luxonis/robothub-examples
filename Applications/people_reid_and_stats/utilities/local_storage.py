@@ -11,17 +11,15 @@ class LocalStorage:
     """
     @staticmethod
     def handle_video_saving(record_id: str, save_function) -> None:
-        video_path = save_function(name=record_id, dir_path=LocalStorage.determine_dir_path())
+        video_path = save_function(name=record_id, dir_path=LocalStorage.create_dir_path())
+        log.info(f"Recording saved to {video_path}")
         if not CONFIGURATION["local_storage_enabled"]:
             send_video_event(video=video_path.as_posix(), title=f"Recording {record_id}")
             video_path.unlink()
 
     @staticmethod
-    def determine_dir_path() -> Path:
-        if CONFIGURATION["local_storage_enabled"]:
-            subdir = CONFIGURATION["video_storage_location"].lstrip(' /')
-            dir_path = Path(f'/home/robothub/') / subdir
-        else:
-            dir_path = Path(f'/shared/robothub-videos/')
-        log.info(f"Recording saved to {dir_path}")
+    def create_dir_path() -> Path:
+        subdir = CONFIGURATION["video_storage_location"].lstrip(' /')
+        dir_path = Path(f'/shared/robothub-videos/') / subdir
+        dir_path.mkdir(parents=True, exist_ok=True)
         return dir_path

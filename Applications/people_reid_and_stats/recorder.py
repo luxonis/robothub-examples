@@ -50,7 +50,6 @@ class Recorder(BaseNode):
         LocalStorage.handle_video_saving(record_id, self.__save_video)
 
     def __save_video(self, name: str, dir_path: Path) -> Path:
-        dir_path.mkdir(parents=True, exist_ok=True)
         av_writer = AvWriter(path=Path(dir_path),
                              name=name,
                              fourcc='h264',
