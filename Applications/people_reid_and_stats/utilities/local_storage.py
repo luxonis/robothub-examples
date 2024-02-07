@@ -44,7 +44,7 @@ class LocalStorage:
             log.info(f"Removed oldest video")
 
     def __is_storage_full(self) -> bool:
-        return CONFIGURATION["storage_space_limit"] >= os.path.getsize(self._dir_path)
+        return (CONFIGURATION["storage_space_limit"] / 1073741824) >= os.path.getsize(self._dir_path)
 
     @staticmethod
     def __create_dir_path() -> Path:
