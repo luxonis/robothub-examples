@@ -1,4 +1,5 @@
 from pathlib import Path
+import logging as log
 
 from robothub.events import send_video_event
 from robothub_core import CONFIGURATION
@@ -22,4 +23,5 @@ class LocalStorage:
             dir_path = Path(f'/home/robothub/') / subdir
         else:
             dir_path = Path(f'/shared/robothub-videos/')
+        log.info(f"Recording saved to {dir_path}")
         return dir_path
