@@ -47,7 +47,8 @@ class Recorder(BaseNode):
         log.info(f"Recording {record_id}")
         while not self.__timer.event_time_elapsed(event=record_id, seconds=60 * CONFIGURATION["recording_length"]):
             time.sleep(1.)
-        LocalStorage.handle_video_saving(record_id, self.__save_video)
+        local_storage = LocalStorage(record_id=record_id, save_function=self.__save_video)
+        local_storage.handle_video_saving()
 
     def __save_video(self, name: str, dir_path: Path) -> Path:
         av_writer = AvWriter(path=Path(dir_path),
