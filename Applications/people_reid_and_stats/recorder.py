@@ -9,10 +9,9 @@ from pathlib import Path
 from base_node import BaseNode
 from depthai_sdk.recorders.video_writers import AvWriter
 from messages import Person, PeopleFacesMessage
-from robothub.events import send_video_event
 from robothub_core import CONFIGURATION
 from settings import IMAGE_HEIGHT, IMAGE_WIDTH
-from utilities import IntervalTimer
+from utilities import IntervalTimer, LocalStorage
 
 
 class Recorder(BaseNode):
@@ -34,7 +33,8 @@ class Recorder(BaseNode):
 
     def __should_record(self, person: Person) -> bool:
         return (person.face_features is not None
-                and self.__timer.event_time_elapsed(event="record", seconds=60 * CONFIGURATION["record_frequency_minutes"])
+                and self.__timer.event_time_elapsed(event="record",
+                                                    seconds=60 * CONFIGURATION["record_frequency_minutes"])
                 and CONFIGURATION["recording_enabled"])
 
     def __record_video(self) -> None:
@@ -47,13 +47,9 @@ class Recorder(BaseNode):
         log.info(f"Recording {record_id}")
         while not self.__timer.event_time_elapsed(event=record_id, seconds=60 * CONFIGURATION["recording_length"]):
             time.sleep(1.)
-        video_path = self.__save_video(name=record_id)
-        send_video_event(video=video_path.as_posix(), title=f"Recording {record_id}")
-        video_path.unlink()
+        LocalStorage.handle_video_saving(record_id, self.__save_video)
 
-    def __save_video(self, name: str) -> Path:
-        dir_path = Path(f'/shared/robothub-videos/')
-        dir_path.mkdir(parents=True, exist_ok=True)
+    def __save_video(self, name: str, dir_path: Path) -> Path:
         av_writer = AvWriter(path=Path(dir_path),
                              name=name,
                              fourcc='h264',

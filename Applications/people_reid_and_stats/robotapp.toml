@@ -58,5 +58,33 @@ min = 6
 max = 61
 initial_value = 10
 
+[[configuration]]
+label = "Local image storing"
+key = "local_storage_enabled"
+field = "boolean"
+initial_value = false
+
+[[configuration]]
+label = "Local storage space limit [GB]"
+key = "storage_space_limit"
+field = "num_range"
+step = 1
+min = 1
+max = 500
+initial_value = 1
+
+[[configuration]]
+label = "Delete oldest recording when storage is full"
+key = "remove_oldest_enabled"
+field = "boolean"
+initial_value = false
+
+[[configuration]]
+label = "Subdirectory to store images(Always under /home/robothub/)"
+key = "video_storage_location"
+field = "text"
+initial_value = "videos"
+prefix = ""
+
 # thermal camera
 # gaze estimation as local app
