@@ -65,7 +65,7 @@ field = "boolean"
 initial_value = false
 
 [[configuration]]
-label = "Local storage space limit [GB]"
+label = "Local storage space limit [GIB]"
 key = "storage_space_limit"
 field = "num_range"
 step = 1
