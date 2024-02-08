@@ -50,7 +50,7 @@ class LocalStorage:
 
     def __is_storage_full(self) -> bool:
         # 1 GIB = 1073741824 bytes
-        return CONFIGURATION["storage_space_limit"] >= (os.path.getsize(self._dir_path) / 1073741824)
+        return CONFIGURATION["storage_space_limit"] <= (os.path.getsize(self._dir_path) / 1073741824)
 
     @staticmethod
     def __create_dir_path() -> Path:
