@@ -29,6 +29,8 @@ class Recorder(BaseNode):
         for person in message.people:
             person: Person
             if self.__should_record(person):
+                self.__buffer.clear()
+                self.__buffer = deque(maxlen=CONFIGURATION["fps"] * 60 * CONFIGURATION["recording_length"])
                 self.__timer.update_timestamp("record")
                 self.__record_video()
                 return
