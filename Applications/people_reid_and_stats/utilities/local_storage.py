@@ -3,6 +3,7 @@ import logging as log
 
 from pathlib import Path
 from robothub_core import CONFIGURATION
+from robothub.events import send_video_event
 
 
 class LocalStorage:
@@ -21,9 +22,10 @@ class LocalStorage:
             self.__store_on_cloud()
 
     def __store_locally(self) -> None:
-        video_path = self._save_function(name=self._record_id, dir_path=self.__create_dir_path())
+        video_path = self._save_function(name=self._record_id, dir_path=self._dir_path)
         if self.__is_storage_full():
             if CONFIGURATION["remove_oldest_enabled"]:
+                log.info(f"Removing oldest image")
                 self.__remove_oldest_videos()
             else:
                 video_path.unlink()
@@ -32,7 +34,8 @@ class LocalStorage:
         log.info(f"Recording saved to {video_path}")
 
     def __store_on_cloud(self):
-        video_path = self._save_function(name=self._record_id, dir_path=self.__create_dir_path())
+        video_path = self._save_function(name=self._record_id, dir_path=self._dir_path)
+        send_video_event(video=video_path.as_posix(), title=f"Recording {self._record_id}")
         video_path.unlink()
         pass
 
