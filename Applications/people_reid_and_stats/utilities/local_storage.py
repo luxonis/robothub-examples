@@ -10,8 +10,8 @@ class LocalStorage:
     """
     def __init__(self, file_name: str, gib_storage_limit: int, file_suffix: str,
                  storage_path=Path(f'/shared'), subdir_path="robothub-media"):
-        self.file_path = self._create_file_path(file_name, file_suffix)
         self._dir_path = self._create_dir_path(storage_path, subdir_path)
+        self.file_path = self._create_file_path(file_name, file_suffix)
         self._storage_limit = gib_storage_limit
 
     def get_dir_path(self) -> Path:
