@@ -17,8 +17,10 @@ class LocalStorage:
 
     def handle_video_saving(self) -> None:
         if CONFIGURATION["local_storage_enabled"]:
+            log.info(f"Storing image locally")
             self.__store_locally()
         else:
+            log.info(f"Storing image remotely")
             self.__store_on_cloud()
 
     def __store_locally(self) -> None:
