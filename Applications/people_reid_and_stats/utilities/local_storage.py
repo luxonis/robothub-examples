@@ -6,8 +6,7 @@ from pathlib import Path
 
 class LocalStorage:
     """ Local storage handles 1 directory specified in dir_path, which cannot store more than GIB of data than
-    gib_storage_limit. You can add and reassign file_path in case you would want to store more images at one folder.
-
+    gib_storage_limit. You can manipulate and reassign file_path in case you would want to store more images.
     """
     def __init__(self, file_name: str, gib_storage_limit: int, file_suffix: str,
                  storage_path=Path(f'/shared'), subdir_path="robothub-media"):
