@@ -5,33 +5,31 @@ from pathlib import Path
 
 
 class LocalStorage:
-    """ LocalStorage module needs dir_path which handles where data should be stored to
-    If local storage is active id doesn't delete the file where the video is stored.
+    """ Local storage handles 1 directory specified in dir_path, which cannot store more than GIB of data than
+    gib_storage_limit. You can add and reassign file_path in case you would want to store more images at one folder.
+
     """
     def __init__(self, file_name: str, gib_storage_limit: int, file_suffix: str,
                  storage_path=Path(f'/shared'), subdir_path="robothub-media"):
+        self.file_path = self._create_file_path(file_name, file_suffix)
         self._dir_path = self._create_dir_path(storage_path, subdir_path)
-        self._video_path = self._create_video_path(file_name, file_suffix)
         self._storage_limit = gib_storage_limit
 
     def get_dir_path(self) -> Path:
         return self._dir_path
 
-    def get_video_path(self):
-        return self._video_path
-
-    def manage_stored_video(self, remove_oldest_enabled=False) -> None:
+    def manage_stored_file(self, remove_oldest_enabled=False) -> None:
         if self._is_storage_full():
             if remove_oldest_enabled:
                 log.info(f"Removing oldest image")
-                self._remove_oldest_videos()
+                self._remove_oldest_files()
             else:
-                self._video_path.unlink()
+                self.file_path.unlink()
                 log.info(f"Remove oldest video is disabled so the recording has been deleted")
                 return
-        log.info(f"Recording saved to {self._video_path}")
+        log.info(f"Recording saved to {self.file_path}")
 
-    def _remove_oldest_videos(self) -> None:
+    def _remove_oldest_files(self) -> None:
         while self._is_storage_full():
             files = self._dir_path.glob('*')
             oldest_file = min(files, key=lambda x: x.stat().st_ctime)
@@ -42,7 +40,7 @@ class LocalStorage:
         # 1 GIB = 1073741824 bytes
         return self._storage_limit <= (self._calculate_dir_size(dir_path=self._dir_path) / 1073741824)
 
-    def _create_video_path(self, file_name: str, file_suffix: str) -> Path:
+    def _create_file_path(self, file_name: str, file_suffix: str) -> Path:
         return Path(self._dir_path, file_name).with_suffix(file_suffix)
 
     @staticmethod

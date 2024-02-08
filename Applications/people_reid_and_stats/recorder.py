@@ -66,13 +66,13 @@ class Recorder(BaseNode):
             av_writer.write(p)
         av_writer.close()
 
-        self._handle_video_saving(video_path=self._local_storage.get_video_path())
+        self._handle_video_saving(video_path=self._local_storage.file_path)
 
     def _handle_video_saving(self, video_path: Path) -> None:
         log.info(f"Storing image remotely")
         send_video_event(video=video_path.as_posix(), title=f"Recording {self._record_id}")
         if CONFIGURATION["local_storage_enabled"]:
             log.info(f"Storing image locally")
-            self._local_storage.manage_stored_video(remove_oldest_enabled=CONFIGURATION["remove_oldest_enabled"])
+            self._local_storage.manage_stored_file(remove_oldest_enabled=CONFIGURATION["remove_oldest_enabled"])
         else:
             video_path.unlink()
