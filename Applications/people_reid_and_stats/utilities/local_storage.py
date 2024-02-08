@@ -55,6 +55,6 @@ class LocalStorage:
     @staticmethod
     def __create_dir_path() -> Path:
         subdir = CONFIGURATION["video_storage_location"].lstrip(' /')
-        dir_path = Path(f'/shared/robothub-videos/') / subdir
+        dir_path = Path(f'/shared') / subdir
         dir_path.mkdir(parents=True, exist_ok=True)
         return dir_path
