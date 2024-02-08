@@ -35,11 +35,10 @@ class LocalStorage:
                 return
         log.info(f"Recording saved to {video_path}")
 
-    def __store_on_cloud(self):
+    def __store_on_cloud(self) -> None:
         video_path = self._save_function(name=self._record_id, dir_path=self._dir_path)
         send_video_event(video=video_path.as_posix(), title=f"Recording {self._record_id}")
         video_path.unlink()
-        pass
 
     def __remove_oldest_videos(self) -> None:
         while self.__is_storage_full():
@@ -50,7 +49,11 @@ class LocalStorage:
 
     def __is_storage_full(self) -> bool:
         # 1 GIB = 1073741824 bytes
-        return CONFIGURATION["storage_space_limit"] <= (os.path.getsize(self._dir_path) / 1073741824)
+        return CONFIGURATION["storage_space_limit"] <= (self.__calculate_dir_size() / 1073741824)
+
+    def __calculate_dir_size(self) -> int:
+        for root, dirs, files in os.walk(self._dir_path):
+            return sum(os.path.getsize(os.path.join(root, name)) for name in files)
 
     @staticmethod
     def __create_dir_path() -> Path:
