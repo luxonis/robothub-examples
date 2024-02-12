@@ -65,6 +65,12 @@ field = "boolean"
 initial_value = false
 
 [[configuration]]
+label = "Cloud image storing"
+key = "cloud_storage_enabled"
+field = "boolean"
+initial_value = true
+
+[[configuration]]
 label = "Local storage space limit [GIB]"
 key = "storage_space_limit"
 field = "num_range"

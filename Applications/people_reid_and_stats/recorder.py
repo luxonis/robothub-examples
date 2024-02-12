@@ -53,7 +53,7 @@ class Recorder(BaseNode):
         self._handle_video_saving()
 
     def _handle_video_saving(self) -> None:
-        self._local_storage = LocalStorage(file_name=self._record_id, file_suffix='.mp4',
+        self._local_storage = LocalStorage(file_name=self._record_id,
                                            subdir_path=CONFIGURATION["video_storage_location"],
                                            gib_storage_limit=CONFIGURATION["storage_space_limit"])
         self._save_video()
@@ -72,7 +72,9 @@ class Recorder(BaseNode):
         av_writer.close()
 
     def _upload_to_cloud(self):
-        send_video_event(video=self._local_storage.file_path.unlink().as_posix(), title=f"Recording {self._record_id}")
+        if CONFIGURATION["cloud_storage_enabled"]:
+            log.info(f"Saving video on cloud")
+            send_video_event(video=self._local_storage.file_path.unlink().as_posix(), title=f"Recording {self._record_id}")
 
     def _save_locally(self):
         self._local_storage.manage_stored_file(local_storage_enabled=CONFIGURATION["local_storage_enabled"],
