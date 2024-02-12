@@ -53,14 +53,13 @@ class Recorder(BaseNode):
         self._handle_video_saving()
 
     def _handle_video_saving(self) -> None:
-        self._local_storage = LocalStorage(file_name=self._record_id,
-                                           subdir_path=CONFIGURATION["video_storage_location"],
+        self._local_storage = LocalStorage(subdir_path=CONFIGURATION["video_storage_location"],
                                            gib_storage_limit=CONFIGURATION["storage_space_limit"])
-        self._save_video()
-        self._upload_to_cloud()
-        self._save_locally()
+        video_path = self._save_video()
+        self._upload_to_cloud(video_path)
+        self._save_locally(video_path)
 
-    def _save_video(self) -> None:
+    def _save_video(self) -> Path:
         av_writer = AvWriter(path=self._local_storage.get_dir_path(),
                              name=self._record_id,
                              fourcc='h264',
@@ -70,12 +69,14 @@ class Recorder(BaseNode):
         for p in packets:
             av_writer.write(p)
         av_writer.close()
+        return Path(self._local_storage.get_dir_path(), self._record_id).with_suffix('.mp4')
 
-    def _upload_to_cloud(self):
+    def _upload_to_cloud(self, video_path: Path):
         if CONFIGURATION["cloud_storage_enabled"]:
             log.info(f"Saving video on cloud")
-            send_video_event(video=self._local_storage.file_path.unlink().as_posix(), title=f"Recording {self._record_id}")
+            send_video_event(video=video_path.as_posix(), title=f"Recording {self._record_id}")
 
-    def _save_locally(self):
-        self._local_storage.manage_stored_file(local_storage_enabled=CONFIGURATION["local_storage_enabled"],
+    def _save_locally(self, video_path: Path):
+        self._local_storage.manage_stored_file(file_path=video_path,
+                                               local_storage_enabled=CONFIGURATION["local_storage_enabled"],
                                                remove_oldest_enabled=CONFIGURATION["remove_oldest_enabled"])

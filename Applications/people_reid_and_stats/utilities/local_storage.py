@@ -16,7 +16,7 @@ class LocalStorage:
     def get_dir_path(self) -> Path:
         return self._dir_path
 
-    def manage_stored_file(self, local_storage_enabled: bool, file_path: Path, remove_oldest_enabled=False) -> None:
+    def manage_stored_file(self, file_path: Path, local_storage_enabled: bool, remove_oldest_enabled=False) -> None:
         if local_storage_enabled:
             log.info(f"Saving file locally")
             if self._is_storage_full():
