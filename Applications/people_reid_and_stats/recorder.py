@@ -50,12 +50,17 @@ class Recorder(BaseNode):
         while not self.__timer.event_time_elapsed(event=self._record_id,
                                                   seconds=60 * CONFIGURATION["recording_length"]):
             time.sleep(1.)
-        self.__save_video()
+        self._handle_video_saving()
 
-    def __save_video(self) -> None:
+    def _handle_video_saving(self) -> None:
         self._local_storage = LocalStorage(file_name=self._record_id, file_suffix='.mp4',
                                            subdir_path=CONFIGURATION["video_storage_location"],
                                            gib_storage_limit=CONFIGURATION["storage_space_limit"])
+        self._save_video()
+        self._upload_to_cloud()
+        self._save_locally()
+
+    def _save_video(self) -> None:
         av_writer = AvWriter(path=self._local_storage.get_dir_path(),
                              name=self._record_id,
                              fourcc='h264',
@@ -66,13 +71,9 @@ class Recorder(BaseNode):
             av_writer.write(p)
         av_writer.close()
 
-        self._handle_video_saving(video_path=self._local_storage.file_path)
+    def _upload_to_cloud(self):
+        send_video_event(video=self._local_storage.file_path.unlink().as_posix(), title=f"Recording {self._record_id}")
 
-    def _handle_video_saving(self, video_path: Path) -> None:
-        log.info(f"Storing image remotely")
-        send_video_event(video=video_path.as_posix(), title=f"Recording {self._record_id}")
-        if CONFIGURATION["local_storage_enabled"]:
-            log.info(f"Storing image locally")
-            self._local_storage.manage_stored_file(remove_oldest_enabled=CONFIGURATION["remove_oldest_enabled"])
-        else:
-            video_path.unlink()
+    def _save_locally(self):
+        self._local_storage.manage_stored_file(local_storage_enabled=CONFIGURATION["local_storage_enabled"],
+                                               remove_oldest_enabled=CONFIGURATION["remove_oldest_enabled"])

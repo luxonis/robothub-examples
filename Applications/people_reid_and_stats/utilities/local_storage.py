@@ -17,16 +17,20 @@ class LocalStorage:
     def get_dir_path(self) -> Path:
         return self._dir_path
 
-    def manage_stored_file(self, remove_oldest_enabled=False) -> None:
-        if self._is_storage_full():
-            if remove_oldest_enabled:
-                log.info(f"Removing oldest image")
-                self._remove_oldest_files()
-            else:
-                self.file_path.unlink()
-                log.info(f"Remove oldest video is disabled so the recording has been deleted")
-                return
-        log.info(f"Recording saved to {self.file_path}")
+    def manage_stored_file(self, local_storage_enabled: bool, remove_oldest_enabled=False) -> None:
+        if local_storage_enabled:
+            log.info(f"Storing image locally")
+            if self._is_storage_full():
+                if remove_oldest_enabled:
+                    log.info(f"Removing oldest image")
+                    self._remove_oldest_files()
+                else:
+                    self.file_path.unlink()
+                    log.info(f"Remove oldest video is disabled so the recording has been deleted")
+                    return
+            log.info(f"Recording saved to {self.file_path}")
+        else:
+            self.file_path.unlink()
 
     def _remove_oldest_files(self) -> None:
         while self._is_storage_full():
