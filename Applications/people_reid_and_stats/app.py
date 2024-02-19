@@ -12,34 +12,33 @@ from people_tracking import PeopleTracking
 from people_tracking_sync import PeopleTrackingSync
 from pipeline_robothub import create_pipeline
 from recorder import Recorder
-from robothub import BaseApplication
+from robothub import BaseDepthAIApplication
 
 
-class CounterApp(BaseApplication):
+class CounterApp(BaseDepthAIApplication):
 
     def __init__(self):
         # App
         super().__init__()
         self.oak: OakCamera = None
 
-    def setup_pipeline(self, oak: OakCamera):
+    def setup_pipeline(self) -> dai.Pipeline:
         log.info(f"CONFIGURATION: {self.config}")
-        create_pipeline(oak=oak, config=self.config)
+        pipeline = dai.Pipeline()
+        create_pipeline(pipeline=pipeline, config=self.config)
+        return pipeline
 
-    def on_device_connected(self, oak: OakCamera):
-        self.oak: OakCamera = oak
-
-    def _BaseApplication__poll_device(self):
+    def manage_device(self, device: dai.Device):
         log.info(f"DepthAI version: {dai.__version__}")
         log.info(f"Oak started. getting queues...")
-        rgb_preview = self.oak.device.getOutputQueue(name="rgb_preview", maxSize=5, blocking=False)
-        rgb_mjpeg = self.oak.device.getOutputQueue(name="rgb_mjpeg", maxSize=5, blocking=False)
-        object_detections = self.oak.device.getOutputQueue(name="object_detection_nn", maxSize=5, blocking=False)
-        face_detections = self.oak.device.getOutputQueue(name="face_detection_nn", maxSize=5, blocking=False)
-        emotion_detections = self.oak.device.getOutputQueue(name="emotion_detection_nn", maxSize=20, blocking=False)
-        age_gender_detections = self.oak.device.getOutputQueue(name="age_gender_detection_nn", maxSize=20, blocking=False)
+        rgb_preview = device.getOutputQueue(name="rgb_preview", maxSize=5, blocking=False)
+        rgb_mjpeg = device.getOutputQueue(name="rgb_mjpeg", maxSize=5, blocking=False)
+        object_detections = device.getOutputQueue(name="object_detection_nn", maxSize=5, blocking=False)
+        face_detections = device.getOutputQueue(name="face_detection_nn", maxSize=5, blocking=False)
+        emotion_detections = device.getOutputQueue(name="emotion_detection_nn", maxSize=20, blocking=False)
+        age_gender_detections = device.getOutputQueue(name="age_gender_detection_nn", maxSize=20, blocking=False)
         re_id = None
-        tracker = self.oak.device.getOutputQueue(name="object_tracker", maxSize=5, blocking=False)
+        tracker = device.getOutputQueue(name="object_tracker", maxSize=5, blocking=False)
         # host nodes
         face_features = FaceFeatures(age_gender_queue=age_gender_detections, emotions_queue=emotion_detections)
         people_tracking_sync = PeopleTrackingSync()

@@ -2,7 +2,6 @@
 import depthai as dai
 import json
 
-from depthai_sdk import OakCamera
 from depthai_sdk.components.nn_helper import Path
 from robothub_core import CONFIGURATION
 from string import Template
@@ -16,47 +15,47 @@ def create_script(fps: int, path: Path):
         return code
 
 
-def create_pipeline(oak: OakCamera, config: dict):
-    rgb_sensor = create_rgb_sensor(oak.pipeline, fps=config["fps"])
-    rgb_input = oak.pipeline.createXLinkIn()
+def create_pipeline(pipeline: dai.Pipeline, config: dict):
+    rgb_sensor = create_rgb_sensor(pipeline, fps=config["fps"])
+    rgb_input = pipeline.createXLinkIn()
     rgb_input.setStreamName("rgb_input")
     rgb_input.out.link(rgb_sensor.inputControl)
-    rgb_h264_encoder = create_h264_encoder(oak=oak, fps=config["fps"])
-    rgb_mjpeg_encoder = create_mjpeg_encoder(oak=oak, fps=config["fps"])
+    rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=config["fps"])
+    rgb_mjpeg_encoder = create_mjpeg_encoder(pipeline=pipeline, fps=config["fps"])
     # link
     rgb_sensor.video.link(rgb_h264_encoder.input)
     rgb_sensor.video.link(rgb_mjpeg_encoder.input)
     # rgb_sensor.initialControl.setManualFocus(100)
-    image_manip = create_image_manip(pipeline=oak.pipeline, source=rgb_sensor.preview, resize=(640, 640))
+    image_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.preview, resize=(640, 640))
     # config_sensor(rgb_sensor)
-    object_detection_nn = create_object_detecting_nn(oak.pipeline, "yolov6n_coco_640x640", source=image_manip.out)
-    object_tracker = create_object_tracker(oak.pipeline, image_source=object_detection_nn.passthrough, detections_source=object_detection_nn.out)
+    object_detection_nn = create_object_detecting_nn(pipeline, "yolov6n_coco_640x640", source=image_manip.out)
+    object_tracker = create_object_tracker(pipeline, image_source=object_detection_nn.passthrough, detections_source=object_detection_nn.out)
 
-    script_node = oak.pipeline.createScript()
+    script_node = pipeline.createScript()
     script_node.setScript(create_script(fps=config["fps"], path=Path("script_node.py")))
 
     # for re-id
-    # script_node_people = oak.pipeline.createScript()
+    # script_node_people = pipeline.createScript()
     # script_node_people.setScript(create_script(fps=config["fps"], path=Path("script_node_people.py")))
 
     # face detection nn
-    image_manip_face_det = create_image_manip(pipeline=oak.pipeline, source=script_node.outputs["manip_face_img"], resize=(300, 300))
-    face_detection_nn, face_det_nn_input_size = create_face_detection_nn(pipeline=oak.pipeline, source=image_manip_face_det.out)
+    image_manip_face_det = create_image_manip(pipeline=pipeline, source=script_node.outputs["manip_face_img"], resize=(300, 300))
+    face_detection_nn, face_det_nn_input_size = create_face_detection_nn(pipeline=pipeline, source=image_manip_face_det.out)
 
     # emotion detection nn
-    image_manip_emotions = create_image_manip(pipeline=oak.pipeline, source=script_node.outputs["manip_emotions_img"], resize=(64, 64),
+    image_manip_emotions = create_image_manip(pipeline=pipeline, source=script_node.outputs["manip_emotions_img"], resize=(64, 64),
                                               blocking_input_queue=True, input_queue_size=20, frames_pool=20, wait_for_config=True)
-    emotion_detection_nn = create_emotion_detection_nn(pipeline=oak.pipeline, source=image_manip_emotions.out)
+    emotion_detection_nn = create_emotion_detection_nn(pipeline=pipeline, source=image_manip_emotions.out)
 
     # age gender recognition nn
-    image_manip_age_gender = create_image_manip(pipeline=oak.pipeline, source=script_node.outputs["manip_age_gender_img"], resize=(62, 62),
+    image_manip_age_gender = create_image_manip(pipeline=pipeline, source=script_node.outputs["manip_age_gender_img"], resize=(62, 62),
                                                 blocking_input_queue=True, input_queue_size=20, frames_pool=20, wait_for_config=True)
-    age_gender_nn = create_age_gender_nn(pipeline=oak.pipeline, source=image_manip_age_gender.out)
+    age_gender_nn = create_age_gender_nn(pipeline=pipeline, source=image_manip_age_gender.out)
 
     # re-id nn
-    # image_manip_re_id = create_image_manip(pipeline=oak.pipeline, source=script_node_people.outputs["manip_reid_img"], resize=(128, 256),
+    # image_manip_re_id = create_image_manip(pipeline=pipeline, source=script_node_people.outputs["manip_reid_img"], resize=(128, 256),
     #                                        blocking_input_queue=True, input_queue_size=20, frames_pool=20, wait_for_config=True)
-    # re_id_nn = create_re_id_nn(pipeline=oak.pipeline, source=image_manip_re_id.out)
+    # re_id_nn = create_re_id_nn(pipeline=pipeline, source=image_manip_re_id.out)
 
     # script node IO
     rgb_sensor.preview.link(script_node.inputs["rgb_frames"])
@@ -69,14 +68,14 @@ def create_pipeline(oak: OakCamera, config: dict):
     # script_node_people.outputs["manip_reid_cfg"].link(image_manip_re_id.inputConfig)
 
     # outputs
-    create_output(pipeline=oak.pipeline, node=rgb_h264_encoder.bitstream, stream_name="rgb_preview")
-    create_output(pipeline=oak.pipeline, node=rgb_mjpeg_encoder.bitstream, stream_name="rgb_mjpeg")
-    create_output(pipeline=oak.pipeline, node=object_detection_nn.out, stream_name="object_detection_nn")
-    create_output(pipeline=oak.pipeline, node=object_tracker.out, stream_name="object_tracker")
-    create_output(pipeline=oak.pipeline, node=face_detection_nn.out, stream_name="face_detection_nn")
-    create_output(pipeline=oak.pipeline, node=emotion_detection_nn.out, stream_name="emotion_detection_nn")
-    create_output(pipeline=oak.pipeline, node=age_gender_nn.out, stream_name="age_gender_detection_nn")
-    # create_output(pipeline=oak.pipeline, node=re_id_nn.out, stream_name="re_id_nn")
+    create_output(pipeline=pipeline, node=rgb_h264_encoder.bitstream, stream_name="rgb_preview")
+    create_output(pipeline=pipeline, node=rgb_mjpeg_encoder.bitstream, stream_name="rgb_mjpeg")
+    create_output(pipeline=pipeline, node=object_detection_nn.out, stream_name="object_detection_nn")
+    create_output(pipeline=pipeline, node=object_tracker.out, stream_name="object_tracker")
+    create_output(pipeline=pipeline, node=face_detection_nn.out, stream_name="face_detection_nn")
+    create_output(pipeline=pipeline, node=emotion_detection_nn.out, stream_name="emotion_detection_nn")
+    create_output(pipeline=pipeline, node=age_gender_nn.out, stream_name="age_gender_detection_nn")
+    # create_output(pipeline=pipeline, node=re_id_nn.out, stream_name="re_id_nn")
 
 
 def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamera:
@@ -189,8 +188,8 @@ def create_output(pipeline, node: dai.Node.Output, stream_name: str):
     node.link(xout.input)
 
 
-def create_h264_encoder(oak: OakCamera, fps):
-    rh_encoder = oak.pipeline.createVideoEncoder()
+def create_h264_encoder(pipeline: dai.Pipeline, fps):
+    rh_encoder = pipeline.createVideoEncoder()
     rh_encoder_profile = dai.VideoEncoderProperties.Profile.H264_MAIN
     rh_encoder.setDefaultProfilePreset(fps, rh_encoder_profile)
     rh_encoder.input.setQueueSize(2)
@@ -201,8 +200,8 @@ def create_h264_encoder(oak: OakCamera, fps):
     return rh_encoder
 
 
-def create_mjpeg_encoder(oak: OakCamera, fps: int):
-    encoder = oak.pipeline.createVideoEncoder()
+def create_mjpeg_encoder(pipeline: dai.Pipeline, fps: int):
+    encoder = pipeline.createVideoEncoder()
     encoder_profile = dai.VideoEncoderProperties.Profile.MJPEG
     encoder.setDefaultProfilePreset(fps, encoder_profile)
     return encoder
