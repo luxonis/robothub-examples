@@ -20,7 +20,6 @@ class CounterApp(BaseDepthAIApplication):
     def __init__(self):
         # App
         super().__init__()
-        self.oak: OakCamera = None
 
     def setup_pipeline(self) -> dai.Pipeline:
         log.info(f"CONFIGURATION: {self.config}")
