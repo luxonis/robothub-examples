@@ -1,18 +1,21 @@
 import depthai as dai
 import logging as log
 import time
+from pathlib import Path
 
-from depthai_sdk import OakCamera
 from face_features import FaceFeatures
 from line_counter import LineCounter
-from monitor_robothub import Monitor
-
 from people_faces_sync import PeopleFacesSync
 from people_tracking import PeopleTracking
 from people_tracking_sync import PeopleTrackingSync
-from pipeline_robothub import create_pipeline
+from pipeline import create_pipeline
 from recorder import Recorder
-from robothub import BaseDepthAIApplication
+from robothub import BaseDepthAIApplication, LOCAL_DEV
+
+if LOCAL_DEV is True:
+    from monitor import Monitor
+else:
+    from monitor_robothub import Monitor
 
 
 class CounterApp(BaseDepthAIApplication):
@@ -20,6 +23,9 @@ class CounterApp(BaseDepthAIApplication):
     def __init__(self):
         # App
         super().__init__()
+        if LOCAL_DEV is True:
+            data_dir = Path(__file__).parent / "data"
+            data_dir.mkdir(parents=True, exist_ok=True)
 
     def setup_pipeline(self) -> dai.Pipeline:
         log.info(f"CONFIGURATION: {self.config}")
@@ -42,11 +48,10 @@ class CounterApp(BaseDepthAIApplication):
         face_features = FaceFeatures(age_gender_queue=age_gender_detections, emotions_queue=emotion_detections)
         people_tracking_sync = PeopleTrackingSync()
         people_tracking = PeopleTracking(input_node=people_tracking_sync, re_id_queue=re_id)
-        line_counter = LineCounter(source_node=people_tracking_sync)
+        LineCounter(source_node=people_tracking_sync)
         people_faces_sync = PeopleFacesSync(people_tracking=people_tracking, face_features=face_features)
-        #
-        monitor = Monitor(input_node=people_faces_sync)
-        video_recorder = Recorder(input_node=people_faces_sync)
+        Monitor(input_node=people_faces_sync)
+        Recorder(input_node=people_faces_sync)
 
         log.info(f"Polling starting...")
         while self.running:
@@ -68,9 +73,10 @@ class CounterApp(BaseDepthAIApplication):
                 log.debug(f"Faces ID: {face_detections_frame.getSequenceNum()}")
             time.sleep(0.01)
 
-    def start_execution(self):
-        while self.running:
-            time.sleep(0.5)
-
     def on_configuration_changed(self, configuration_changes: dict) -> None:
         log.info(f"CONFIGURATION CHANGES: {configuration_changes=} {self.config=}")
+
+
+if __name__ == "__main__":
+    app = CounterApp()
+    app.run()

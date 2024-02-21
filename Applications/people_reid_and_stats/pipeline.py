@@ -3,7 +3,7 @@ import depthai as dai
 import json
 
 from depthai_sdk.components.nn_helper import Path
-from robothub_core import CONFIGURATION
+from robothub import CONFIGURATION
 from string import Template
 
 
@@ -28,7 +28,7 @@ def create_pipeline(pipeline: dai.Pipeline, config: dict):
     # rgb_sensor.initialControl.setManualFocus(100)
     image_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.preview, resize=(640, 640))
     # config_sensor(rgb_sensor)
-    object_detection_nn = create_object_detecting_nn(pipeline, "yolov6n_coco_640x640", source=image_manip.out)
+    object_detection_nn = create_object_detecting_nn(pipeline, "nn_models/yolov6n_coco_640x640", source=image_manip.out)
     object_tracker = create_object_tracker(pipeline, image_source=object_detection_nn.passthrough, detections_source=object_detection_nn.out)
 
     script_node = pipeline.createScript()
@@ -52,6 +52,7 @@ def create_pipeline(pipeline: dai.Pipeline, config: dict):
                                                 blocking_input_queue=True, input_queue_size=20, frames_pool=20, wait_for_config=True)
     age_gender_nn = create_age_gender_nn(pipeline=pipeline, source=image_manip_age_gender.out)
 
+    # RE-ID nn - app was too slow, maybe it is possible to make it work so just keeping the code here in case anyone wants to try
     # re-id nn
     # image_manip_re_id = create_image_manip(pipeline=pipeline, source=script_node_people.outputs["manip_reid_img"], resize=(128, 256),
     #                                        blocking_input_queue=True, input_queue_size=20, frames_pool=20, wait_for_config=True)
@@ -92,7 +93,7 @@ def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamer
 
 
 def create_object_detecting_nn(pipeline: dai.Pipeline, model: str, source: dai.Node.Output) -> dai.node.NeuralNetwork:
-    model_config = Path("object_detection_config.json")
+    model_config = Path("nn_models/object_detection_config.json")
     with model_config.open() as f:
         config = json.loads(f.read())
     node = pipeline.createYoloDetectionNetwork()
@@ -105,7 +106,7 @@ def create_object_detecting_nn(pipeline: dai.Pipeline, model: str, source: dai.N
     node.setIouThreshold(nn_metadata["iou_threshold"])
     node.setConfidenceThreshold(CONFIGURATION["confidence_threshold"])
     node.input.setBlocking(False)
-    blob = dai.OpenVINO.Blob(Path("yolov6n_coco_640x640.blob").resolve())
+    blob = dai.OpenVINO.Blob(Path("nn_models/yolov6n_coco_640x640.blob").resolve())
     node.setBlob(blob)
     source.link(node.input)
     return node
@@ -113,7 +114,7 @@ def create_object_detecting_nn(pipeline: dai.Pipeline, model: str, source: dai.N
 
 def create_face_detection_nn(pipeline: dai.Pipeline, source: dai.Node.Output) -> tuple[dai.node.MobileNetDetectionNetwork, tuple[int, int]]:
     node = pipeline.createMobileNetDetectionNetwork()
-    blob = dai.OpenVINO.Blob(Path("face-detection-retail-0004_openvino_2022.1_6shave.blob").resolve())
+    blob = dai.OpenVINO.Blob(Path("nn_models/face-detection-retail-0004_openvino_2022.1_6shave.blob").resolve())
     node.setBlob(blob)
     nn_in: dai.TensorInfo = next(iter(blob.networkInputs.values()))
     size: tuple[int, int] = (nn_in.dims[0], nn_in.dims[1])  # 300x300 for: face-detection-retail-0004_openvino_2022.1_6shave.blob
@@ -126,23 +127,21 @@ def create_face_detection_nn(pipeline: dai.Pipeline, source: dai.Node.Output) ->
 
 def create_emotion_detection_nn(pipeline: dai.Pipeline, source: dai.Node.Output) -> dai.node.NeuralNetwork:
     node = pipeline.createNeuralNetwork()
-    blob = dai.OpenVINO.Blob(Path("emotions-recognition-retail-0003_openvino_2022.1_6shave.blob").resolve())  # size = 64x64
-    # node.setBlob(blob)
-    node.setBlobPath(Path("emotions-recognition-retail-0003_openvino_2022.1_6shave.blob").resolve())
+    node.setBlobPath(Path("nn_models/emotions-recognition-retail-0003_openvino_2022.1_6shave.blob").resolve())  # size = 64x64
     source.link(node.input)
     return node
 
 
 def create_age_gender_nn(pipeline: dai.Pipeline, source: dai.Node.Output) -> dai.node.NeuralNetwork:
     node = pipeline.createNeuralNetwork()
-    node.setBlobPath(Path("age-gender-recognition-retail-0013_openvino_2022.1_6shave.blob").resolve())
+    node.setBlobPath(Path("nn_models/age-gender-recognition-retail-0013_openvino_2022.1_6shave.blob").resolve())
     source.link(node.input)
     return node
 
 
 def create_re_id_nn(pipeline: dai.Pipeline, source: dai.Node.Output) -> dai.node.NeuralNetwork:
     node = pipeline.createNeuralNetwork()
-    node.setBlobPath(Path("person-reidentification-retail-0288_openvino_2022.1_6shave.blob").resolve())
+    node.setBlobPath(Path("nn_models/person-reidentification-retail-0288_openvino_2022.1_6shave.blob").resolve())
     source.link(node.input)
     return node
 
@@ -163,7 +162,6 @@ def create_image_manip(pipeline: dai.Pipeline, source: dai.Node.Output, resize: 
                        blocking_input_queue: bool = False, input_queue_size: int = 4, frames_pool: int = 4,
                        wait_for_config: bool = False) -> dai.node.ImageManip:
     image_manip = pipeline.createImageManip()
-    # image_manip.initialConfig.set(dai.RawImageManipConfig())
     image_manip.setResize(*resize)
     image_manip.setFrameType(frame_type)
     image_manip.setMaxOutputFrameSize(resize[0] * resize[1] * output_frame_dims)

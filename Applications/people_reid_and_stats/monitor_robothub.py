@@ -3,7 +3,7 @@ import depthai as dai
 import image_drawing as img
 import logging as log
 import numpy as np
-import robothub_core
+import robothub as rh
 import time
 import uuid
 
@@ -47,8 +47,8 @@ class FeSlotData:
 
 
 class FeFaceSlots:
-    image_storage_path = Path("/public/event-images/")
-    fe_storage_path = Path(f"/files/{robothub_core.APP_INSTANCE_ID}/event-images")
+    image_storage_path = Path("/public/event-images/") if not rh.LOCAL_DEV else Path("images/")
+    fe_storage_path = Path(f"/files/{rh.APP_INSTANCE_ID}/event-images") if not rh.LOCAL_DEV else Path("fe_storage_mock/")
     image_storage_path.mkdir(parents=True, exist_ok=True)
     gender_to_fe_conversion = {"Man": "male", "Woman": "female"}
 
@@ -321,7 +321,7 @@ class Monitor(BaseNode):
         self.live_view.publish(image_h264=frame)
 
     def notify_fe(self, payload: dict) -> None:
-        robothub_core.COMMUNICATOR.notify(key="faces", payload=payload)
+        rh.COMMUNICATOR.notify(key="faces", payload=payload)
 
     def __update_people_faces(self, message: PeopleFacesMessage) -> None:
         log.debug(f"---")

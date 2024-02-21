@@ -1,7 +1,8 @@
 import json
 import logging as log
 import os
-import robothub_core
+import pathlib
+import robothub
 import threading
 import toml
 
@@ -10,14 +11,14 @@ class LineManager:
 
     def __init__(self):
         self.lines: dict = self.init_lines()
-        self.config = robothub_core.CONFIGURATION
+        self.config = robothub.CONFIGURATION
 
         # Autosave
         self.autosave_interval = 5  # Seconds
         self.autosave_timer = None
         self.start_autosave()
 
-        robothub_core.COMMUNICATOR.on_frontend(notification=self.on_fe_notification, request=self.on_fe_request)
+        robothub.COMMUNICATOR.on_frontend(notification=self.on_fe_notification, request=self.on_fe_request)
 
     @property
     def line_entities(self):
@@ -29,7 +30,10 @@ class LineManager:
         self.autosave_timer.start()
 
     def save_lines(self):
-        lines_path = "/storage/lines.json"
+        if robothub.LOCAL_DEV:
+            lines_path = "data/lines.json"
+        else:
+            lines_path = "/storage/lines.json"
 
         with open(lines_path, "w") as json_file:
             json.dump({"entities": self.lines["entities"]}, json_file)

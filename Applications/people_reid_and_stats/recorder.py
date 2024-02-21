@@ -1,4 +1,3 @@
-import av
 import logging as log
 import threading
 import time
@@ -7,11 +6,13 @@ import uuid
 from collections import deque
 from pathlib import Path
 
+import robothub as rh
+
 from base_node import BaseNode
 from depthai_sdk.recorders.video_writers import AvWriter
 from messages import Person, PeopleFacesMessage
 from robothub.events import send_video_event
-from robothub_core import CONFIGURATION
+from robothub import CONFIGURATION
 from settings import IMAGE_HEIGHT, IMAGE_WIDTH
 from utilities import IntervalTimer
 
@@ -23,6 +24,8 @@ class Recorder(BaseNode):
         input_node.set_callback(self.__callback)
         self.__timer = IntervalTimer()
         self.__buffer = deque(maxlen=CONFIGURATION["fps"] * 60)
+        self.dir_path = Path(f'data/videos/') if rh.LOCAL_DEV is True else Path(f'/shared/robothub-videos/')
+        self.dir_path.mkdir(parents=True, exist_ok=True)
 
     def __callback(self, message: PeopleFacesMessage):
         self.__buffer.append(message.image)
@@ -55,9 +58,7 @@ class Recorder(BaseNode):
         video_path.unlink()
 
     def __save_video(self, name: str) -> Path:
-        dir_path = Path(f'/shared/robothub-videos/')
-        dir_path.mkdir(parents=True, exist_ok=True)
-        av_writer = AvWriter(path=Path(dir_path),
+        av_writer = AvWriter(path=Path(self.dir_path),
                              name=name,
                              fourcc='h264',
                              fps=CONFIGURATION["fps"],
@@ -67,6 +68,6 @@ class Recorder(BaseNode):
             av_writer.write(p)
 
         av_writer.close()
-        video_path = Path(dir_path, name).with_suffix('.mp4')
+        video_path = Path(self.dir_path, name).with_suffix('.mp4')
         log.info(f"Recording saved to {video_path}")
         return video_path

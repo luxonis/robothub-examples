@@ -3,7 +3,7 @@ import time
 from geometry import BoundingBox
 from settings import IMAGE_HEIGHT, IMAGE_WIDTH
 
-from robothub_core import STREAMS, StreamHandle
+from robothub import STREAMS, StreamHandle
 
 LiveViewTexts = list[tuple[str, tuple[int, int]]]
 LiveViewRois = list[tuple[tuple[int, int, int, int], str]]

@@ -1,6 +1,8 @@
+import av
 import cv2
 import image_drawing as img
 import logging as log
+import threading
 
 from base_node import BaseNode
 from geometry import clamp
@@ -30,6 +32,8 @@ def emotion_to_emoji(emotion: str) -> str:
 
 
 class Monitor(BaseNode):
+    codec_r = av.CodecContext.create("h264", "r")
+
     def __init__(self, input_node: BaseNode):
         super().__init__()
         input_node.set_callback(self.__callback)
@@ -40,7 +44,10 @@ class Monitor(BaseNode):
         # self.__show_people_faces(message=message)
 
     def __show_main_window(self, message: PeopleFacesMessage) -> None:
-        frame = message.image.getCvFrame()
+        h264_frame = message.image.getCvFrame()
+        frame = self.decode_h264_frame(frame=h264_frame)
+        if frame is None:
+            return
         for person in message.people:
             figure = person.figure.bbox
             img.draw_rectangle(image=frame, bottom_left=(figure.xmin, figure.ymax),
@@ -59,6 +66,7 @@ class Monitor(BaseNode):
                           color=(255, 255, 255), room_for_text=figure.xmax - figure.xmin)
 
         cv2.imshow("frame", frame)
+        cv2.waitKey(1)
 
     def __show_people_faces(self, message: PeopleFacesMessage) -> None:
         for person in message.people:
@@ -84,3 +92,19 @@ class Monitor(BaseNode):
             img.draw_text(image=cropped_face, text=person.face_features.emotion, bottom_left_position=(width_step, 50), color=(0, 0, 255))
             img.draw_text(image=cropped_face, text=str(person.face_features.age), bottom_left_position=(2 * width_step, 50), color=(0, 0, 255))
             cv2.imshow(self.__window_names[person.figure.tracking_id], cropped_face)
+
+    def decode_h264_frame(self, frame):
+        enc_packets = self.codec_r.parse(frame)
+        if len(enc_packets) == 0:
+            return None
+
+        try:
+            frames = self.codec_r.decode(enc_packets[-1])
+        except Exception:
+            return None
+
+        if not frames:
+            return None
+
+        decoded_frame = frames[0].to_ndarray(format='bgr24')
+        return decoded_frame

@@ -10,7 +10,7 @@ from synchronisation import Synchronizer
 
 class PeopleTracking(BaseNode):
 
-    def __init__(self, input_node: BaseNode, re_id_queue: dai.DataOutputQueue):
+    def __init__(self, input_node: BaseNode, re_id_queue: dai.DataOutputQueue | None):
         super().__init__()
         input_node.set_callback(self.tracking_callback)
         self.__re_id_queue = re_id_queue
