@@ -20,3 +20,12 @@ step = 15
 min = 15
 max = 300
 initial_value = 30
+
+[[configuration]]
+label = "FPS"
+key = "fps"
+field = "num_range"
+step = 1
+min = 1
+max = 30
+initial_value = 9

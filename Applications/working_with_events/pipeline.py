@@ -6,21 +6,23 @@ from depthai_sdk.components.nn_helper import Path
 
 def create_pipeline(pipeline: dai.Pipeline, config: dict):
     rgb_sensor = create_rgb_sensor(pipeline, fps=config["fps"])
+    # TODO add left(CAM_B) and right(CAM_C) monocamera
+    # TODO add stereo depth
     rgb_input = pipeline.createXLinkIn()
     rgb_input.setStreamName("rgb_input")
     rgb_input.out.link(rgb_sensor.inputControl)
     rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=config["fps"])
     rgb_mjpeg_encoder = create_mjpeg_encoder(pipeline=pipeline, fps=config["fps"])
     # link
-
     rgb_sensor.video.link(rgb_h264_encoder.input)
     rgb_sensor.video.link(rgb_mjpeg_encoder.input)
     image_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.preview, resize=(640, 640))
     detection_nn = create_detecting_nn(pipeline, "nn_models/yolov6n_coco_640x640.blob", source=image_manip.out)
     # output
-    create_output(pipeline=pipeline, node=rgb_h264_encoder.bitstream, stream_name="rgb_preview")
+    create_output(pipeline=pipeline, node=rgb_h264_encoder.bitstream, stream_name="rgb_h264")
     create_output(pipeline=pipeline, node=rgb_mjpeg_encoder.bitstream, stream_name="rgb_mjpeg")
     create_output(pipeline=pipeline, node=detection_nn.out, stream_name="detection_nn")
+    # TODO add stereo output
 
 
 def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamera:
@@ -55,7 +57,8 @@ def create_mjpeg_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEn
     return encoder
 
 
-def create_image_manip(pipeline: dai.Pipeline, source: dai.Node.Output, resize: tuple[int, int], keep_aspect_ration: bool = False,
+def create_image_manip(pipeline: dai.Pipeline, source: dai.Node.Output, resize: tuple[int, int],
+                       keep_aspect_ration: bool = False,
                        frame_type: dai.RawImgFrame.Type = dai.RawImgFrame.Type.BGR888p, output_frame_dims: int = 3,
                        blocking_input_queue: bool = False, input_queue_size: int = 4, frames_pool: int = 4,
                        wait_for_config: bool = False) -> dai.node.ImageManip:
@@ -73,7 +76,7 @@ def create_image_manip(pipeline: dai.Pipeline, source: dai.Node.Output, resize: 
 
 
 def create_detecting_nn(pipeline: dai.Pipeline, model: str, source: dai.Node.Output) -> dai.node.NeuralNetwork:
-    model_config = Path("nn_models/object_detection_config.json")
+    model_config = Path("nn_models/detection_config.json")
     with model_config.open() as f:
         config = json.loads(f.read())
     node = pipeline.createYoloDetectionNetwork()
@@ -81,7 +84,7 @@ def create_detecting_nn(pipeline: dai.Pipeline, model: str, source: dai.Node.Out
     node.setNumClasses(1)
     node.setCoordinateSize(nn_metadata["coordinates"])
     node.setAnchors(nn_metadata["anchors"])
-    node.setAnchorMasks(nn_metadata["anchor_mask"])
+    node.setAnchorMasks(nn_metadata["anchor_masks"])
     node.setIouThreshold(nn_metadata["iou_threshold"])
     node.input.setBlocking(False)
     blob = dai.OpenVINO.Blob(Path(model).resolve())
