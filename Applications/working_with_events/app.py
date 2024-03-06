@@ -24,6 +24,7 @@ class Application(rh.BaseDepthAIApplication):
         # App
         super().__init__()
         self.live_view = rh.DepthaiLiveView(name="live_view", unique_key="rgb", width=1920, height=1080)
+        self.depth_view = rh.DepthaiLiveView(name="depth_view", unique_key="depth", width=1920, height=1080)
 
     def setup_pipeline(self) -> dai.Pipeline:
         pipeline = dai.Pipeline()
@@ -35,11 +36,8 @@ class Application(rh.BaseDepthAIApplication):
         log.info(f"Oak started. getting queues...")
         rgb_h264 = device.getOutputQueue(name="rgb_h264", maxSize=5, blocking=False)
         rgb_mjpeg = device.getOutputQueue(name="rgb_mjpeg", maxSize=5, blocking=False)
+        stereo_depth = device.getOutputQueue(name="stereo_depth", maxSize=5, blocking=False)
         detection_nn = device.getOutputQueue(name="detection_nn", maxSize=5, blocking=False)
-        # TODO add stereo output queue
-
-        node = self.pipeline.getNode(0)
-        print(node)
 
         model_config = Path("nn_models/detection_config.json")
         with model_config.open() as f:
@@ -48,8 +46,8 @@ class Application(rh.BaseDepthAIApplication):
         while self.running:
             rgb_h264_frame: dai.ImgFrame = rgb_h264.get()
             rgb_mjpeg_frame: dai.ImgFrame = rgb_mjpeg.get()
+            stereo_depth_frame: dai.ImgFrame = stereo_depth.get()
             detections: dai.ImgDetections = detection_nn.get()
-            # TODO get stereo ImgFrame
             for detection in detections.detections:
                 if detection.label == 0:
                     frame_size = rgb_h264_frame.getWidth(), rgb_h264_frame.getHeight()
@@ -58,8 +56,9 @@ class Application(rh.BaseDepthAIApplication):
                     self.live_view.add_rectangle(bbox, label=config["mappings"]["labels"][0])
                     rh.events.send_image_event(image=rgb_mjpeg_frame.getFrame(), title="Person detected",
                                                device_id=device.getMxId())
-            # TODO publish stereo output with the frame side by side
+                    # TODO remove event handling and move it to working with events example
             self.live_view.publish(h264_frame=rgb_h264_frame.getFrame())
+            self.depth_view.publish(h264_frame=stereo_depth_frame.getFrame())
             time.sleep(0.01)
 
 

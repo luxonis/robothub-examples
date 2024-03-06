@@ -5,24 +5,41 @@ from depthai_sdk.components.nn_helper import Path
 
 
 def create_pipeline(pipeline: dai.Pipeline, config: dict):
+    # sensors
     rgb_sensor = create_rgb_sensor(pipeline, fps=config["fps"])
-    # TODO add left(CAM_B) and right(CAM_C) monocamera
-    # TODO add stereo depth
+    left_sensor = create_left_sensor(pipeline, fps=config["fps"])
+    right_sensor = create_right_sensor(pipeline, fps=config["fps"])
+    # input control
     rgb_input = pipeline.createXLinkIn()
+    left_input = pipeline.createXLinkIn()
+    right_input = pipeline.createXLinkIn()
     rgb_input.setStreamName("rgb_input")
+    left_input.setStreamName("left_input")
+    right_input.setStreamName("right_input")
     rgb_input.out.link(rgb_sensor.inputControl)
+    left_input.out.link(left_sensor.inputControl)
+    right_input.out.link(right_sensor.inputControl)
+    # stereo
+    stereo = create_stereo(pipeline, fps=config["fps"])
+    colormap = create_colormap(pipeline, disparity=stereo.initialConfig.getMaxDisparity())
+    # encoders
     rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=config["fps"])
     rgb_mjpeg_encoder = create_mjpeg_encoder(pipeline=pipeline, fps=config["fps"])
-    # link
+    stereo_depth_encoder = create_depth_encoder(pipeline=pipeline, fps=config["fps"])
+    # linking
+    left_sensor.out.link(stereo.left)
+    right_sensor.out.link(stereo.right)
+    stereo.disparity.link(colormap.inputImage)
     rgb_sensor.video.link(rgb_h264_encoder.input)
     rgb_sensor.video.link(rgb_mjpeg_encoder.input)
+    colormap.out.link(stereo_depth_encoder.input)
     image_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.preview, resize=(640, 640))
     detection_nn = create_detecting_nn(pipeline, "nn_models/yolov6n_coco_640x640.blob", source=image_manip.out)
     # output
     create_output(pipeline=pipeline, node=rgb_h264_encoder.bitstream, stream_name="rgb_h264")
     create_output(pipeline=pipeline, node=rgb_mjpeg_encoder.bitstream, stream_name="rgb_mjpeg")
+    create_output(pipeline=pipeline, node=stereo_depth_encoder.bitstream, stream_name="stereo_depth")
     create_output(pipeline=pipeline, node=detection_nn.out, stream_name="detection_nn")
-    # TODO add stereo output
 
 
 def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamera:
@@ -36,6 +53,47 @@ def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamer
     node.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
     node.setFps(fps)
     return node
+
+
+def create_left_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.MonoCamera:
+    left = pipeline.createMonoCamera()
+    left.setBoardSocket(dai.CameraBoardSocket.CAM_B)
+    left.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
+    left.setFps(fps)
+    return left
+
+
+def create_right_sensor(pipeline, fps):
+    right = pipeline.createMonoCamera()
+    right.setBoardSocket(dai.CameraBoardSocket.CAM_C)
+    right.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
+    right.setFps(fps)
+    return right
+
+
+def create_stereo(pipeline: dai.Pipeline, fps: float) -> dai.node.StereoDepth:
+    stereo = pipeline.createStereoDepth()
+    stereo.setDepthAlign(dai.CameraBoardSocket.CAM_A)
+    stereo.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_5x5)
+    stereo.initialConfig.setLeftRightCheck(True)
+    config = stereo.initialConfig.get()
+    config.postProcessing.decimationFilter.decimationFactor = 1
+    config.postProcessing.speckleFilter.enable = False
+    config.postProcessing.speckleFilter.speckleRange = 50
+    config.postProcessing.temporalFilter.enable = True
+    config.postProcessing.decimationFilter.decimationFactor = 1
+    config.postProcessing.thresholdFilter.minRange = 400
+    config.postProcessing.thresholdFilter.maxRange = 15000
+    stereo.initialConfig.set(config)
+    return stereo
+
+
+def create_colormap(pipeline: dai.Pipeline, disparity: float) -> dai.node.ImageManip:
+    colormap = pipeline.createImageManip()
+    colormap.initialConfig.setColormap(dai.Colormap.JET, disparity)
+    colormap.initialConfig.setFrameType(dai.ImgFrame.Type.NV12)
+    colormap.setMaxOutputFrameSize(3110400)
+    return colormap
 
 
 def create_h264_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEncoder:
@@ -53,6 +111,13 @@ def create_h264_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEnc
 def create_mjpeg_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEncoder:
     encoder = pipeline.createVideoEncoder()
     encoder_profile = dai.VideoEncoderProperties.Profile.MJPEG
+    encoder.setDefaultProfilePreset(fps, encoder_profile)
+    return encoder
+
+
+def create_depth_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEncoder:
+    encoder = pipeline.createVideoEncoder()
+    encoder_profile = dai.VideoEncoderProperties.Profile.H264_MAIN
     encoder.setDefaultProfilePreset(fps, encoder_profile)
     return encoder
 
