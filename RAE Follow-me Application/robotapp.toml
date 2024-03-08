@@ -1,0 +1,32 @@
+config_version = "2.0"
+[[configuration]]
+field = "text"
+key = "CHAT_API_KEY"
+label = "ChatGPT KEY"
+prefix = "KEY:"
+initial_value = "XXX"
+
+[[configuration]]
+field = "text"
+key = "CHAT_SYSTEM_DESCRIPTION"
+label = "ChatGPT System Description"
+prefix = "Description:"
+initial_value = "Assume you are a mobile robot that has a camera, speakers, microphone and LCD display. Let's say your main goal is to learn how to survive and interact with the world without causing harm to others."
+
+[info]
+name = "RAE Default Application"
+description = "RAE Default Application"
+
+[runtime]
+application = "src/apps/follow_me/follow_me.py#Application"
+workdir = "/app"
+pre_launch = "export ROS_DOMAIN_ID=30\n. /opt/ros/$ROS_DISTRO/setup.sh\n. /ws/install/setup.sh"
+permissions = ["rae-peripherals"]
+
+[runtime.frontend]
+redirectToIndex = true
+
+[runtime.runs_on]
+type = "image"
+name = "ghcr.io/luxonis/rae-ros:v0.4.0-humble"
+
