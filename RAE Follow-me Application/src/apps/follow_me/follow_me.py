@@ -132,6 +132,9 @@ class Application(robothub.RobotHubApplication):
             else:
                 self.robot.display.display_text('NO API KEY', color=(0,0,255))
                 log.error("No OpenAI client API KEY available in configuration!")
+        elif unique_key == "rae_control_audio":
+            self.robot.audio.save_recorded_sound(payload['audio'])
+            self.robot.audio.play_audio_file("/app/mic_recording.wav")
         else:
             log.info(f"Unique key: {unique_key}, payload: {payload}")
 
@@ -166,9 +169,6 @@ class Application(robothub.RobotHubApplication):
             except KeyError:
                 log.error(
                     f"Unexpected mode \"{payload.get('mode')}\" was requested, ignoring")
-        elif unique_key == "rae_control_audio":
-            self.robot.audio.save_recorded_sound(payload['audio'])
-            self.robot.audio.play_audio_file("/app/mic_recording.wav")
         else:
             log.info(f"Unique key: {unique_key}, payload: {payload}")
 
