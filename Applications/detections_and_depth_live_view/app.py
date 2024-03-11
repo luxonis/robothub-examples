@@ -57,5 +57,6 @@ class Application(rh.BaseDepthAIApplication):
 
 
 if __name__ == '__main__':
-    app = Application()
-    app.run()
+    if rh.LOCAL_DEV:
+        app = Application()
+        app.run()
