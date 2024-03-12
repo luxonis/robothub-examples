@@ -9,8 +9,11 @@ def create_pipeline(pipeline: dai.Pipeline, config: dict):
     rgb_input = pipeline.createXLinkIn()
     rgb_input.setStreamName("rgb_input")
     rgb_input.out.link(rgb_sensor.inputControl)
+    rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=config["fps"])
     rgb_mjpeg_encoder = create_mjpeg_encoder(pipeline=pipeline, fps=config["fps"])
+
     # linking
+    rgb_sensor.video.link(rgb_h264_encoder.input)
     rgb_sensor.video.link(rgb_mjpeg_encoder.input)
 
     # detection nn
@@ -18,6 +21,7 @@ def create_pipeline(pipeline: dai.Pipeline, config: dict):
     detection_nn = create_detecting_nn(pipeline, "nn_models/yolov6n_coco_640x640.blob", source=image_manip.out)
 
     # outputs
+    create_output(pipeline=pipeline, node=rgb_h264_encoder.bitstream, stream_name="rgb_h264")
     create_output(pipeline=pipeline, node=rgb_mjpeg_encoder.bitstream, stream_name="rgb_mjpeg")
     create_output(pipeline=pipeline, node=detection_nn.out, stream_name="detection_nn")
 
@@ -33,6 +37,19 @@ def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamer
     node.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
     node.setFps(fps)
     return node
+
+
+def create_h264_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEncoder:
+    rh_encoder = pipeline.createVideoEncoder()
+    rh_encoder_profile = dai.VideoEncoderProperties.Profile.H264_MAIN
+    rh_encoder.setDefaultProfilePreset(fps, rh_encoder_profile)
+    rh_encoder.input.setQueueSize(2)
+    rh_encoder.input.setBlocking(False)
+    rh_encoder.setKeyframeFrequency(fps)
+    rh_encoder.setRateControlMode(dai.VideoEncoderProperties.RateControlMode.CBR)
+    rh_encoder.setNumFramesPool(3)
+    return rh_encoder
+
 
 def create_mjpeg_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEncoder:
     encoder = pipeline.createVideoEncoder()

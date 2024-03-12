@@ -20,9 +20,8 @@ from pipeline import create_pipeline
 class Application(rh.BaseDepthAIApplication):
 
     def __init__(self):
-        # App
         super().__init__()
-        self.live_view = rh.DepthaiLiveView(name="live_view", unique_key="rgb", width=1920, height=1080)
+        self.detection_view = rh.DepthaiLiveView(name="detection_view", unique_key="rgb", width=1920, height=1080)
         self.depth_view = rh.DepthaiLiveView(name="depth_view", unique_key="depth", width=1920, height=1080)
 
     def setup_pipeline(self) -> dai.Pipeline:
@@ -47,11 +46,11 @@ class Application(rh.BaseDepthAIApplication):
             detections: dai.ImgDetections = detection_nn.get()
             for detection in detections.detections:
                 if detection.label == 0:
-                    frame_size = self.live_view.frame_width, self.live_view.frame_height
+                    frame_size = self.detection_view.frame_width, self.detection_view.frame_height
                     bbox = int(detection.xmin * frame_size[0]), int(detection.ymin * frame_size[1]), int(
                         detection.xmax * frame_size[0]), int(detection.ymax * frame_size[1])
-                    self.live_view.add_rectangle(bbox, label=config["mappings"]["labels"][0])
-            self.live_view.publish(h264_frame=rgb_h264_frame.getFrame())
+                    self.detection_view.add_rectangle(bbox, label=config["mappings"]["labels"][0])
+            self.detection_view.publish(h264_frame=rgb_h264_frame.getFrame())
             self.depth_view.publish(h264_frame=stereo_depth_frame.getFrame())
             time.sleep(0.01)
 

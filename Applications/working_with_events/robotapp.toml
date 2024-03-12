@@ -13,8 +13,8 @@ type = "image"
 name = "ghcr.io/luxonis/robothub-app-v2:2023.275.1315-rvc2-regular"
 
 [[configuration]]
-key = "event_upload_interval"
 label = "Event upload interval (seconds)"
+key = "event_upload_interval"
 field = "num_range"
 step = 15
 min = 15

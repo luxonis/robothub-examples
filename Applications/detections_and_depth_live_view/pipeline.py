@@ -17,7 +17,7 @@ def create_pipeline(pipeline: dai.Pipeline, config: dict):
     rgb_input.out.link(rgb_sensor.inputControl)
     left_input.out.link(left_sensor.inputControl)
     right_input.out.link(right_sensor.inputControl)
-    stereo = create_stereo(pipeline, fps=config["fps"])
+    stereo = create_stereo(pipeline)
     colormap = create_colormap(pipeline, disparity=stereo.initialConfig.getMaxDisparity())
     rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=config["fps"])
     stereo_depth_encoder = create_depth_encoder(pipeline=pipeline, fps=config["fps"])
@@ -68,7 +68,7 @@ def create_right_sensor(pipeline, fps):
     return right
 
 
-def create_stereo(pipeline: dai.Pipeline, fps: float) -> dai.node.StereoDepth:
+def create_stereo(pipeline: dai.Pipeline) -> dai.node.StereoDepth:
     stereo = pipeline.createStereoDepth()
     stereo.setDepthAlign(dai.CameraBoardSocket.CAM_A)
     stereo.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_5x5)
