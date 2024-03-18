@@ -1,0 +1,19 @@
+config_version = "2.0"
+configuration = []
+
+[info]
+name = "ROS App"
+description = "ROS App environment"
+
+[runtime]
+application = "app.py#Application"
+workdir = "/app"
+pre_launch = "export ROS_DOMAIN_ID=30\n. /opt/ros/$ROS_DISTRO/setup.sh\n. /ws/install/setup.sh"
+
+
+[runtime.frontend]
+redirectToIndex = true
+
+[runtime.runs_on]
+type = "image"
+name = "ros:humble-ros-base"
