@@ -1,4 +1,5 @@
 import time
+import logging as log
 
 # cv2 and av bug workaround
 import cv2
@@ -7,28 +8,26 @@ import numpy as np
 cv2.imshow("bugfix", np.zeros((10, 10, 3), dtype=np.uint8))
 cv2.destroyWindow("bugfix")
 
-import depthai as dai
 
-import logging as log
+import depthai as dai
 import robothub as rh
 
 from pipeline import create_pipeline
-from utils import get_labels
-from handlers import OverlayHandler
+from wrappers import DepthaiLiveViewWrapper
 
 
 class Application(rh.BaseDepthAIApplication):
 
     def __init__(self):
         super().__init__()
-        self.detection_view = rh.DepthaiLiveView(name="detection_view", unique_key="rgb", width=1920, height=1080)
-        self.depth_view = rh.DepthaiLiveView(name="depth_view", unique_key="depth", width=1920, height=1080)
-        self.overlay_handler = OverlayHandler(detection_view=self.detection_view,
-                                              labels=get_labels(model_config_path="nn_models/detection_config.json"))
+        self.detection_live_view = DepthaiLiveViewWrapper(name="detection_view", unique_key="rgb", width=1920, height=1080,
+                                                          model_config_path="nn_models/detection_config.json")
+        self.depth_live_view = DepthaiLiveViewWrapper(name="depth_view", unique_key="depth", width=1280, height=800,
+                                                      model_config_path="nn_models/detection_config.json")
 
     def setup_pipeline(self) -> dai.Pipeline:
         pipeline = dai.Pipeline()
-        create_pipeline(pipeline=pipeline, config=rh.CONFIGURATION)
+        create_pipeline(pipeline=pipeline)
         return pipeline
 
     def manage_device(self, device: dai.Device):
@@ -43,10 +42,8 @@ class Application(rh.BaseDepthAIApplication):
             stereo_depth_frame: dai.ImgFrame = stereo_depth.get()
             detections: dai.ImgDetections = detection_nn.get()
 
-            self.overlay_handler.add_rectangle_overlays_on_detections(detections=detections)
-
-            self.detection_view.publish(h264_frame=rgb_h264_frame.getFrame())
-            self.depth_view.publish(h264_frame=stereo_depth_frame.getFrame())
+            self.detection_live_view.update(frame=rgb_h264_frame, detections=detections)
+            self.depth_live_view.update(frame=stereo_depth_frame)
             time.sleep(0.01)
 
 

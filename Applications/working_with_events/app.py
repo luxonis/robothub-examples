@@ -39,9 +39,9 @@ class Application(rh.BaseDepthAIApplication):
             rgb_mjpeg_frame: dai.ImgFrame = rgb_mjpeg.get()
             detections: dai.ImgDetections = detection_nn.get()
 
-            self.event_handler.send_spaced_img_event_on_detection(detections=detections,
-                                                                  rgb_mjpeg_frame=rgb_mjpeg_frame,
-                                                                  device_id=device.getMxId())
+            self.event_handler.send_event_on_detection(detections=detections,
+                                                       rgb_mjpeg_frame=rgb_mjpeg_frame,
+                                                       device_id=device.getMxId())
 
             self.event_handler.send_event_on_fe_notification(rgb_mjpeg_frame=rgb_mjpeg_frame,
                                                              device_id=device.getMxId())
