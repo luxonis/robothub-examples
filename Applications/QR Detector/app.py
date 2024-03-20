@@ -24,31 +24,30 @@ script = pipeline.create(depthai.node.Script)
 # split the image from the camera into 9 tiles, save the values to a config and send it
 # to the ImageManip together with the image to handle the actual cropping and resizing
 script.setScript("""
-    import time 
-                
     NN_INPUT_SIZE_W = 512
     NN_INPUT_SIZE_H = 288
+                 
+    crop_vals = [(0.0, 0.0), (0.0, 0.3), (0.0, 0.6), (0.3, 0.0), (0.3, 0.3), (0.3, 0.6), (0.6, 0.0), (0.6, 0.3), (0.6, 0.6)]
+    
+    step = 0.4
                  
     while True:
         frame = node.io['in_still'].tryGet()
                  
         if frame is not None:
-            values_x = [0.0, 0.3, 0.6]
-            values_y = [0.0, 0.3, 0.6]
-            step = 0.4
-
-            for x_min in values_x:
-                for y_min in values_y:
-                    x_max = x_min + step
-                    y_max = y_min + step
-     
-                    config = ImageManipConfig()
-                    config.setFrameType(ImgFrame.Type.BGR888p)
-                    config.setCropRect(x_min, y_min, x_max, y_max)
-                    config.setResize(NN_INPUT_SIZE_W, NN_INPUT_SIZE_H)
+            for val in crop_vals:
+                xmin = val[0]
+                ymin = val[1]
+                xmax = xmin + step
+                ymax = ymin + step
                  
-                    node.io['out_cfg'].send(config)
-                    node.io['out_still'].send(frame)
+                config = ImageManipConfig()
+                config.setFrameType(ImgFrame.Type.BGR888p)
+                config.setCropRect(xmin, ymin, xmax, ymax)
+                config.setResize(NN_INPUT_SIZE_W, NN_INPUT_SIZE_H)
+                
+                node.io['out_cfg'].send(config)
+                node.io['out_still'].send(frame)
 """)
 
 # ImageManip
