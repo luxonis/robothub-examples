@@ -2,15 +2,16 @@ import depthai as dai
 import json
 
 from depthai_sdk.components.nn_helper import Path
+import robothub as rh
 
 
-def create_pipeline(pipeline: dai.Pipeline, config: dict):
-    rgb_sensor = create_rgb_sensor(pipeline, fps=config["fps"])
+def create_pipeline(pipeline: dai.Pipeline):
+    rgb_sensor = create_rgb_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
     rgb_input = pipeline.createXLinkIn()
     rgb_input.setStreamName("rgb_input")
     rgb_input.out.link(rgb_sensor.inputControl)
-    rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=config["fps"])
-    rgb_mjpeg_encoder = create_mjpeg_encoder(pipeline=pipeline, fps=config["fps"])
+    rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
+    rgb_mjpeg_encoder = create_mjpeg_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
 
     # linking
     rgb_sensor.video.link(rgb_h264_encoder.input)

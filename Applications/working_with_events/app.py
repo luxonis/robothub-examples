@@ -25,7 +25,7 @@ class Application(rh.BaseDepthAIApplication):
 
     def setup_pipeline(self) -> dai.Pipeline:
         pipeline = dai.Pipeline()
-        create_pipeline(pipeline=pipeline, config=rh.CONFIGURATION)
+        create_pipeline(pipeline=pipeline)
         return pipeline
 
     def manage_device(self, device: dai.Device):
