@@ -81,11 +81,6 @@ xout_video.setStreamName("video")
 xout_still = pipeline.create(depthai.node.XLinkOut)
 xout_still.setStreamName("still")
 
-# XLinkOut (image manip cropped images)
-# https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_out/
-xout_crop = pipeline.create(depthai.node.XLinkOut)
-xout_crop.setStreamName("crop")
-
 # XLinkOut (NN output)
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_out/
 xout_nn = pipeline.create(depthai.node.XLinkOut)
@@ -113,7 +108,6 @@ manip.out.link(nn_yolo.input)
 
 # NN -> out (host)
 nn_yolo.out.link(xout_nn.input)  # detections
-nn_yolo.passthrough.link(xout_crop.input)   # input image
 
 
 # ------------------
@@ -124,7 +118,6 @@ with depthai.Device(pipeline) as device:
     controlQueue = device.getInputQueue("cam_control")
     videoQueue = device.getOutputQueue("video")
     stillQueue = device.getOutputQueue("still")
-    cropQueue = device.getOutputQueue("crop")
     nnQueue = device.getOutputQueue("nn")
 
     
@@ -133,6 +126,10 @@ with depthai.Device(pipeline) as device:
     crop_vals = [(0.0, 0.0), (0.0, 0.3), (0.0, 0.6), (0.3, 0.0), (0.3, 0.3), (0.3, 0.6), (0.6, 0.0), (0.6, 0.3), (0.6, 0.6)]
     CROP_FACTOR = 0.4   # corresponds to "step" in the Script node
     NUMBER_OF_CROPPED_IMAGES = 9    # corresponds to the number of cropped images created by the Script node
+
+
+    NN_INPUT_SIZE_W = 512
+    NN_INPUT_SIZE_H = 288
     
     
     # scale_factor can be scalar (= same for both x,y) or vector [scale_x, scale_y]
@@ -164,7 +161,6 @@ with depthai.Device(pipeline) as device:
     # color_green = (0, 255, 0)
     # color_blue = (255, 0, 0)
 
-    yolo_frame = None
     detections = []
 
     while True:
@@ -174,7 +170,7 @@ with depthai.Device(pipeline) as device:
             cv2.imshow("Video", vidFrame.getCvFrame())
 
         # process image input from camera (if any)
-        if cropQueue.has() and nnQueue.has() and stillQueue.has():
+        if stillQueue.has() and nnQueue.has():
             still_frame = stillQueue.get().getCvFrame()
 
             bboxes = []
@@ -185,19 +181,20 @@ with depthai.Device(pipeline) as device:
 
             # process results from all cropped images
             for i in range(NUMBER_OF_CROPPED_IMAGES):
-                # get the cropped image + the corresponding detections
-                yolo_frame = cropQueue.get().getCvFrame()
+
+                # placeholder comment
+
                 detections = nnQueue.get().detections
 
                 # calculate coordinates of each detection wrt the original frame
                 for detection in detections:
-                    # transform the bounding box from the detections space <0..1> to the yolo_frame space
+                    # transform the bounding box from the detections space <0..1> to the yolo frame space
                     bbox_detection = (detection.xmin, detection.ymin, detection.xmax, detection.ymax)
-                    bbox_yolo_frame = transform_coords(np.array([1,1]), wh_from_frame(yolo_frame), bbox_detection)
-                    
-                    # transform the bounding box from the yolo_frame space to the coordinates in the original image
-                    bbox = transform_coords(wh_from_frame(yolo_frame), wh_from_frame(still_frame, CROP_FACTOR), bbox_yolo_frame, wh_from_frame(still_frame, crop_vals[i]))
+                    bbox_yolo_frame = transform_coords(np.array([1,1]), np.array([NN_INPUT_SIZE_W,NN_INPUT_SIZE_H]), bbox_detection)
 
+                    # transform the bounding box from the yolo frame space to the coordinates in the original image
+                    bbox = transform_coords(np.array([NN_INPUT_SIZE_W,NN_INPUT_SIZE_H]), wh_from_frame(still_frame, CROP_FACTOR), bbox_yolo_frame, wh_from_frame(still_frame, crop_vals[i]))
+                    
                     # save the final bounding box and confidence of the detection
                     bboxes.append(bbox.tolist())
                     confidences.append(detection.confidence)
