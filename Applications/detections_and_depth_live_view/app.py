@@ -1,12 +1,13 @@
 import time
 import logging as log
 
-# cv2 and av bug workaround
-import cv2
-import numpy as np
+### cv2 and av bug workaround - uncomment in local dev
 
-cv2.imshow("bugfix", np.zeros((10, 10, 3), dtype=np.uint8))
-cv2.destroyWindow("bugfix")
+# import cv2
+# import numpy as np
+#
+# cv2.imshow("bugfix", np.zeros((10, 10, 3), dtype=np.uint8))
+# cv2.destroyWindow("bugfix")
 
 
 import depthai as dai

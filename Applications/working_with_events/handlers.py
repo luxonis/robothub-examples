@@ -17,16 +17,16 @@ class EventHandler:
             print("Received take picture notification from FE")
             self.take_picture_signal.set()
 
-    def send_event_on_fe_notification(self, rgb_mjpeg_frame: dai.ImgFrame, device_id: str):
+    def send_image_event_on_fe_notification(self, rgb_mjpeg_frame: dai.ImgFrame, device_id: str):
         if self.take_picture_signal.is_set():
             self.take_picture_signal.clear()
             log.info(f"Sending Event...")
             rh.events.send_image_event(image=rgb_mjpeg_frame.getFrame(), title="Front-end event image",
                                        device_id=device_id)
 
-    def send_event_on_detection(self, detections: dai.ImgDetections, rgb_mjpeg_frame: dai.ImgFrame,
-                                device_id: str):
-        if detections.detections and self.check_interval():
+    def send_image_event_on_detection_if_interval_elapsed(self, detections: dai.ImgDetections, rgb_mjpeg_frame: dai.ImgFrame,
+                                                          device_id: str):
+        if detections.detections and self.__check_interval():
             rh.events.send_image_event(image=rgb_mjpeg_frame.getFrame(), title="Person detected",
                                        device_id=device_id)
 

@@ -1,12 +1,13 @@
 import time
 import logging as log
 
-# cv2 and av bug workaround
-import cv2
-import numpy as np
+### cv2 and av bug workaround - uncomment in local dev
 
-cv2.imshow("bugfix", np.zeros((10, 10, 3), dtype=np.uint8))
-cv2.destroyWindow("bugfix")
+# import cv2
+# import numpy as np
+#
+# cv2.imshow("bugfix", np.zeros((10, 10, 3), dtype=np.uint8))
+# cv2.destroyWindow("bugfix")
 
 import depthai as dai
 import robothub as rh
@@ -39,12 +40,12 @@ class Application(rh.BaseDepthAIApplication):
             rgb_mjpeg_frame: dai.ImgFrame = rgb_mjpeg.get()
             detections: dai.ImgDetections = detection_nn.get()
 
-            self.event_handler.send_event_on_detection(detections=detections,
-                                                       rgb_mjpeg_frame=rgb_mjpeg_frame,
-                                                       device_id=device.getMxId())
+            self.event_handler.send_image_event_on_detection_if_interval_elapsed(detections=detections,
+                                                                                 rgb_mjpeg_frame=rgb_mjpeg_frame,
+                                                                                 device_id=device.getMxId())
 
-            self.event_handler.send_event_on_fe_notification(rgb_mjpeg_frame=rgb_mjpeg_frame,
-                                                             device_id=device.getMxId())
+            self.event_handler.send_image_event_on_fe_notification(rgb_mjpeg_frame=rgb_mjpeg_frame,
+                                                                   device_id=device.getMxId())
 
             self.detection_view.publish(h264_frame=rgb_h264_frame.getFrame())
             time.sleep(0.01)
