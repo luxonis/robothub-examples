@@ -3,13 +3,11 @@ import json
 
 from depthai_sdk.components.nn_helper import Path
 
-import robothub as rh
 
-
-def create_pipeline(pipeline: dai.Pipeline):
-    rgb_sensor = create_rgb_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
-    left_sensor = create_left_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
-    right_sensor = create_right_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
+def create_pipeline(pipeline: dai.Pipeline, config: dict):
+    rgb_sensor = create_rgb_sensor(pipeline, fps=config["fps"])
+    left_sensor = create_left_sensor(pipeline, fps=config["fps"])
+    right_sensor = create_right_sensor(pipeline, fps=config["fps"])
     rgb_input = pipeline.createXLinkIn()
     left_input = pipeline.createXLinkIn()
     right_input = pipeline.createXLinkIn()
@@ -21,8 +19,8 @@ def create_pipeline(pipeline: dai.Pipeline):
     right_input.out.link(right_sensor.inputControl)
     stereo = create_stereo(pipeline)
     colormap = create_colormap(pipeline, disparity=stereo.initialConfig.getMaxDisparity())
-    rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
-    stereo_depth_encoder = create_depth_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
+    rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=config["fps"])
+    stereo_depth_encoder = create_depth_encoder(pipeline=pipeline, fps=config["fps"])
 
     # linking
     left_sensor.out.link(stereo.left)
