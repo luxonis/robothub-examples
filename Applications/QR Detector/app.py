@@ -48,24 +48,46 @@ script.setScript("""
     step = 0.4
                  
     while True:
-        frame = node.io['in_still'].tryGet()
-                 
-        if frame is not None:
-            for val in crop_vals:
-                xmin = val[0]
-                ymin = val[1]
-                xmax = xmin + step
-                ymax = ymin + step
-                 
-                config = ImageManipConfig()
-                config.setFrameType(ImgFrame.Type.BGR888p)
-                config.setCropRect(xmin, ymin, xmax, ymax)
-                config.setResize(NN_INPUT_SIZE_W, NN_INPUT_SIZE_H)
-                
-                node.io['out_cfg'].send(config)
-                node.io['out_still'].send(frame)
-        else:
-            time.sleep(0.001)  # avoid lazy looping
+        time_report = {}
+        start = time.perf_counter()
+        frame = node.io['in_still'].get()
+        time_report['img'] = time.perf_counter() - start
+
+        start_loop = time.perf_counter()
+        time_report['dets'] = []
+        for val in crop_vals:
+            start_det = time.perf_counter()
+            xmin = val[0]
+            ymin = val[1]
+            xmax = xmin + step
+            ymax = ymin + step
+
+            config = ImageManipConfig()
+            config.setFrameType(ImgFrame.Type.BGR888p)
+            config.setCropRect(xmin, ymin, xmax, ymax)
+            config.setResize(NN_INPUT_SIZE_W, NN_INPUT_SIZE_H)
+
+            node.io['out_cfg'].send(config)
+            node.io['out_still'].send(frame)
+            time_report['dets'].append(time.perf_counter() - start_det)
+        time_report['det_loop'] = time.perf_counter() - start_loop
+
+        min_, max_, sum_ = None, None, 0.
+        for i, det in enumerate(time_report['dets']):
+            if min_ is None or det < min_[0]:
+                min_ = (det, i)
+            if max_ is None or det > max_[0]:
+                max_ = (det, i)
+            sum_ += det
+        node.error(
+            f"img: {time_report['img']:.5f}, "
+            f"dets: ("
+            f"loop: {time_report['det_loop']:.5f}, "
+            f"avg: {sum_ / 9.:.5f}, "
+            f"min: ({min_[0]:.5f}, {min_[1]})"
+            f"max: ({max_[0]:.5f}, {max_[1]})"
+            f")"
+        )
 """)
 script.inputs["in_still"].setBlocking(True)  # for safe measure
 # always set queue size 1, if you can - in this case, if script node is slower than the fps, there is no use
