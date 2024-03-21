@@ -5,6 +5,10 @@ import numpy as np
 from pathlib import Path
 
 
+NN_INPUT_SIZE_W = 512
+NN_INPUT_SIZE_H = 288
+
+
 # ---------------------
 #  PIPELINE DEFINITION
 # ---------------------
@@ -17,6 +21,16 @@ pipeline = depthai.Pipeline()
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/color_camera/
 cam = pipeline.create(depthai.node.ColorCamera)
 cam.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
+# this basically indicates how many of the `output type` frames can be in the pipeline at once,
+# but I don't think this will necessarily help in your case, it's just good to know about this
+# (this increases RAM usage)
+cam.setVideoNumFramesPool(7)
+cam.setStillNumFramesPool(7)
+
+cam.setVideoSize(960, 540)  # try lowering the video resolution first - if the fps rise up, you can try to remove this and see what happens
+# it's counter-productive to set high fps (I think default is 30) if you run much lower than that
+# best is to set fps at exactly what the pipeline is capable of
+cam.setFps(10)
 
 # Script
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/script/
@@ -24,6 +38,8 @@ script = pipeline.create(depthai.node.Script)
 # split the image from the camera into 9 tiles, save the values to a config and send it
 # to the ImageManip together with the image to handle the actual cropping and resizing
 script.setScript("""
+    import time
+
     NN_INPUT_SIZE_W = 512
     NN_INPUT_SIZE_H = 288
                  
@@ -48,23 +64,45 @@ script.setScript("""
                 
                 node.io['out_cfg'].send(config)
                 node.io['out_still'].send(frame)
+        else:
+            time.sleep(0.001)  # avoid lazy looping
 """)
+script.inputs["in_still"].setBlocking(True)  # for safe measure
+# always set queue size 1, if you can - in this case, if script node is slower than the fps, there is no use
+# for sending another images to the script node
+script.inputs["in_still"].setQueueSize(1)
 
 # ImageManip
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/image_manip/
 manip = pipeline.create(depthai.node.ImageManip)
 manip.inputConfig.setWaitForMessage(True)   # wait for both config and image
+# above you say the setWaitForMessage includes also waiting for image - might be true, but in my experience,
+# it's never a bad practice to set these explicitly, since you at least know exactly what is set (default values are hard to find in the doc)
+manip.inputImage.setWaitForMessage(True)
+manip.inputConfig.setQueueSize(9)  # set queue size to the number of crops - the script node will send them immediately
+manip.inputImage.setQueueSize(9)  # set queue size to the number of crops - the script node will send them immediately
+manip.inputConfig.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
+manip.inputImage.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
+# how many crops can be in the pipeline at the same time
+# 9 in the nn queue
+# 1 currently processed by nn
+# 1 in the XLinkOut
+# +1 to be sure
+manip.setNumFramesPool(9 + 1 + 1 + 1)
+manip.setMaxOutputFrameSize(NN_INPUT_SIZE_W * NN_INPUT_SIZE_H * 3)  # just to be sure you know what's actually outputted
 
 # YoloDetectionNetwork
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/yolo_detection_network/
 nn_yolo = pipeline.create(depthai.node.YoloDetectionNetwork)
 nn_yolo.setBlobPath(str((Path(__file__).parent / Path('qr_model_512x288_rvc2_openvino_2022.1_6shave.blob')).resolve().absolute()))
-nn_yolo.setConfidenceThreshold(0.1)
+# nn_yolo.setConfidenceThreshold(0.1)  # TODO I'm not sure about this - did someone specifically recommended this threshold? If so, keep it that way...
+nn_yolo.setConfidenceThreshold(0.5)
 nn_yolo.setNumClasses(1)
 nn_yolo.setCoordinateSize(4)
 nn_yolo.setIouThreshold(0.5)
 nn_yolo.setNumInferenceThreads(2)
-nn_yolo.input.setBlocking(False)
+nn_yolo.input.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
+nn_yolo.input.setQueueSize(9)  # set queue size to the number of crops - it can keep all the crops in a queue and unblock the image manip, that would be stuck on image.send()
 
 # XLinkIn (camera control)
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_in/
@@ -116,9 +154,12 @@ nn_yolo.out.link(xout_nn.input)  # detections
 with depthai.Device(pipeline) as device:
     # host-side output queues to access the produced results
     controlQueue = device.getInputQueue("cam_control")
-    videoQueue = device.getOutputQueue("video")
-    stillQueue = device.getOutputQueue("still")
-    nnQueue = device.getOutputQueue("nn")
+    # maxSize = 15, or choose any high number
+    # blocking = False, to ensure the pipeline won't get stuck even if host does
+    #   - pipeline will keep sending messages, and they will get overwritten in this queue
+    videoQueue = device.getOutputQueue("video", maxSize=15, blocking=False)
+    stillQueue = device.getOutputQueue("still", maxSize=15, blocking=False)
+    nnQueue = device.getOutputQueue("nn", maxSize=15, blocking=False)
 
     
     # TODO: bound "scale" and "mean" to the number of cropped images
@@ -126,10 +167,6 @@ with depthai.Device(pipeline) as device:
     crop_vals = [(0.0, 0.0), (0.0, 0.3), (0.0, 0.6), (0.3, 0.0), (0.3, 0.3), (0.3, 0.6), (0.6, 0.0), (0.6, 0.3), (0.6, 0.6)]
     CROP_FACTOR = 0.4   # corresponds to "step" in the Script node
     NUMBER_OF_CROPPED_IMAGES = 9    # corresponds to the number of cropped images created by the Script node
-
-
-    NN_INPUT_SIZE_W = 512
-    NN_INPUT_SIZE_H = 288
     
     
     # scale_factor can be scalar (= same for both x,y) or vector [scale_x, scale_y]
