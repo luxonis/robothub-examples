@@ -1,6 +1,7 @@
 import cv2
 import depthai
 import numpy as np
+import time
 
 from pathlib import Path
 
@@ -21,16 +22,7 @@ pipeline = depthai.Pipeline()
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/color_camera/
 cam = pipeline.create(depthai.node.ColorCamera)
 cam.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
-# this basically indicates how many of the `output type` frames can be in the pipeline at once,
-# but I don't think this will necessarily help in your case, it's just good to know about this
-# (this increases RAM usage)
-cam.setVideoNumFramesPool(7)
-cam.setStillNumFramesPool(7)
-
-cam.setVideoSize(960, 540)  # try lowering the video resolution first - if the fps rise up, you can try to remove this and see what happens
-# it's counter-productive to set high fps (I think default is 30) if you run much lower than that
-# best is to set fps at exactly what the pipeline is capable of
-cam.setFps(10)
+cam.setPreviewSize(960,540)     # (1920,1080) / 2
 
 # Script
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/script/
@@ -50,7 +42,7 @@ script.setScript("""
     while True:
         time_report = {}
         start = time.perf_counter()
-        frame = node.io['in_still'].get()
+        frame = node.io['in_preview'].get()
         time_report['img'] = time.perf_counter() - start
 
         start_loop = time.perf_counter()
@@ -68,7 +60,7 @@ script.setScript("""
             config.setResize(NN_INPUT_SIZE_W, NN_INPUT_SIZE_H)
 
             node.io['out_cfg'].send(config)
-            node.io['out_still'].send(frame)
+            node.io['out_frame'].send(frame)
             time_report['dets'].append(time.perf_counter() - start_det)
         time_report['det_loop'] = time.perf_counter() - start_loop
 
@@ -79,7 +71,7 @@ script.setScript("""
             if max_ is None or det > max_[0]:
                 max_ = (det, i)
             sum_ += det
-        node.error(
+        node.warn(
             f"img: {time_report['img']:.5f}, "
             f"dets: ("
             f"loop: {time_report['det_loop']:.5f}, "
@@ -89,6 +81,7 @@ script.setScript("""
             f")"
         )
 """)
+
 script.inputs["in_still"].setBlocking(True)  # for safe measure
 # always set queue size 1, if you can - in this case, if script node is slower than the fps, there is no use
 # for sending another images to the script node
@@ -101,45 +94,28 @@ manip.inputConfig.setWaitForMessage(True)   # wait for both config and image
 # above you say the setWaitForMessage includes also waiting for image - might be true, but in my experience,
 # it's never a bad practice to set these explicitly, since you at least know exactly what is set (default values are hard to find in the doc)
 manip.inputImage.setWaitForMessage(True)
-manip.inputConfig.setQueueSize(9)  # set queue size to the number of crops - the script node will send them immediately
-manip.inputImage.setQueueSize(9)  # set queue size to the number of crops - the script node will send them immediately
 manip.inputConfig.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
 manip.inputImage.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
-# how many crops can be in the pipeline at the same time
-# 9 in the nn queue
-# 1 currently processed by nn
-# 1 in the XLinkOut
-# +1 to be sure
-manip.setNumFramesPool(9 + 1 + 1 + 1)
-manip.setMaxOutputFrameSize(NN_INPUT_SIZE_W * NN_INPUT_SIZE_H * 3)  # just to be sure you know what's actually outputted
+manip.inputConfig.setQueueSize(1)
+manip.inputImage.setQueueSize(1)
+manip.setMaxOutputFrameSize(NN_INPUT_SIZE_W * NN_INPUT_SIZE_H * 3)  # just to be sure you know what's actually output
 
 # YoloDetectionNetwork
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/yolo_detection_network/
 nn_yolo = pipeline.create(depthai.node.YoloDetectionNetwork)
 nn_yolo.setBlobPath(str((Path(__file__).parent / Path('qr_model_512x288_rvc2_openvino_2022.1_6shave.blob')).resolve().absolute()))
-# nn_yolo.setConfidenceThreshold(0.1)  # TODO I'm not sure about this - did someone specifically recommended this threshold? If so, keep it that way...
-nn_yolo.setConfidenceThreshold(0.5)
+nn_yolo.setConfidenceThreshold(0.1)
 nn_yolo.setNumClasses(1)
 nn_yolo.setCoordinateSize(4)
 nn_yolo.setIouThreshold(0.5)
 nn_yolo.setNumInferenceThreads(2)
 nn_yolo.input.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
-nn_yolo.input.setQueueSize(9)  # set queue size to the number of crops - it can keep all the crops in a queue and unblock the image manip, that would be stuck on image.send()
-
-# XLinkIn (camera control)
-# https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_in/
-cam_control = pipeline.create(depthai.node.XLinkIn)
-cam_control.setStreamName("cam_control")
+nn_yolo.input.setQueueSize(50)  # it can keep all the crops in a queue and unblock the image manip, that would be stuck on image.send()
 
 # XLinkOut (camera video)
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_out/
 xout_video = pipeline.create(depthai.node.XLinkOut)
 xout_video.setStreamName("video")
-
-# XLinkOut (camera still image)
-# https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_out/
-xout_still = pipeline.create(depthai.node.XLinkOut)
-xout_still.setStreamName("still")
 
 # XLinkOut (NN output)
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_out/
@@ -148,20 +124,15 @@ xout_nn.setStreamName("nn")
 
 
 # LINKS
-# camera control -> camera
-cam_control.out.link(cam.inputControl)
-
-# camera (video) -> host
-cam.video.link(xout_video.input)
-# camera (still) -> host
-cam.still.link(xout_still.input)
-# camera (still) -> script
-cam.still.link(script.inputs['in_still'])
+# camera (preview) -> script
+cam.preview.link(script.inputs['in_preview'])
+# camera (preview) -> host
+cam.preview.link(xout_video.input)
 
 # script -> image manip (config)
 script.outputs['out_cfg'].link(manip.inputConfig)
 # script -> image manip (frame)
-script.outputs['out_still'].link(manip.inputImage)
+script.outputs['out_frame'].link(manip.inputImage)
 
 # image manip -> NN
 manip.out.link(nn_yolo.input)
@@ -175,12 +146,10 @@ nn_yolo.out.link(xout_nn.input)  # detections
 # ------------------
 with depthai.Device(pipeline) as device:
     # host-side output queues to access the produced results
-    controlQueue = device.getInputQueue("cam_control")
     # maxSize = 15, or choose any high number
     # blocking = False, to ensure the pipeline won't get stuck even if host does
     #   - pipeline will keep sending messages, and they will get overwritten in this queue
     videoQueue = device.getOutputQueue("video", maxSize=15, blocking=False)
-    stillQueue = device.getOutputQueue("still", maxSize=15, blocking=False)
     nnQueue = device.getOutputQueue("nn", maxSize=15, blocking=False)
 
     
@@ -217,20 +186,19 @@ with depthai.Device(pipeline) as device:
 
     
     color_red = (0, 0, 255)
+    color_white = (255, 255, 255)
     # color_green = (0, 255, 0)
     # color_blue = (255, 0, 0)
 
+    frame = None
     detections = []
+    startTime = time.monotonic()
+    counter = 0
 
     while True:
-        # process video input from camera (if any)
-        vidFrames = videoQueue.tryGetAll()
-        for vidFrame in vidFrames:
-            cv2.imshow("Video", vidFrame.getCvFrame())
-
-        # process image input from camera (if any)
-        if stillQueue.has() and nnQueue.has():
-            still_frame = stillQueue.get().getCvFrame()
+        # process input from camera (if any)
+        if videoQueue.has() and nnQueue.has():      # sync video and NN
+            frame = videoQueue.get().getCvFrame()
 
             bboxes = []
             confidences = []
@@ -241,10 +209,10 @@ with depthai.Device(pipeline) as device:
             # process results from all cropped images
             for i in range(NUMBER_OF_CROPPED_IMAGES):
 
-                # placeholder comment
-
+                # get the corresponding detections
                 detections = nnQueue.get().detections
-
+                counter += 1    # FPS will be per cropped frame
+            
                 # calculate coordinates of each detection wrt the original frame
                 for detection in detections:
                     # transform the bounding box from the detections space <0..1> to the yolo frame space
@@ -252,7 +220,7 @@ with depthai.Device(pipeline) as device:
                     bbox_yolo_frame = transform_coords(np.array([1,1]), np.array([NN_INPUT_SIZE_W,NN_INPUT_SIZE_H]), bbox_detection)
 
                     # transform the bounding box from the yolo frame space to the coordinates in the original image
-                    bbox = transform_coords(np.array([NN_INPUT_SIZE_W,NN_INPUT_SIZE_H]), wh_from_frame(still_frame, CROP_FACTOR), bbox_yolo_frame, wh_from_frame(still_frame, crop_vals[i]))
+                    bbox = transform_coords(np.array([NN_INPUT_SIZE_W,NN_INPUT_SIZE_H]), wh_from_frame(frame, CROP_FACTOR), bbox_yolo_frame, wh_from_frame(frame, crop_vals[i]))
                     
                     # save the final bounding box and confidence of the detection
                     bboxes.append(bbox.tolist())
@@ -267,22 +235,17 @@ with depthai.Device(pipeline) as device:
             # display and print info about each resulting bounding box
             for index in indices:
                 bbox = bboxes[index]
-                cv2.rectangle(still_frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color_red, 2)
-                cv2.putText(still_frame, f"{int(confidences[index] * 100)}%", (bbox[0] + 10, bbox[1] + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
+                cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color_red, 2)
+                cv2.putText(frame, f"{int(confidences[index] * 100)}%", (bbox[0] + 10, bbox[1] + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
 
                 print(f"QR code detected: coordinates: {bbox}, confidence: {confidences[index] * 100:.2f}%")            
 
             # display the original frame
-            cv2.imshow("Still", still_frame)
-        
+            cv2.putText(frame, "NN fps: {:.2f}".format(counter / (time.monotonic() - startTime)), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color_white)
+            cv2.imshow("Video", frame)
 
         # keyboard controls
         key = cv2.waitKey(1)
         # terminate the program when "q" is pressed
         if key == ord("q"):
             break
-        # create a screenshot when "c" is pressed
-        elif key == ord("c"):
-            ctrl = depthai.CameraControl()
-            ctrl.setCaptureStill(True)
-            controlQueue.send(ctrl)
