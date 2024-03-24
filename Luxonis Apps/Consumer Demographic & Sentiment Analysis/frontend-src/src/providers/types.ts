@@ -1,0 +1,1 @@
+export type VideoResolution = '720p' | '1080p'

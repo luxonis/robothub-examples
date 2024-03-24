@@ -1,0 +1,31 @@
+config_version = "2.0"
+
+[info]
+name = "Events app"
+description = "This app demonstrates how to send events to RobotHub"
+
+[runtime]
+application = "app.py#Application"
+workdir = "/app"
+
+[runtime.runs_on]
+type = "image"
+name = "ghcr.io/luxonis/robothub-app-v2:2023.275.1315-rvc2-regular"
+
+[[configuration]]
+label = "Event upload interval (seconds)"
+key = "event_upload_interval"
+field = "num_range"
+step = 15
+min = 15
+max = 300
+initial_value = 30
+
+[[configuration]]
+label = "FPS"
+key = "fps"
+field = "num_range"
+step = 1
+min = 1
+max = 30
+initial_value = 9
