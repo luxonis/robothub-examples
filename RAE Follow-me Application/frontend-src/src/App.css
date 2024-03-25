@@ -1,0 +1,161 @@
+:root{
+  --card-size: 230px;
+  --icon-size: 30px;
+  --general-spacer: 25px;
+}
+
+body {
+  margin: 0px;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.spread {
+  justify-content: space-between;
+}
+
+.space {
+  padding: var(--general-spacer);
+}
+
+.gap {
+  gap: var(--general-spacer);
+}
+
+.h-full {
+  height: 100%;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.wrapper {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 560px) {
+  .wrapper {
+    flex-wrap: nowrap;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+.centered {
+  align-items: center;
+  justify-content: center;
+}
+
+.base-border {
+  border-radius: 12px;
+}
+
+.more {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+}
+
+.icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+rh-video {
+  width: 100%;
+  height: 100%;
+}
+
+.rh-video-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.secondary-stream {
+  position: absolute;
+  z-index: 999;
+  width: 30%;
+  cursor: grab;
+  top: 6%;
+  left: 4%;
+}
+
+.mini-map {
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  z-index: 1000;
+  min-width: 300px;
+  bottom: 6%;
+  left: 4%;
+}
+
+.crop {
+  overflow: hidden;
+}
+
+.mini-map-button {
+  padding: 5px 0;
+}
+
+.mini-map-bg {
+  transition: 0.2s;
+  background: rgba(200, 200, 200, 0.3);
+}
+
+.mini-map-bg:hover {
+  background: rgba(200, 200, 200, 0.4);
+}
+
+.bg-white {
+  background: #ffffff;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.card {
+  position: relative;
+  cursor: pointer;
+  background-color: white;
+  width: var(--card-size);
+  height: var(--card-size);
+  box-shadow: rgba(0, 0, 0, 0.09) 0px 3px 12px;
+  transition: box-shadow 0.2s ease-out;
+}
+
+.card:hover {
+  box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgb(209, 213, 219) 0px 0px 0px 1px inset;
+}
+
+.grow {
+  flex: 1;
+}
+
+.top {
+  top: 0;
+}
+
+.drawer .MuiButtonBase-root.Mui-selected .drawer-icon {
+  color: white;
+}
