@@ -3,6 +3,7 @@ import depthai
 import numpy as np
 import time
 
+from datetime import datetime
 from pathlib import Path
 
 
@@ -238,7 +239,9 @@ with depthai.Device(pipeline) as device:
                 cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color_red, 2)
                 cv2.putText(frame, f"{int(confidences[index] * 100)}%", (bbox[0] + 10, bbox[1] + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
 
-                print(f"QR code detected: coordinates: {bbox}, confidence: {confidences[index] * 100:.2f}%")            
+                timestamp = datetime.now().strftime("%T.%f")
+
+                print(f"{timestamp} QR code detected: coordinates: {bbox}, confidence: {confidences[index] * 100:.2f}%")
 
             # display the original frame
             cv2.putText(frame, "NN fps: {:.2f}".format(counter / (time.monotonic() - startTime)), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color_white)
