@@ -82,10 +82,10 @@ script.setScript("""
         )
 """)
 
-script.inputs["in_still"].setBlocking(True)  # for safe measure
+script.inputs["in_preview"].setBlocking(True)  # for safe measure
 # always set queue size 1, if you can - in this case, if script node is slower than the fps, there is no use
 # for sending another images to the script node
-script.inputs["in_still"].setQueueSize(1)
+script.inputs["in_preview"].setQueueSize(1)
 
 # ImageManip
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/image_manip/
