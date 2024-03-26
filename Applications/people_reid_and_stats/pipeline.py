@@ -1,4 +1,4 @@
-
+import blobconverter
 import depthai as dai
 import json
 
