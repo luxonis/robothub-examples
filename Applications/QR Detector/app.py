@@ -1,8 +1,13 @@
 import cv2
 import depthai
 import numpy as np
+import time
 
 from pathlib import Path
+
+
+NN_INPUT_SIZE_W = 512
+NN_INPUT_SIZE_H = 288
 
 
 # ---------------------
@@ -17,6 +22,7 @@ pipeline = depthai.Pipeline()
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/color_camera/
 cam = pipeline.create(depthai.node.ColorCamera)
 cam.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
+cam.setPreviewSize(960,540)     # (1920,1080) / 2
 
 # Script
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/script/
@@ -24,6 +30,8 @@ script = pipeline.create(depthai.node.Script)
 # split the image from the camera into 9 tiles, save the values to a config and send it
 # to the ImageManip together with the image to handle the actual cropping and resizing
 script.setScript("""
+    import time
+
     NN_INPUT_SIZE_W = 512
     NN_INPUT_SIZE_H = 288
                  
@@ -32,28 +40,65 @@ script.setScript("""
     step = 0.4
                  
     while True:
-        frame = node.io['in_still'].tryGet()
-                 
-        if frame is not None:
-            for val in crop_vals:
-                xmin = val[0]
-                ymin = val[1]
-                xmax = xmin + step
-                ymax = ymin + step
-                 
-                config = ImageManipConfig()
-                config.setFrameType(ImgFrame.Type.BGR888p)
-                config.setCropRect(xmin, ymin, xmax, ymax)
-                config.setResize(NN_INPUT_SIZE_W, NN_INPUT_SIZE_H)
-                
-                node.io['out_cfg'].send(config)
-                node.io['out_still'].send(frame)
+        time_report = {}
+        start = time.perf_counter()
+        frame = node.io['in_preview'].get()
+        time_report['img'] = time.perf_counter() - start
+
+        start_loop = time.perf_counter()
+        time_report['dets'] = []
+        for val in crop_vals:
+            start_det = time.perf_counter()
+            xmin = val[0]
+            ymin = val[1]
+            xmax = xmin + step
+            ymax = ymin + step
+
+            config = ImageManipConfig()
+            config.setFrameType(ImgFrame.Type.BGR888p)
+            config.setCropRect(xmin, ymin, xmax, ymax)
+            config.setResize(NN_INPUT_SIZE_W, NN_INPUT_SIZE_H)
+
+            node.io['out_cfg'].send(config)
+            node.io['out_frame'].send(frame)
+            time_report['dets'].append(time.perf_counter() - start_det)
+        time_report['det_loop'] = time.perf_counter() - start_loop
+
+        min_, max_, sum_ = None, None, 0.
+        for i, det in enumerate(time_report['dets']):
+            if min_ is None or det < min_[0]:
+                min_ = (det, i)
+            if max_ is None or det > max_[0]:
+                max_ = (det, i)
+            sum_ += det
+        node.warn(
+            f"img: {time_report['img']:.5f}, "
+            f"dets: ("
+            f"loop: {time_report['det_loop']:.5f}, "
+            f"avg: {sum_ / 9.:.5f}, "
+            f"min: ({min_[0]:.5f}, {min_[1]})"
+            f"max: ({max_[0]:.5f}, {max_[1]})"
+            f")"
+        )
 """)
+
+script.inputs["in_preview"].setBlocking(True)  # for safe measure
+# always set queue size 1, if you can - in this case, if script node is slower than the fps, there is no use
+# for sending another images to the script node
+script.inputs["in_preview"].setQueueSize(1)
 
 # ImageManip
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/image_manip/
 manip = pipeline.create(depthai.node.ImageManip)
 manip.inputConfig.setWaitForMessage(True)   # wait for both config and image
+# above you say the setWaitForMessage includes also waiting for image - might be true, but in my experience,
+# it's never a bad practice to set these explicitly, since you at least know exactly what is set (default values are hard to find in the doc)
+manip.inputImage.setWaitForMessage(True)
+manip.inputConfig.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
+manip.inputImage.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
+manip.inputConfig.setQueueSize(1)
+manip.inputImage.setQueueSize(1)
+manip.setMaxOutputFrameSize(NN_INPUT_SIZE_W * NN_INPUT_SIZE_H * 3)  # just to be sure you know what's actually output
 
 # YoloDetectionNetwork
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/yolo_detection_network/
@@ -64,27 +109,13 @@ nn_yolo.setNumClasses(1)
 nn_yolo.setCoordinateSize(4)
 nn_yolo.setIouThreshold(0.5)
 nn_yolo.setNumInferenceThreads(2)
-nn_yolo.input.setBlocking(False)
-
-# XLinkIn (camera control)
-# https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_in/
-cam_control = pipeline.create(depthai.node.XLinkIn)
-cam_control.setStreamName("cam_control")
+nn_yolo.input.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
+nn_yolo.input.setQueueSize(50)  # it can keep all the crops in a queue and unblock the image manip, that would be stuck on image.send()
 
 # XLinkOut (camera video)
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_out/
 xout_video = pipeline.create(depthai.node.XLinkOut)
 xout_video.setStreamName("video")
-
-# XLinkOut (camera still image)
-# https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_out/
-xout_still = pipeline.create(depthai.node.XLinkOut)
-xout_still.setStreamName("still")
-
-# XLinkOut (image manip cropped images)
-# https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_out/
-xout_crop = pipeline.create(depthai.node.XLinkOut)
-xout_crop.setStreamName("crop")
 
 # XLinkOut (NN output)
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/xlink_out/
@@ -93,27 +124,21 @@ xout_nn.setStreamName("nn")
 
 
 # LINKS
-# camera control -> camera
-cam_control.out.link(cam.inputControl)
-
-# camera (video) -> host
-cam.video.link(xout_video.input)
-# camera (still) -> host
-cam.still.link(xout_still.input)
-# camera (still) -> script
-cam.still.link(script.inputs['in_still'])
+# camera (preview) -> script
+cam.preview.link(script.inputs['in_preview'])
+# camera (preview) -> host
+cam.preview.link(xout_video.input)
 
 # script -> image manip (config)
 script.outputs['out_cfg'].link(manip.inputConfig)
 # script -> image manip (frame)
-script.outputs['out_still'].link(manip.inputImage)
+script.outputs['out_frame'].link(manip.inputImage)
 
 # image manip -> NN
 manip.out.link(nn_yolo.input)
 
 # NN -> out (host)
 nn_yolo.out.link(xout_nn.input)  # detections
-nn_yolo.passthrough.link(xout_crop.input)   # input image
 
 
 # ------------------
@@ -121,11 +146,11 @@ nn_yolo.passthrough.link(xout_crop.input)   # input image
 # ------------------
 with depthai.Device(pipeline) as device:
     # host-side output queues to access the produced results
-    controlQueue = device.getInputQueue("cam_control")
-    videoQueue = device.getOutputQueue("video")
-    stillQueue = device.getOutputQueue("still")
-    cropQueue = device.getOutputQueue("crop")
-    nnQueue = device.getOutputQueue("nn")
+    # maxSize = 15, or choose any high number
+    # blocking = False, to ensure the pipeline won't get stuck even if host does
+    #   - pipeline will keep sending messages, and they will get overwritten in this queue
+    videoQueue = device.getOutputQueue("video", maxSize=15, blocking=False)
+    nnQueue = device.getOutputQueue("nn", maxSize=15, blocking=False)
 
     
     # TODO: bound "scale" and "mean" to the number of cropped images
@@ -161,21 +186,19 @@ with depthai.Device(pipeline) as device:
 
     
     color_red = (0, 0, 255)
+    color_white = (255, 255, 255)
     # color_green = (0, 255, 0)
     # color_blue = (255, 0, 0)
 
-    yolo_frame = None
+    frame = None
     detections = []
+    startTime = time.monotonic()
+    counter = 0
 
     while True:
-        # process video input from camera (if any)
-        vidFrames = videoQueue.tryGetAll()
-        for vidFrame in vidFrames:
-            cv2.imshow("Video", vidFrame.getCvFrame())
-
-        # process image input from camera (if any)
-        if cropQueue.has() and nnQueue.has() and stillQueue.has():
-            still_frame = stillQueue.get().getCvFrame()
+        # process input from camera (if any)
+        if videoQueue.has() and nnQueue.has():      # sync video and NN
+            frame = videoQueue.get().getCvFrame()
 
             bboxes = []
             confidences = []
@@ -185,19 +208,20 @@ with depthai.Device(pipeline) as device:
 
             # process results from all cropped images
             for i in range(NUMBER_OF_CROPPED_IMAGES):
-                # get the cropped image + the corresponding detections
-                yolo_frame = cropQueue.get().getCvFrame()
-                detections = nnQueue.get().detections
 
+                # get the corresponding detections
+                detections = nnQueue.get().detections
+                counter += 1    # FPS will be per cropped frame
+            
                 # calculate coordinates of each detection wrt the original frame
                 for detection in detections:
-                    # transform the bounding box from the detections space <0..1> to the yolo_frame space
+                    # transform the bounding box from the detections space <0..1> to the yolo frame space
                     bbox_detection = (detection.xmin, detection.ymin, detection.xmax, detection.ymax)
-                    bbox_yolo_frame = transform_coords(np.array([1,1]), wh_from_frame(yolo_frame), bbox_detection)
-                    
-                    # transform the bounding box from the yolo_frame space to the coordinates in the original image
-                    bbox = transform_coords(wh_from_frame(yolo_frame), wh_from_frame(still_frame, CROP_FACTOR), bbox_yolo_frame, wh_from_frame(still_frame, crop_vals[i]))
+                    bbox_yolo_frame = transform_coords(np.array([1,1]), np.array([NN_INPUT_SIZE_W,NN_INPUT_SIZE_H]), bbox_detection)
 
+                    # transform the bounding box from the yolo frame space to the coordinates in the original image
+                    bbox = transform_coords(np.array([NN_INPUT_SIZE_W,NN_INPUT_SIZE_H]), wh_from_frame(frame, CROP_FACTOR), bbox_yolo_frame, wh_from_frame(frame, crop_vals[i]))
+                    
                     # save the final bounding box and confidence of the detection
                     bboxes.append(bbox.tolist())
                     confidences.append(detection.confidence)
@@ -211,22 +235,17 @@ with depthai.Device(pipeline) as device:
             # display and print info about each resulting bounding box
             for index in indices:
                 bbox = bboxes[index]
-                cv2.rectangle(still_frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color_red, 2)
-                cv2.putText(still_frame, f"{int(confidences[index] * 100)}%", (bbox[0] + 10, bbox[1] + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
+                cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color_red, 2)
+                cv2.putText(frame, f"{int(confidences[index] * 100)}%", (bbox[0] + 10, bbox[1] + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
 
                 print(f"QR code detected: coordinates: {bbox}, confidence: {confidences[index] * 100:.2f}%")            
 
             # display the original frame
-            cv2.imshow("Still", still_frame)
-        
+            cv2.putText(frame, "NN fps: {:.2f}".format(counter / (time.monotonic() - startTime)), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color_white)
+            cv2.imshow("Video", frame)
 
         # keyboard controls
         key = cv2.waitKey(1)
         # terminate the program when "q" is pressed
         if key == ord("q"):
             break
-        # create a screenshot when "c" is pressed
-        elif key == ord("c"):
-            ctrl = depthai.CameraControl()
-            ctrl.setCaptureStill(True)
-            controlQueue.send(ctrl)
