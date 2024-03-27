@@ -2,6 +2,7 @@ import cv2
 import depthai
 import numpy as np
 import time
+import zxingcpp
 
 from datetime import datetime
 from pathlib import Path
@@ -10,6 +11,7 @@ from pathlib import Path
 NN_INPUT_SIZE_W = 512
 NN_INPUT_SIZE_H = 288
 
+CONFIDENCE_THRESHOLD = 0.2
 
 # ---------------------
 #  PIPELINE DEFINITION
@@ -23,7 +25,8 @@ pipeline = depthai.Pipeline()
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/color_camera/
 cam = pipeline.create(depthai.node.ColorCamera)
 cam.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
-cam.setPreviewSize(960,540)     # (1920,1080) / 2
+# cam.setPreviewSize(960,540)     # (1920,1080) / 2
+cam.setPreviewSize(1920,1080)
 
 # Script
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/script/
@@ -105,7 +108,7 @@ manip.setMaxOutputFrameSize(NN_INPUT_SIZE_W * NN_INPUT_SIZE_H * 3)  # just to be
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/yolo_detection_network/
 nn_yolo = pipeline.create(depthai.node.YoloDetectionNetwork)
 nn_yolo.setBlobPath(str((Path(__file__).parent / Path('qr_model_512x288_rvc2_openvino_2022.1_6shave.blob')).resolve().absolute()))
-nn_yolo.setConfidenceThreshold(0.1)
+nn_yolo.setConfidenceThreshold(CONFIDENCE_THRESHOLD)
 nn_yolo.setNumClasses(1)
 nn_yolo.setCoordinateSize(4)
 nn_yolo.setIouThreshold(0.5)
@@ -163,6 +166,8 @@ with depthai.Device(pipeline) as device:
     
     # scale_factor can be scalar (= same for both x,y) or vector [scale_x, scale_y]
     def wh_from_frame(frame, scale_factor = 1):
+        # CONSIDER: is this flipping a good idea? it seems confusing when indexing frames (CV images)
+        # which use "matrix" indexing - i,j (height, width)
         wh = np.flip(frame.shape[0:-1])     # order of coordinates: x, y (width, height)
         return wh * np.array(scale_factor)
 
@@ -182,7 +187,12 @@ with depthai.Device(pipeline) as device:
         if np.ndim(M) > 0:
             M = np.tile(M, 2)  
 
-        return (bbox * S + M).astype(int)
+        res = bbox * S + M
+
+        # clip the result to get rid of negative numbers that might occur
+        np.clip(res, a_min=0, a_max=None, out=res)  # in-place clipping
+
+        return res.astype(int)
 
 
     
@@ -190,6 +200,10 @@ with depthai.Device(pipeline) as device:
     color_white = (255, 255, 255)
     # color_green = (0, 255, 0)
     # color_blue = (255, 0, 0)
+
+    # a border to keep around each detected code - decoding is hard(er) to impossible without a border.
+    # 10 px seems to work well
+    BORDER_SIZE = 10
 
     frame = None
     detections = []
@@ -204,15 +218,18 @@ with depthai.Device(pipeline) as device:
             bboxes = []
             confidences = []
 
-            # if any QR codes were detected, display the image and highlight the codes with rectangles.
-            # If not, just display the image.
+            # If any codes were detected, display the image, highlight the codes with rectangles,
+            # display the decoded text (if available) above the highlighting rectangle,
+            # and print the relevant info to the output.
+            # Note: the highlighted rectangles include an (additional) border necessary for code decoding.
+            # If no codes were detected, just display the image.
 
             # process results from all cropped images
             for i in range(NUMBER_OF_CROPPED_IMAGES):
 
                 # get the corresponding detections
                 detections = nnQueue.get().detections
-                counter += 1    # FPS will be per cropped frame
+                counter += 1    # FPS will be counted per cropped frame
             
                 # calculate coordinates of each detection wrt the original frame
                 for detection in detections:
@@ -226,26 +243,53 @@ with depthai.Device(pipeline) as device:
                     # save the final bounding box and confidence of the detection
                     bboxes.append(bbox.tolist())
                     confidences.append(detection.confidence)
+
                     
             # calculate NMS over all detected bounding boxes
-            confidence_threshold = 0.1  # generally should match yolo's confidence_threshold
+            confidence_threshold = CONFIDENCE_THRESHOLD     # generally should match yolo's confidence_threshold
             overlap_threshold = 0.01
             nmsboxes = [(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]) for bbox in bboxes]
             indices = cv2.dnn.NMSBoxes(nmsboxes, confidences, confidence_threshold, overlap_threshold)
             
-            # display and print info about each resulting bounding box
+            # display and print info about each resulting code and try to decode it. 
+            # If successful, display and print the decoded text as well.
             for index in indices:
                 bbox = bboxes[index]
-                cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color_red, 2)
-                cv2.putText(frame, f"{int(confidences[index] * 100)}%", (bbox[0] + 10, bbox[1] + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
+                # cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color_red, 2)
+                # cv2.putText(frame, f"{int(confidences[index] * 100)}%", (bbox[0] + 10, bbox[1] + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
 
                 timestamp = datetime.now().strftime("%T.%f")
 
-                print(f"{timestamp} QR code detected: coordinates: {bbox}, confidence: {confidences[index] * 100:.2f}%")
+                print(f"{timestamp} Code detected: coordinates: {bbox}, confidence: {confidences[index] * 100:.2f}%")
+                
+                # QR decoding
+                
+                # make sure the selection dims won't exceed the frame dims
+                x_from = max((bbox[0] - BORDER_SIZE), 0)
+                x_to = min((bbox[2] + BORDER_SIZE), np.shape(frame)[1])
+                y_from = max((bbox[1] - BORDER_SIZE), 0)
+                y_to = min((bbox[3] + BORDER_SIZE), np.shape(frame)[0])
+                channel = 0     # blue channel is enough
 
-            # display the original frame
+                # highlight the detected code in the video frame
+                cv2.rectangle(frame, (x_from, y_from), (x_to, y_to), color_red, 2)
+
+                # selection - detected code with a border
+                detected_code = frame[y_from:y_to, x_from:x_to, channel]
+                
+                # try to decode it
+                decoded_codes = zxingcpp.read_barcodes(detected_code)
+                for code in decoded_codes:
+                    timestamp = datetime.now().strftime("%T.%f")
+                    print(f'{timestamp} Code decoded: "{code.text}"')
+                    
+                    cv2.putText(frame, f"{code.text}", (bbox[0] + 10, bbox[1] - 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
+
+
+            # display the video frame
             cv2.putText(frame, "NN fps: {:.2f}".format(counter / (time.monotonic() - startTime)), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color_white)
             cv2.imshow("Video", frame)
+
 
         # keyboard controls
         key = cv2.waitKey(1)
