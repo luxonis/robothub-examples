@@ -31,7 +31,7 @@ a {
 
 .button-group {
     width: 100%;
-    max-width: 600px; /* Ensure buttons group width is controlled */
+    /* max-width: 600px; */
     display: flex;
     justify-content: center; /* Evenly space the buttons */
     flex-wrap: wrap; /* Allow buttons to wrap in smaller screens */
