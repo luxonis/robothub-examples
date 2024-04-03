@@ -13,6 +13,10 @@ NN_INPUT_SIZE_H = 288
 
 CONFIDENCE_THRESHOLD = 0.2
 
+NUMBER_OF_CROPPED_IMAGES = 9
+crop_vals = [(0.0, 0.0), (0.0, 0.3), (0.0, 0.6), (0.3, 0.0), (0.3, 0.3), (0.3, 0.6), (0.6, 0.0), (0.6, 0.3), (0.6, 0.6)]
+
+
 # ---------------------
 #  PIPELINE DEFINITION
 # ---------------------
@@ -25,84 +29,71 @@ pipeline = depthai.Pipeline()
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/color_camera/
 cam = pipeline.create(depthai.node.ColorCamera)
 cam.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
-# cam.setPreviewSize(960,540)     # (1920,1080) / 2
+cam.setColorOrder(depthai.ColorCameraProperties.ColorOrder.BGR)
+cam.setInterleaved(False)
 cam.setPreviewSize(1920,1080)
 
 # Script
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/script/
 script = pipeline.create(depthai.node.Script)
-# split the image from the camera into 9 tiles, save the values to a config and send it
-# to the ImageManip together with the image to handle the actual cropping and resizing
+# wait for the output of the corresponding image manip and send it to the NN,
+# making sure the frames are passed in the right order
 script.setScript("""
     import time
-
-    NN_INPUT_SIZE_W = 512
-    NN_INPUT_SIZE_H = 288
-                 
-    crop_vals = [(0.0, 0.0), (0.0, 0.3), (0.0, 0.6), (0.3, 0.0), (0.3, 0.3), (0.3, 0.6), (0.6, 0.0), (0.6, 0.3), (0.6, 0.6)]
     
-    step = 0.4
-                 
+    NUMBER_OF_CROPPED_IMAGES = 9
+
     while True:
-        time_report = {}
         start = time.perf_counter()
-        frame = node.io['in_preview'].get()
-        time_report['img'] = time.perf_counter() - start
-
-        start_loop = time.perf_counter()
-        time_report['dets'] = []
-        for val in crop_vals:
-            start_det = time.perf_counter()
-            xmin = val[0]
-            ymin = val[1]
-            xmax = xmin + step
-            ymax = ymin + step
-
-            config = ImageManipConfig()
-            config.setFrameType(ImgFrame.Type.BGR888p)
-            config.setCropRect(xmin, ymin, xmax, ymax)
-            config.setResize(NN_INPUT_SIZE_W, NN_INPUT_SIZE_H)
-
-            node.io['out_cfg'].send(config)
+        for i in range(NUMBER_OF_CROPPED_IMAGES):
+            input_name = f"in_im{i}"
+            frame = node.io[input_name].get()
             node.io['out_frame'].send(frame)
-            time_report['dets'].append(time.perf_counter() - start_det)
-        time_report['det_loop'] = time.perf_counter() - start_loop
-
-        min_, max_, sum_ = None, None, 0.
-        for i, det in enumerate(time_report['dets']):
-            if min_ is None or det < min_[0]:
-                min_ = (det, i)
-            if max_ is None or det > max_[0]:
-                max_ = (det, i)
-            sum_ += det
-        node.warn(
-            f"img: {time_report['img']:.5f}, "
-            f"dets: ("
-            f"loop: {time_report['det_loop']:.5f}, "
-            f"avg: {sum_ / 9.:.5f}, "
-            f"min: ({min_[0]:.5f}, {min_[1]})"
-            f"max: ({max_[0]:.5f}, {max_[1]})"
-            f")"
-        )
+        elapsed = time.perf_counter() - start
+        node.warn(f"Time elapsed: {elapsed:.5f} s")
 """)
 
-script.inputs["in_preview"].setBlocking(True)  # for safe measure
-# always set queue size 1, if you can - in this case, if script node is slower than the fps, there is no use
-# for sending another images to the script node
-script.inputs["in_preview"].setQueueSize(1)
 
-# ImageManip
+# ImageManip nodes with corresponding configs
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/image_manip/
-manip = pipeline.create(depthai.node.ImageManip)
-manip.inputConfig.setWaitForMessage(True)   # wait for both config and image
-# above you say the setWaitForMessage includes also waiting for image - might be true, but in my experience,
-# it's never a bad practice to set these explicitly, since you at least know exactly what is set (default values are hard to find in the doc)
-manip.inputImage.setWaitForMessage(True)
-manip.inputConfig.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
-manip.inputImage.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
-manip.inputConfig.setQueueSize(1)
-manip.inputImage.setQueueSize(1)
-manip.setMaxOutputFrameSize(NN_INPUT_SIZE_W * NN_INPUT_SIZE_H * 3)  # just to be sure you know what's actually output
+def create_image_manip(crop):
+    # create the node
+    manip = pipeline.create(depthai.node.ImageManip)
+    
+    # default config values
+    manip.initialConfig.setFrameType(depthai.ImgFrame.Type.BGR888p)
+    manip.initialConfig.setResize(NN_INPUT_SIZE_W, NN_INPUT_SIZE_H)
+    step = 0.4
+    xmin = crop[0]
+    ymin = crop[1]
+    xmax = xmin + step
+    ymax = ymin + step
+    manip.initialConfig.setCropRect(xmin, ymin, xmax, ymax)
+    
+    # input image settings
+    manip.inputImage.setWaitForMessage(True)
+    manip.inputImage.setBlocking(True)
+    manip.inputImage.setQueueSize(1)
+    manip.setMaxOutputFrameSize(NN_INPUT_SIZE_W * NN_INPUT_SIZE_H * 3)
+
+    return manip
+
+# connect the camera preview to each image manip's input,
+# connect each image manip's output to the Script node's input
+for i in range(NUMBER_OF_CROPPED_IMAGES):
+    im = create_image_manip(crop_vals[i])
+    
+    # camera (preview) > image manip
+    cam.preview.link(im.inputImage)
+
+    # image manip > script
+    input_name = f"in_im{i}"
+    im.out.link(script.inputs[input_name])
+
+    # script input settings
+    script.inputs[input_name].setBlocking(True)
+    script.inputs[input_name].setQueueSize(1)
+
 
 # YoloDetectionNetwork
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/yolo_detection_network/
@@ -128,18 +119,11 @@ xout_nn.setStreamName("nn")
 
 
 # LINKS
-# camera (preview) -> script
-cam.preview.link(script.inputs['in_preview'])
 # camera (preview) -> host
 cam.preview.link(xout_video.input)
 
-# script -> image manip (config)
-script.outputs['out_cfg'].link(manip.inputConfig)
-# script -> image manip (frame)
-script.outputs['out_frame'].link(manip.inputImage)
-
-# image manip -> NN
-manip.out.link(nn_yolo.input)
+# script -> NN
+script.outputs['out_frame'].link(nn_yolo.input)
 
 # NN -> out (host)
 nn_yolo.out.link(xout_nn.input)  # detections
@@ -158,11 +142,9 @@ with depthai.Device(pipeline) as device:
 
     
     # TODO: bound "scale" and "mean" to the number of cropped images
-
-    crop_vals = [(0.0, 0.0), (0.0, 0.3), (0.0, 0.6), (0.3, 0.0), (0.3, 0.3), (0.3, 0.6), (0.6, 0.0), (0.6, 0.3), (0.6, 0.6)]
+  
     CROP_FACTOR = 0.4   # corresponds to "step" in the Script node
-    NUMBER_OF_CROPPED_IMAGES = 9    # corresponds to the number of cropped images created by the Script node
-    
+
     
     # scale_factor can be scalar (= same for both x,y) or vector [scale_x, scale_y]
     def wh_from_frame(frame, scale_factor = 1):
