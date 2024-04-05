@@ -1,3 +1,4 @@
+import csv
 import cv2
 import depthai
 import numpy as np
@@ -7,6 +8,9 @@ import zxingcpp
 from datetime import datetime
 from pathlib import Path
 
+
+OUTPUT_TO_FILE = False
+OUTPUT_FILENAME = "results.txt"
 
 NN_INPUT_SIZE_W = 512
 NN_INPUT_SIZE_H = 288
@@ -174,7 +178,6 @@ with depthai.Device(pipeline) as device:
         return res.astype(int)
 
 
-    
     color_red = (0, 0, 255)
     color_white = (255, 255, 255)
     # color_green = (0, 255, 0)
@@ -188,6 +191,18 @@ with depthai.Device(pipeline) as device:
     detections = []
     startTime = time.monotonic()
     counter = 0
+
+    if OUTPUT_TO_FILE:
+        # write the results to a csv file
+        f = open(OUTPUT_FILENAME, "w", encoding="utf-8")
+        header = ["timestamp", "bbox_xmin", "bbox_ymin", "bbox_xmax", "bbox_ymax", "confidence", "decoded", "type"]
+        writer = csv.DictWriter(f, fieldnames=header, restval="null")
+        try:
+            writer.writeheader()
+        except Exception as e:
+            f.close()
+            raise Exception(e)
+
 
     while True:
         # process input from camera (if any)
@@ -236,10 +251,21 @@ with depthai.Device(pipeline) as device:
             # cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color_red, 2)
             # cv2.putText(frame, f"{int(confidences[index] * 100)}%", (bbox[0] + 10, bbox[1] + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
 
-            timestamp = datetime.now().strftime("%T.%f")
+            t_detected = datetime.now()
 
-            print(f"{timestamp} Code detected: coordinates: {bbox}, confidence: {confidences[index] * 100:.2f}%")
-            
+            print(f"{t_detected} Code detected: coordinates: {bbox}, confidence: {confidences[index] * 100:.2f}%")
+
+            if OUTPUT_TO_FILE:
+                # gather data to write to a csv file
+                result = {
+                    "timestamp": t_detected, 
+                    "bbox_xmin": bbox[0], 
+                    "bbox_ymin": bbox[1], 
+                    "bbox_xmax": bbox[2], 
+                    "bbox_ymax": bbox[3], 
+                    "confidence": confidences[index]
+                    }
+
             # QR decoding
             
             # make sure the selection dims won't exceed the frame dims
@@ -258,10 +284,27 @@ with depthai.Device(pipeline) as device:
             # try to decode it
             decoded_codes = zxingcpp.read_barcodes(detected_code)
             for code in decoded_codes:
-                timestamp = datetime.now().strftime("%T.%f")
-                print(f'{timestamp} Code decoded: "{code.text}"')
-                
+                t_decoded = datetime.now()
+                print(f'{t_decoded} Code decoded: "{code.text}"')
+
                 cv2.putText(frame, f"{code.text}", (bbox[0] + 10, bbox[1] - 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
+
+                if OUTPUT_TO_FILE:
+                    # gather data to write to a csv file
+                    # FIXME: since we are sending detected codes one by one, the 'decoded_codes' list should contain 0 or 1 elements.
+                    # We only get here if it contains anything at all, i.e. 1 element, thus it's OK to append the results like this,
+                    # but it should be done in a more robust way in the future
+                    result["decoded"] = code.text
+                    result["type"] = code.format
+
+
+            if OUTPUT_TO_FILE:
+                # write results to a csv file
+                try:
+                    writer.writerow(result)
+                except Exception as e:
+                    f.close()
+                    raise Exception(e)
 
 
         # display the video frame
@@ -273,4 +316,7 @@ with depthai.Device(pipeline) as device:
         key = cv2.waitKey(1)
         # terminate the program when "q" is pressed
         if key == ord("q"):
+            if OUTPUT_TO_FILE:
+                # close the csv file
+                f.close()
             break
