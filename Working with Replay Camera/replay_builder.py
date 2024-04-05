@@ -82,10 +82,9 @@ class Application(rh.BaseDepthAIApplication):
                 if frame is not None:
                     cv2.imshow("frame", frame)
 
-                key = cv2.waitKey(1)
-
-                if key == ord("q"):
-                    exit(0)
+            key = cv2.waitKey(1)
+            if key == ord("q"):
+                exit(0)
 
             time.sleep(0.001)
 

@@ -80,18 +80,17 @@ class Application(rh.BaseDepthAIApplication):
                 if frame is not None:
                     cv2.imshow("frame", frame)
 
-                key = cv2.waitKey(1)
-
-                if key == ord("q"):
-                    exit(0)
-                if key == ord("d"):
-                    capture_manager.next_frame()
-                if key == ord("a"):
-                    capture_manager.prev_frame()
-                if key == ord("r"):
-                    capture_manager.jump_to_frame(0)
-                if key == ord("p"):
-                    capture_manager.toggle_pause()
+            key = cv2.waitKey(1)
+            if key == ord("q"):
+                exit(0)
+            if key == ord("d"):
+                capture_manager.next_frame()
+            if key == ord("a"):
+                capture_manager.prev_frame()
+            if key == ord("r"):
+                capture_manager.jump_to_frame(0)
+            if key == ord("p"):
+                capture_manager.toggle_pause()
 
             time.sleep(0.001)
 
