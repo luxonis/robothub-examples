@@ -1,0 +1,9 @@
+[[configuration]]
+key = "fps"
+label = "cameras fps"
+field = "num_range"
+step = 1
+min = 1
+max = 60
+initial_value = 5
+
