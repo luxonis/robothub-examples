@@ -7,6 +7,12 @@ import robothub as rh
 
 def create_pipeline(pipeline: dai.Pipeline):
     rgb_sensor: dai.node.ColorCamera = create_rgb_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
+    create_camera_control_queue(pipeline=pipeline, node=rgb_sensor, name="rgb_control")
+
+    if rh.CONFIGURATION["enable_manual_exposure"]:
+        rgb_sensor.initialControl.setManualExposure(rh.CONFIGURATION["manual_exposure"], rh.CONFIGURATION["manual_iso"])
+    if rh.CONFIGURATION["manual_focus"] > 0:
+        rgb_sensor.initialControl.setManualFocus(rh.CONFIGURATION["manual_focus"])
 
     main_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"], input_node=rgb_sensor.video)
     main_mjpeg_encoder = create_mjpeg_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"], input_node=rgb_sensor.video)
@@ -64,6 +70,14 @@ def create_mjpeg_encoder(pipeline: dai.Pipeline, fps: int, input_node: dai.Node.
     encoder.setDefaultProfilePreset(fps, encoder_profile)
     input_node.link(encoder.input)
     return encoder
+
+
+def create_camera_control_queue(pipeline: dai.Pipeline, node, name: str):
+    cam_control = pipeline.createXLinkIn()
+    cam_control.setMaxDataSize(1)
+    cam_control.setNumFrames(1)
+    cam_control.setStreamName(name)
+    cam_control.out.link(node.inputControl)
 
 
 if __name__ == "__main__":

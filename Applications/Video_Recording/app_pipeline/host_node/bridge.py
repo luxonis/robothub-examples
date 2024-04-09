@@ -1,3 +1,4 @@
+import logging as log
 import threading
 import time
 
@@ -16,10 +17,16 @@ class Bridge(host_node.BaseNode):
         self.__bridges.append(self)
 
     @classmethod
-    def run(cls):
-        while rh.app_is_running():
+    def run(cls, device_stop_event: threading.Event):
+        while rh.app_is_running() and not device_stop_event.is_set():
             for bridge in cls.__bridges:
-                bridge._poll()
+                try:
+                    bridge._poll()
+                except RuntimeError as e:
+                    log.error(f'Bridge poll failed with error: {e}')
+                    device_stop_event.set()
+                    cls.__bridges.clear()
+                    break
             time.sleep(0.001)
 
     def _poll(self):

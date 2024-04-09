@@ -1,9 +1,10 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 import depthai as dai
 import robothub as rh
 from app_pipeline import host_node
+from app_pipeline.messages import ControlMessage
 
 
 class ImageEvent(host_node.BaseNode):
@@ -13,9 +14,10 @@ class ImageEvent(host_node.BaseNode):
         input_node.set_callback(callback=self.__callback)
         self._last_frame: Optional[dai.ImgFrame] = None
 
-    def __callback(self, frame_mjpeg: dai.ImgFrame) -> None:
-        self._last_frame = frame_mjpeg
+    def __callback(self, message: Union[dai.ImgFrame, ControlMessage]) -> None:
+        self._last_frame = message.getCvFrame()
+        self.send_image()
 
     def send_image(self) -> None:
-        rh.send_image_event(image=self._last_frame.getCvFrame(), title=f"Image event {datetime.now().strftime('%Y-%m-%d %H')}",
+        rh.send_image_event(image=self._last_frame, title=f"Image event {datetime.now().strftime('%Y-%m-%d %H')}",
                             tags=["image_event"])

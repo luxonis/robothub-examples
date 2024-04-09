@@ -25,9 +25,9 @@ class VideoEvent(host_node.BaseNode):
     def save_video(self, data: list[dai.ImgFrame]) -> Optional[io.BytesIO]:
         print(f"Saving video...")
         length = len(data)
-        minimum_length = rh.CONFIGURATION["fps"] * 5
+        minimum_length = rh.CONFIGURATION["fps"] * 2
         if length < minimum_length:
-            log.error(f"Video buffer is too short: {length} seconds. Minimum length: {minimum_length} seconds")
+            log.error(f"Video buffer is too short: {length / rh.CONFIGURATION['fps']} seconds. Minimum length: 2 seconds")
             return None
 
         save_start = time.monotonic()

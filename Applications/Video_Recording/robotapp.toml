@@ -42,3 +42,67 @@ key = "flip_camera"
 label = "Flip Camera 180 deg"
 field = "boolean"
 initial_value = false
+
+[[configuration]]
+key = "enable_manual_exposure"
+label = "Enable Manual Exposure and ISO"
+field = "boolean"
+initial_value = false
+
+[[configuration]]
+key = "manual_exposure"
+label = "Manual Exposure (microseconds)"
+field = "num_range"
+step = 125
+min = 100
+max = 30000
+initial_value = 20000
+
+[[configuration]]
+key = "manual_iso"
+label = "Manual ISO"
+field = "num_range"
+step = 25
+min = 100
+max = 1600
+initial_value = 500
+
+[[configuration]]
+key = "manual_focus"
+label = "Manual Focus (0 = AUTO)"
+field = "num_range"
+step = 1
+min = 0
+max = 255
+initial_value = 0
+
+[[configuration]]
+visual = "section"
+title = "App config"
+
+[[configuration]]
+key = "video_buffer_size_minutes"
+label = "Regular Video Event Length (minutes)"
+field = "num_range"
+step = 1
+min = 1
+max = 10
+initial_value = 4
+
+[[configuration]]
+key = "video_event_frequency_minutes"
+label = "Regular Video Event Frequency (minutes)"
+field = "num_range"
+step = 2
+min = 2
+max = 60
+initial_value = 20
+
+[[configuration]]
+key = "image_event_frequency_minutes"
+label = "Regular Image Event Frequency (minutes)"
+field = "num_range"
+step = 1
+min = 1
+max = 60
+initial_value = 2
