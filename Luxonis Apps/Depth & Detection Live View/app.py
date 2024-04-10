@@ -48,6 +48,6 @@ class Application(rh.BaseDepthAIApplication):
             time.sleep(0.01)
 
 
-if rh.LOCAL_DEV:
+if __name__ == "__main__":
     app = Application()
-    app.run()
+    app._run()

@@ -105,3 +105,8 @@ class Application(robothub_core.RobotHubApplication):
             except BaseException as e:
                 log.debug(f'Could not close device with error: {e}')
         log.info('App Stopped')
+
+
+if __name__ == "__main__":
+    app = Application()
+    app._run()

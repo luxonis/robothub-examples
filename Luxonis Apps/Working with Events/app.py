@@ -53,4 +53,4 @@ class Application(rh.BaseDepthAIApplication):
 
 if rh.LOCAL_DEV:
     app = Application()
-    app.run()
+    app._run()
