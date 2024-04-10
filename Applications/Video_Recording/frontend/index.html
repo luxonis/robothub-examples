@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Live View</title>
+    <link rel="stylesheet" href="./style.css"> <!-- Assuming basic styling is still desired -->
+    <link rel="stylesheet" href="./bootstrap.min.css" />
+</head>
+<body>
+    <div class="container">
+        <h1>Live Stream View</h1>
+        <div>
+            <rh-video id="stream" stream-key="color_stream"></rh-video> <!-- Live view component -->
+        </div>
+        <div class="button-group">
+            <button id="start-record" type="button">Start Record</button>
+            <button id="stop-record" type="button">Stop Record</button>
+            <button id="send-video-buffer" type="button">Send Video Last 5 minutes</button>
+            <button id="send-image-event" type="button">Send Image Event</button>
+        </div>
+    </div>
+
+    <script src="./simplified.js"></script> <!-- Script for button actions -->
+</body>
+</html>

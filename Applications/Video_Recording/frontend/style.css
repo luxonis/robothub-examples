@@ -1,0 +1,59 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+.actions {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+a {
+    font-size: 24px;
+}
+
+.selected {
+    text-decoration: underline;
+}
+
+.container{
+    text-align: center;
+    margin-top: auto;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.button-group {
+    width: 100%;
+    /* max-width: 600px; */
+    display: flex;
+    justify-content: center; /* Evenly space the buttons */
+    flex-wrap: wrap; /* Allow buttons to wrap in smaller screens */
+}
+
+button {
+    background-color: #007bff; /* Example styling for buttons */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 5px; /* Ensure some space around buttons */
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3; /* Darker shade for hover effect */
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
