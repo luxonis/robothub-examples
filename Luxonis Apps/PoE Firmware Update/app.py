@@ -109,4 +109,4 @@ class Application(robothub_core.RobotHubApplication):
 
 if __name__ == "__main__":
     app = Application()
-    app._run()
+    app.run()

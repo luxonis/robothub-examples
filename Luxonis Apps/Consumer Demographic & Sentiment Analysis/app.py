@@ -79,4 +79,4 @@ class CounterApp(BaseDepthAIApplication):
 
 if __name__ == "__main__":
     app = CounterApp()
-    app._run()
+    app.run()

@@ -50,4 +50,4 @@ class Application(rh.BaseDepthAIApplication):
 
 if __name__ == "__main__":
     app = Application()
-    app._run()
+    app.run()
