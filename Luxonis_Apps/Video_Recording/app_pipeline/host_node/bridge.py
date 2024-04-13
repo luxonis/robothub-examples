@@ -27,7 +27,7 @@ class Bridge(host_node.BaseNode):
                     device_stop_event.set()
                     cls.__bridges.clear()
                     break
-            time.sleep(0.001)
+            time.sleep(0.01)
 
     def _poll(self):
         message = self._get_depthai_message()

@@ -6,3 +6,4 @@ from app_pipeline.host_node.n_monitor import *
 from app_pipeline.host_node.n_video_buffer import *
 from app_pipeline.host_node.n__video_event import *
 from app_pipeline.host_node.regular_event import *
+from app_pipeline.host_node.trigger import *

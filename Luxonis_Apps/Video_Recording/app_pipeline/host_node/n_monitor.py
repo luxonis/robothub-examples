@@ -19,16 +19,16 @@ class Monitor(host_node.BaseNode):
     def __callback(self, message: dai.ImgFrame):
         rec_duration = self._recording_duration.seconds_elapsed()
         text = f"Rec: {'ON' if self._recording_on else 'OFF'}, Rec. duration: {rec_duration:.1f} seconds"
-        size = 4 if rh.CONFIGURATION["resolution"] == "4k" else 2
+        size = 4 if rh.CONFIGURATION["video_resolution"] == "4k" else 2
         self.main_live_view.add_text(text=text, coords=(80, 80), background_color=(0, 0, 0), background_transparency=0.8, size=size)
         self.main_live_view.publish(h264_frame=message.getCvFrame())
 
     @staticmethod
     def _get_width_height():
-        width_mapping = {"4k": 3840, "1080p": 1920, "720p": 1280}
-        height_mapping = {"4k": 2160, "1080p": 1080, "720p": 720}
-        rh.CONFIGURATION["image_width"] = width_mapping[rh.CONFIGURATION["resolution"]]
-        rh.CONFIGURATION["image_height"] = height_mapping[rh.CONFIGURATION["resolution"]]
+        width_mapping = {"4k": 3840, "1080p": 1920, "720p": 1280, "4000x3000": 4000, "5312x6000": 5312}
+        height_mapping = {"4k": 2160, "1080p": 1080, "720p": 720, "4000x3000": 3000, "5312x6000": 6000}
+        rh.CONFIGURATION["image_width"] = width_mapping[rh.CONFIGURATION["video_resolution"]]
+        rh.CONFIGURATION["image_height"] = height_mapping[rh.CONFIGURATION["video_resolution"]]
 
     def toggle_recording_on(self):
         self._recording_on = True

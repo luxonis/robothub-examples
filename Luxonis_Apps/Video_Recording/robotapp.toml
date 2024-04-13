@@ -27,8 +27,23 @@ initial_value = 20
 
 [[configuration]]
 field = "choice"
-key = "resolution"
-label = "Resolution"
+key = "image_resolution"
+label = "Image Resolution"
+style = "radio"
+allow_multiple = false
+options = [
+  { key = "720p", label = "720p" },
+  { key = "1080p", label = "1080p", default=true },
+  { key = "4k", label = "4k" },
+  { key = "4000x3000", label = "4000x3000" },
+  { key = "5312x6000", label = "5312x6000" },
+  { key = "48MP", label = "48MO" }
+]
+
+[[configuration]]
+field = "choice"
+key = "video_resolution"
+label = "Video Resolution"
 style = "radio"
 allow_multiple = false
 options = [
@@ -36,6 +51,12 @@ options = [
   { key = "1080p", label = "1080p", default=true },
   { key = "4k", label = "4k" },
 ]
+
+[[configuration]]
+key = "enable_jpeg_encoding_images"
+label = "Enable On Device image encoding"
+field = "boolean"
+initial_value = false
 
 [[configuration]]
 key = "flip_camera"
@@ -102,7 +123,7 @@ initial_value = 20
 key = "image_event_frequency_minutes"
 label = "Regular Image Event Frequency (minutes)"
 field = "num_range"
-step = 1
-min = 1
+step = 0.1
+min = 0.5
 max = 60
 initial_value = 2
