@@ -127,10 +127,14 @@ class Application(rh.BaseDepthAIApplication):
                 bbox, text, conf = res
                 if conf > RECOGNITION_CONF_THRESHOLD:
                     bbox_formatted = bbox[0] + bbox[2]
+                    bbox_formatted = [int(i) for i in bbox_formatted]
 
                     live_view.add_rectangle(bbox_formatted, "")
                     live_view.add_text(
-                        text.upper(), (bbox[0][0], bbox[0][1] - 3), 1, (255, 255, 255)
+                        text.upper(),
+                        (bbox_formatted[0], bbox_formatted[1] - 3),
+                        1,
+                        (255, 255, 255),
                     )
 
             live_view.publish(h264_packet.getCvFrame())
