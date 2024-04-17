@@ -10,7 +10,7 @@ workdir = "/app"
 
 [runtime.runs_on]
 type = "image"
-name = "ghcr.io/luxonis/robothub-app-v2:2024.087.1457-rvc2-regular"
+name = "ghcr.io/luxonis/ocr-reader:17-04-2024"
 
 [[configuration]]
 label = "FPS"
