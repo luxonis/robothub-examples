@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Reader</title>
+    <link rel="stylesheet" href="./index.css">
+    <script src="./index.js" defer></script>
+</head>
+
+
+
+<body>
+    <main class="main-container">
+        <div class="video-canvas-container">
+            <div class="video-stream-container" id="videoStreamContainer">
+                <rh-video stream-key="live_view" />
+            </div>
+            <canvas id="textDisplay"></canvas>
+        </div>
+        <h1>Search results</h1>
+        <ul id="resultList" class="result-list">
+            <h3 class="no-results">No results yet</h3>
+        </ul>
+    </main>
+</body>
+
+</html>

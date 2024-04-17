@@ -198,9 +198,14 @@ class Application(rh.BaseDepthAIApplication):
         for det in detections:
             bbox, text, conf = det
             bbox_formatted = bbox[0] + bbox[2]
-            bbox_formatted = [int(i) for i in bbox_formatted]
+            bbox_normalized = (
+                bbox_formatted[0] / CAM_SIZE[0],
+                bbox_formatted[1] / CAM_SIZE[1],
+                bbox_formatted[2] / CAM_SIZE[0],
+                bbox_formatted[3] / CAM_SIZE[1],
+            )
             serialized_detections["detections"].append(
-                {"text": text, "bbox": bbox_formatted}
+                {"text": text, "bbox": bbox_normalized}
             )
         rh.COMMUNICATOR.notify("text_detections", serialized_detections)
 
