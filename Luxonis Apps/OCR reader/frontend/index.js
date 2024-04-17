@@ -66,6 +66,7 @@ function createSearchResultElement(result) {
 const streamContainer = document.getElementById("videoStreamContainer");
 const textDisplay = document.getElementById("textDisplay");
 const resultList = document.getElementById("resultList");
+const statusBadge = document.getElementById("statusBadge");
 
 robothubApi.onNotificationWithKey("text_detections", (res) => {
     const streamWidth = streamContainer.clientWidth;
@@ -100,5 +101,17 @@ robothubApi.onNotificationWithKey("search_results", (res) => {
         } catch (err) {
             console.error(err);
         }
+    }
+});
+
+robothubApi.onNotificationWithKey("status_update", (res) => {
+    const status = res.payload.status;
+
+    if (status === "searching") {
+        statusBadge.className = "status searching";
+        statusBadge.innerText = "Searching...";
+    } else if (status === "finished_searching") {
+        statusBadge.className = "status found";
+        statusBadge.innerText = "Finished searching";
     }
 });

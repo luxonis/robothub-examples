@@ -8,6 +8,11 @@
     margin-right: auto;
 }
 
+.info-text {
+    max-width: 65ch;
+    margin-bottom: 1rem;
+}
+
 @media (min-width: 1024px) {
     .main-container {
         width: 100%;
@@ -20,6 +25,37 @@
     }
 }
 
+@media (min-width: 1536px) {
+    .main-container {
+        width: 60%;
+    }
+}
+
+.external-link {
+    text-decoration: underline;
+}
+
+.status {
+    align-self: end;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+}
+
+.status.idle {
+    background-color: #d1d5db;
+    color: #374151;
+}
+
+.status.searching {
+    background-color: #fde68a;
+    color: #b45309;
+}
+
+.status.found {
+    background-color: #a7f3d0;
+    color: #064e3b;
+}
+
 .video-canvas-container {
     display: flex;
     gap: 1rem;
@@ -28,8 +64,8 @@
 }
 
 .video-stream-container {
-    min-width: 30%;
-    aspect-ratio: 1;
+    min-width: 50%;
+    aspect-ratio: 1 / 1;
     background: black;
 }
 

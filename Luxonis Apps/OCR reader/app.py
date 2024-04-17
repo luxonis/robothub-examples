@@ -24,12 +24,14 @@ NN_SIZE = (256, 256)
 DETECTION_CONF_THRESHOLD = 0.5
 RECOGNITION_CONF_THRESHOLD = 0.7
 MIN_SEARCH_INTERVAL = timedelta(seconds=5)
+RESULT_LIMIT = 5
 CHAR_LIST = "#0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+# Open Library URLs
 OLIB_URL = "https://openlibrary.org"
 OLIB_COVER_URL = "https://covers.openlibrary.org"
 COVER_PLACEHOLDER_URL = "https://openlibrary.org/images/icons/avatar_book-sm.png"
 OLIB_SEARCH_URL = f"{OLIB_URL}/search.json"
-RESULT_LIMIT = 5
 
 
 class Application(rh.BaseDepthAIApplication):
@@ -126,6 +128,7 @@ class Application(rh.BaseDepthAIApplication):
         def _search_inner(query: str):
             log.info("Starting search")
             self.searching = True
+            rh.COMMUNICATOR.notify("status_update", {"status": "searching"})
             search_results = self.search_open_lib(query)
             if len(search_results) > 0:
                 log.info("Finished search, sending results")
@@ -135,6 +138,7 @@ class Application(rh.BaseDepthAIApplication):
                 )
             else:
                 log.info("Finished search, no results found")
+            rh.COMMUNICATOR.notify("status_update", {"status": "finished_searching"})
             self.searching = False
 
         # We use ThreadPoolExecutor to prevent blocking of the main thread, which would
