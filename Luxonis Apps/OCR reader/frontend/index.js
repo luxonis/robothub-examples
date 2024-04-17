@@ -67,14 +67,17 @@ const streamContainer = document.getElementById("videoStreamContainer");
 const textDisplay = document.getElementById("textDisplay");
 const resultList = document.getElementById("resultList");
 const statusBadge = document.getElementById("statusBadge");
+const ctx = textDisplay.getContext("2d");
+textDisplay.width = streamContainer.clientWidth;
+textDisplay.height = streamContainer.clientHeight;
+ctx.fillStyle = "black";
+ctx.fillRect(0, 0, textDisplay.width, textDisplay.height);
 
 robothubApi.onNotificationWithKey("text_detections", (res) => {
     const streamWidth = streamContainer.clientWidth;
     const streamHeight = streamContainer.clientHeight;
     textDisplay.width = streamWidth;
     textDisplay.height = streamHeight;
-
-    const ctx = textDisplay.getContext("2d");
 
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, textDisplay.width, textDisplay.height);
