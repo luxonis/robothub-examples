@@ -20,7 +20,7 @@ class Application(rh.BaseDepthAIApplication):
 
     def __init__(self):
         super().__init__()
-        self.detection_view = rh.DepthaiLiveView(name="detection_view", unique_key="rgb", width=1920, height=1080)
+        self.detection_view = rh.DepthaiLiveView(name="detection_view", unique_key="rgb_stream", width=1920, height=1080)
         self.event_handler = EventHandler()
 
     def setup_pipeline(self) -> dai.Pipeline:

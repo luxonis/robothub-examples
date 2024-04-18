@@ -10,7 +10,7 @@ workdir = "/app"
 
 [runtime.runs_on]
 type = "image"
-name = "ghcr.io/luxonis/rh_runtime_ces_app:main"
+name = "ghcr.io/luxonis/dempgraphic_sentiment_app:v1.0.0"
 
 #[runtime.runs_on]
 #type = "custom"

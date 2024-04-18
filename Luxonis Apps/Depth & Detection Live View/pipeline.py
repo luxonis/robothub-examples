@@ -6,30 +6,18 @@ from depthai_sdk.components.nn_helper import Path
 import robothub as rh
 
 
-def create_pipeline(pipeline: dai.Pipeline):
-    rgb_sensor = create_rgb_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
-    left_sensor = create_left_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
-    right_sensor = create_right_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
-    rgb_input = pipeline.createXLinkIn()
-    left_input = pipeline.createXLinkIn()
-    right_input = pipeline.createXLinkIn()
-    rgb_input.setStreamName("rgb_input")
-    left_input.setStreamName("left_input")
-    right_input.setStreamName("right_input")
-    rgb_input.out.link(rgb_sensor.inputControl)
-    left_input.out.link(left_sensor.inputControl)
-    right_input.out.link(right_sensor.inputControl)
-    stereo = create_stereo(pipeline)
-    colormap = create_colormap(pipeline, disparity=stereo.initialConfig.getMaxDisparity())
-    rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
-    stereo_depth_encoder = create_depth_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
+def create_pipeline(pipeline: dai.Pipeline, device: dai.Device) -> None:
+    stereo_pairs: list[dai.StereoPair] = device.getStereoPairs()
+    is_stereo_device = len(stereo_pairs) > 0
 
+    rgb_sensor = create_rgb_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
+    rgb_input = pipeline.createXLinkIn()
+    rgb_input.setStreamName("rgb_input")
+
+    rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
     # linking
-    left_sensor.out.link(stereo.left)
-    right_sensor.out.link(stereo.right)
-    stereo.disparity.link(colormap.inputImage)
+    rgb_input.out.link(rgb_sensor.inputControl)
     rgb_sensor.video.link(rgb_h264_encoder.input)
-    colormap.out.link(stereo_depth_encoder.input)
 
     # detection nn
     image_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.preview, resize=(640, 640))
@@ -37,8 +25,31 @@ def create_pipeline(pipeline: dai.Pipeline):
 
     # outputs
     create_output(pipeline=pipeline, node=rgb_h264_encoder.bitstream, stream_name="rgb_h264")
-    create_output(pipeline=pipeline, node=stereo_depth_encoder.bitstream, stream_name="stereo_depth")
     create_output(pipeline=pipeline, node=detection_nn.out, stream_name="detection_nn")
+
+    if is_stereo_device is True:
+        left_sensor = create_left_sensor(pipeline, fps=rh.CONFIGURATION["fps"], stereo_pair=stereo_pairs[0])
+        right_sensor = create_right_sensor(pipeline, fps=rh.CONFIGURATION["fps"], stereo_pair=stereo_pairs[0])
+
+        left_input = pipeline.createXLinkIn()
+        right_input = pipeline.createXLinkIn()
+        left_input.setStreamName("left_input")
+        right_input.setStreamName("right_input")
+
+        left_input.out.link(left_sensor.inputControl)
+        right_input.out.link(right_sensor.inputControl)
+        stereo = create_stereo(pipeline)
+        colormap = create_colormap(pipeline, disparity=stereo.initialConfig.getMaxDisparity())
+        stereo_depth_encoder = create_depth_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
+
+        # linking
+        left_sensor.out.link(stereo.left)
+        right_sensor.out.link(stereo.right)
+        stereo.disparity.link(colormap.inputImage)
+        colormap.out.link(stereo_depth_encoder.input)
+
+        # outputs
+        create_output(pipeline=pipeline, node=stereo_depth_encoder.bitstream, stream_name="stereo_depth")
 
 
 def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamera:
@@ -54,17 +65,17 @@ def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamer
     return node
 
 
-def create_left_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.MonoCamera:
+def create_left_sensor(pipeline: dai.Pipeline, fps: float, stereo_pair: dai.StereoPair) -> dai.node.MonoCamera:
     left = pipeline.createMonoCamera()
-    left.setBoardSocket(dai.CameraBoardSocket.CAM_B)
+    left.setBoardSocket(stereo_pair.left)
     left.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
     left.setFps(fps)
     return left
 
 
-def create_right_sensor(pipeline, fps):
+def create_right_sensor(pipeline, fps, stereo_pair: dai.StereoPair):
     right = pipeline.createMonoCamera()
-    right.setBoardSocket(dai.CameraBoardSocket.CAM_C)
+    right.setBoardSocket(stereo_pair.right)
     right.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
     right.setFps(fps)
     return right
