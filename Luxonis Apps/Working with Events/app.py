@@ -35,10 +35,14 @@ class Application(rh.BaseDepthAIApplication):
         rgb_mjpeg = device.getOutputQueue(name="rgb_mjpeg", maxSize=5, blocking=False)
         detection_nn = device.getOutputQueue(name="detection_nn", maxSize=5, blocking=False)
 
-        while rh.app_is_running:
-            rgb_h264_frame: dai.ImgFrame = rgb_h264.get()
-            rgb_mjpeg_frame: dai.ImgFrame = rgb_mjpeg.get()
-            detections: dai.ImgDetections = detection_nn.get()
+        while rh.app_is_running and self.device_is_running:
+            try:
+                rgb_h264_frame: dai.ImgFrame = rgb_h264.get()
+                rgb_mjpeg_frame: dai.ImgFrame = rgb_mjpeg.get()
+                detections: dai.ImgDetections = detection_nn.get()
+            except RuntimeError as e:
+                log.error(f"Connection to the device was lost, restarting device... {e}")
+                self.restart_device()
 
             self.event_handler.send_image_event_on_detection_if_interval_elapsed(detections=detections,
                                                                                  rgb_mjpeg_frame=rgb_mjpeg_frame,

@@ -2,6 +2,7 @@ import depthai as dai
 import logging as log
 import time
 from pathlib import Path
+from typing import Union
 
 from face_features import FaceFeatures
 from line_counter import LineCounter
@@ -54,24 +55,32 @@ class CounterApp(BaseDepthAIApplication):
         Recorder(input_node=people_faces_sync)
 
         log.info(f"Polling starting...")
-        while self.running:
+        while self.running and self.device_is_running:
             if rgb_preview.has():
-                rgb_frame: dai.ImgFrame = rgb_preview.get()
+                rgb_frame: dai.ImgFrame = self.try_get_data(queue=rgb_preview)
                 people_tracking_sync.rgb_frame_callback(rgb_frame=rgb_frame)
             if rgb_mjpeg.has():
-                rgb_mjpeg_frame: dai.ImgFrame = rgb_mjpeg.get()
+                rgb_mjpeg_frame: dai.ImgFrame = self.try_get_data(queue=rgb_mjpeg)
                 people_tracking_sync.rgb_mjpeg_frame_callback(rgb_mjpeg_frame=rgb_mjpeg_frame)
             if object_detections.has():
-                object_detections_frame: dai.ImgDetections = object_detections.get()
+                object_detections_frame: dai.ImgDetections = self.try_get_data(queue=object_detections)
                 people_tracking_sync.people_detections_callback(people_detections_frame=object_detections_frame)
             if tracker.has():
-                tracker_frame = tracker.get()
+                tracker_frame: dai.Tracklets = self.try_get_data(queue=tracker)
                 people_tracking_sync.object_tracker_callback(object_tracker_frame=tracker_frame)
             if face_detections.has():
-                face_detections_frame: dai.ImgDetections = face_detections.get()
+                face_detections_frame: dai.ImgDetections = self.try_get_data(queue=face_detections)
                 face_features.face_features_callback(face_detections_frame=face_detections_frame)
                 log.debug(f"Faces ID: {face_detections_frame.getSequenceNum()}")
             time.sleep(0.01)
+
+    def try_get_data(self, queue: dai.DataOutputQueue) -> Union[dai.ImgFrame, dai.ImgDetections, dai.Tracklets]:
+        try:
+            data = queue.get()
+            return data  # type: ignore
+        except RuntimeError as e:
+            log.error(f'OAK disconnected. Error: {e}. Restarting...')
+            self.restart_device()
 
     def on_configuration_changed(self, configuration_changes: dict) -> None:
         log.info(f"CONFIGURATION CHANGES: {configuration_changes=} {self.config=}")
