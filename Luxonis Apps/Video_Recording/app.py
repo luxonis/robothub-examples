@@ -90,7 +90,7 @@ class Application(rh.BaseDepthAIApplication):
     def on_configuration_changed(self, configuration_changes: dict) -> None:
         log.info(f"CONFIGURATION CHANGES: {configuration_changes}")
         require_restart = ["fps", "resolution", "video_buffer_size_minutes", "video_event_frequency_minutes", "image_event_frequency_minutes",
-                           "auto_exposure_limit"]
+                           "auto_exposure_limit", "flip_camera"]
         for key in require_restart:
             if key in configuration_changes:
                 log.info(f"{key} change needs a new pipeline. Restarting OAK device...")
