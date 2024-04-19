@@ -83,7 +83,7 @@ def create_detecting_nn(pipeline: dai.Pipeline, model: str, source: dai.Node.Out
         config = json.loads(f.read())
     node = pipeline.createYoloDetectionNetwork()
     nn_metadata = config["nn_config"]["NN_specific_metadata"]
-    node.setNumClasses(1)
+    node.setNumClasses(nn_metadata["classes"])
     node.setCoordinateSize(nn_metadata["coordinates"])
     node.setAnchors(nn_metadata["anchors"])
     node.setAnchorMasks(nn_metadata["anchor_masks"])
