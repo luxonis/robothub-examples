@@ -1,3 +1,4 @@
+import cv2
 import time
 import logging as log
 
@@ -21,6 +22,7 @@ NUMBER_OF_CROPPED_IMAGES = 9
 NN_INPUT_SIZE_W = 512
 NN_INPUT_SIZE_H = 288
 CROP_FACTOR = 0.4   # corresponds to "step" in the Script node
+CONFIDENCE_THRESHOLD = 0.2
 crop_vals = [(0.0, 0.0), (0.0, 0.3), (0.0, 0.6), (0.3, 0.0), (0.3, 0.3), (0.3, 0.6), (0.6, 0.0), (0.6, 0.3), (0.6, 0.6)]
 
 class Application(rh.BaseDepthAIApplication):
@@ -46,12 +48,10 @@ class Application(rh.BaseDepthAIApplication):
         while rh.app_is_running:
             rgb_h264_frame: dai.ImgFrame = rgb_h264.get()
             # rgb_mjpeg_frame: dai.ImgFrame = rgb_mjpeg.get()
-            frame = rgb_h264_frame.getCvFrame()
-
-            print(f"frame: {frame}")
 
             bboxes = []
             confidences = []
+            wh = (self.detection_view.frame_width, self.detection_view.frame_height)
 
             # If any codes were detected, display the image, highlight the codes with rectangles,
             # display the decoded text (if available) above the highlighting rectangle,
@@ -59,30 +59,35 @@ class Application(rh.BaseDepthAIApplication):
             # Note: the highlighted rectangles include an (additional) border necessary for code decoding.
             # If no codes were detected, just display the image.
 
-            # process results from all cropped images
             for i in range(NUMBER_OF_CROPPED_IMAGES):
                 # get the corresponding detections
                 detections = nnQueue.get().detections
-            
-                # calculate coordinates of each detection wrt the original frame
+
                 for detection in detections:
                     # transform the bounding box from the detections space <0..1> to the yolo frame space
                     bbox_detection = (detection.xmin, detection.ymin, detection.xmax, detection.ymax)
                     bbox_yolo_frame = transform_coords(np.array([1,1]), np.array([NN_INPUT_SIZE_W,NN_INPUT_SIZE_H]), bbox_detection)
 
                     # transform the bounding box from the yolo frame space to the coordinates in the original image
-                    bbox = transform_coords(
-                        np.array([NN_INPUT_SIZE_W,NN_INPUT_SIZE_H]),
-                        wh_from_frame(frame, CROP_FACTOR),
-                        bbox_yolo_frame,
-                        wh_from_frame(frame, crop_vals[i])
-                    )
-                    
-                    # save the final bounding box and confidence of the detection
+                    bbox = transform_coords(np.array([NN_INPUT_SIZE_W,NN_INPUT_SIZE_H]), wh_from_frame(wh, CROP_FACTOR), bbox_yolo_frame, wh_from_frame(wh, crop_vals[i]))
                     bboxes.append(bbox.tolist())
                     confidences.append(detection.confidence)
+                    
+            confidence_threshold = CONFIDENCE_THRESHOLD     # generally should match yolo's confidence_threshold
+            overlap_threshold = 0.01
+            nmsboxes = [(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]) for bbox in bboxes]
+            indices = cv2.dnn.NMSBoxes(nmsboxes, confidences, confidence_threshold, overlap_threshold)
 
             self.detection_view.publish(h264_frame=rgb_h264_frame.getFrame())
+
+            # display and print info about each resulting code and try to decode it. 
+            # If successful, display and print the decoded text as well.
+            for index in indices:
+                bbox = bboxes[index]
+                self.detection_view.add_rectangle((bbox[0], bbox[1], bbox[2], bbox[3]), '')
+                print(bbox[0], bbox[1], bbox[2], bbox[3])
+                # cv2.putText(frame, f"{int(confidences[index] * 100)}%", (bbox[0] + 10, bbox[1] + 40), cv2.FONT_HERSHEY_TRIPLEX, 0.5, color_red)
+
             time.sleep(0.01)
 
 

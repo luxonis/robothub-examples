@@ -23,8 +23,8 @@ def transform_coords(coords_from, coords_to, bbox, mean = 0):
     return res.astype(int)
 
 # scale_factor can be scalar (= same for both x,y) or vector [scale_x, scale_y]
-def wh_from_frame(frame, scale_factor = 1):
+def wh_from_frame(wh, scale_factor = 1):
     # CONSIDER: is this flipping a good idea? it seems confusing when indexing frames (CV images)
     # which use "matrix" indexing - i,j (height, width)
-    wh = np.flip(frame.shape[0:-1])     # order of coordinates: x, y (width, height)
+    # wh = np.flip(frame.shape[0:-1])     # order of coordinates: x, y (width, height)
     return wh * np.array(scale_factor)
