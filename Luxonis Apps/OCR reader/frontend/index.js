@@ -51,6 +51,16 @@ const statusBadge = document.getElementById("statusBadge");
 
 robothubApi.onNotificationWithKey("search_results", (res) => {
     resultList.innerHTML = "";
+    statusBadge.className = "status found";
+
+    if (res.payload.search_results.length <= 0) {
+        const h3 = document.createElement("h3");
+        h3.classList = "no-results";
+        h3.innerText = "No results";
+        resultList.appendChild(h3);
+        return;
+    }
+
     for (const result of res.payload.search_results) {
         try {
             const li = createSearchResultElement(result);
@@ -64,14 +74,9 @@ robothubApi.onNotificationWithKey("search_results", (res) => {
 robothubApi.onNotificationWithKey("status_update", (res) => {
     const status = res.payload.status;
     const query = res.payload?.query;
-    console.log(query);
 
     if (status === "searching") {
         statusBadge.className = "status searching";
-        statusBadge.innerText = "Searching...";
-    } else if (status === "finished_searching") {
-        statusBadge.className = "status found";
-        statusBadge.innerText = "Finished searching";
     }
 
     if (query !== undefined) {
