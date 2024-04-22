@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 import depthai as dai
+import east
 import frontend_notifier
 import robothub as rh
 from live_view_handler import LiveViewHandler
@@ -70,7 +71,11 @@ class Application(rh.BaseDepthAIApplication):
             color_packet: dai.ImgFrame = color_queue.get()  # type: ignore
             nn_packet: dai.NNData = nn_queue.get()  # type: ignore
 
-            self.ocr.set_input_data(nn_packet, color_packet.getCvFrame())  # type: ignore
+            # Decode text detection
+            rect_points = east.decode_east(nn_packet)
+
+            # Text recognition
+            self.ocr.set_input_data(rect_points, color_packet.getCvFrame())  # type: ignore
 
             if self.can_search:
                 self.query_bboxes = self.ocr.get_query_bboxes()

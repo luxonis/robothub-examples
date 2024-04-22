@@ -23,7 +23,7 @@ def get_rotated_rect_points(bbox: np.ndarray, angle: float):
     rotated_points = [
         rotate_point(p[0], p[1], x1, y1, np.rad2deg(angle)) for p in points
     ]
-    return np.asarray(rotated_points)
+    return rotated_points
 
 
 def non_max_suppression(
@@ -167,4 +167,8 @@ def decode_east(nn_packet: dai.NNData, conf_threshold=0.5, overlap_threshold=0.3
         angles=np.array(angles),
         overlap_threshold=overlap_threshold,
     )
-    return boxes, angles
+    rotated_rect_points = [
+        get_rotated_rect_points(bbox, angle * -1)
+        for (bbox, angle) in zip(boxes, angles)
+    ]
+    return rotated_rect_points

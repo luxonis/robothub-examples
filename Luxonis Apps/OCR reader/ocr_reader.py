@@ -1,5 +1,3 @@
-import depthai as dai
-import east
 import easyocr
 import numpy as np
 from model import TextDetection
@@ -16,29 +14,25 @@ class OcrReader:
         self._reader = easyocr.Reader(["en"], detector=False)
         self._current_detections: list[TextDetection] | None = None
 
-        self._input_nn_packet: dai.NNData | None = None
+        self._input_rect_points: list[list[tuple[int, int]]] | None = None
         self._input_image: np.ndarray | None = None
 
-    def set_input_data(self, nn_packet: dai.NNData, image: np.ndarray):
-        self._input_nn_packet = nn_packet
+    def set_input_data(
+        self, rect_points: list[list[tuple[int, int]]], image: np.ndarray
+    ):
+        self._input_rect_points = rect_points
         self._input_image = image
         self._current_detections = None
 
     def _recognize_text(
-        self, nn_packet: dai.NNData, image: np.ndarray
+        self, rect_points: list[list[tuple[int, int]]], image: np.ndarray
     ) -> list[TextDetection]:
         """Run text recognition on text detections received from EAST neural network."""
-
-        boxes, angles = east.decode_east(nn_packet, DETECTION_CONF_THRESHOLD)
-        rotated_rect_points = [
-            east.get_rotated_rect_points(bbox, angle * -1)
-            for (bbox, angle) in zip(boxes, angles)
-        ]
 
         scaling = np.asarray(CAM_SIZE) / np.asarray(NN_SIZE)
         scaled_rotated_points = []
         # Convert angled bboxes to horizontal bboxes
-        for rp in rotated_rect_points:
+        for rp in rect_points:
             # Detections are done on 256x256 frames, we are sending back 1024x1024
             # That's why we rescale points
             scaled_points = (rp * scaling).astype(int).tolist()
@@ -62,12 +56,12 @@ class OcrReader:
     ) -> list[TextDetection]:
         """Returns all detections in current input data with confidence higher than `min_confidence`"""
 
-        if self._input_nn_packet is None or self._input_image is None:
+        if self._input_rect_points is None or self._input_image is None:
             raise RuntimeError("Missing input data")
 
         if self._current_detections is None:
             self._current_detections = self._recognize_text(
-                self._input_nn_packet, self._input_image
+                self._input_rect_points, self._input_image
             )
 
         # Filter detections below min confidence threshold
