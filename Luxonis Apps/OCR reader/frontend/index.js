@@ -1,21 +1,3 @@
-function drawTextInBox(ctx, txt, font, x, y, w, h, angle) {
-    angle = angle || 0;
-    var fontHeight = 20;
-    var hMargin = 4;
-    ctx.font = fontHeight + "px " + font;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    var txtWidth = ctx.measureText(txt).width + 2 * hMargin;
-    ctx.save();
-    ctx.translate(x + w / 2, y);
-    ctx.rotate(angle);
-    ctx.strokeRect(-w / 2, 0, w, h);
-    ctx.scale(w / txtWidth, h / fontHeight);
-    ctx.translate(hMargin, 0);
-    ctx.fillText(txt, -txtWidth / 2, 0);
-    ctx.restore();
-}
-
 function createSearchResultElement(result) {
     const li = document.createElement("li");
     li.className = "result-item";
@@ -64,36 +46,8 @@ function createSearchResultElement(result) {
 }
 
 const streamContainer = document.getElementById("videoStreamContainer");
-const textDisplay = document.getElementById("textDisplay");
 const resultList = document.getElementById("resultList");
 const statusBadge = document.getElementById("statusBadge");
-const ctx = textDisplay.getContext("2d");
-textDisplay.width = streamContainer.clientWidth;
-textDisplay.height = streamContainer.clientHeight;
-ctx.fillStyle = "black";
-ctx.fillRect(0, 0, textDisplay.width, textDisplay.height);
-
-robothubApi.onNotificationWithKey("text_detections", (res) => {
-    const streamWidth = streamContainer.clientWidth;
-    const streamHeight = streamContainer.clientHeight;
-    textDisplay.width = streamWidth;
-    textDisplay.height = streamHeight;
-
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, textDisplay.width, textDisplay.height);
-    for (const detection of res.payload.detections) {
-        const x1 = Math.round(detection.bbox[0] * textDisplay.width);
-        const y1 = Math.round(detection.bbox[1] * textDisplay.height);
-        const x2 = Math.round(detection.bbox[2] * textDisplay.width);
-        const y2 = Math.round(detection.bbox[3] * textDisplay.height);
-
-        const w = Math.abs(x1 - x2);
-        const h = Math.abs(y1 - y2);
-
-        ctx.fillStyle = "white";
-        drawTextInBox(ctx, detection.text.toUpperCase(), "Arial", x1, y1, w, h);
-    }
-});
 
 robothubApi.onNotificationWithKey("search_results", (res) => {
     resultList.innerHTML = "";
@@ -109,6 +63,8 @@ robothubApi.onNotificationWithKey("search_results", (res) => {
 
 robothubApi.onNotificationWithKey("status_update", (res) => {
     const status = res.payload.status;
+    const query = res.payload?.query;
+    console.log(query);
 
     if (status === "searching") {
         statusBadge.className = "status searching";
@@ -116,5 +72,9 @@ robothubApi.onNotificationWithKey("status_update", (res) => {
     } else if (status === "finished_searching") {
         statusBadge.className = "status found";
         statusBadge.innerText = "Finished searching";
+    }
+
+    if (query !== undefined) {
+        statusBadge.innerText = query.toUpperCase();
     }
 });

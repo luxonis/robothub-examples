@@ -3,14 +3,28 @@ import depthai as dai
 import numpy as np
 
 
+def rotate_point(pointX, pointY, originX, originY, angle):
+    angle = angle * np.pi / 180.0
+    x = (
+        np.cos(angle) * (pointX - originX)
+        - np.sin(angle) * (pointY - originY)
+        + originX
+    )
+    y = (
+        np.sin(angle) * (pointX - originX)
+        + np.cos(angle) * (pointY - originY)
+        + originY
+    )
+    return x, y
+
+
 def get_rotated_rect_points(bbox: np.ndarray, angle: float):
     x0, y0, x1, y1 = bbox
-    width = np.float64(abs(x0 - x1))
-    height = np.float64(abs(y0 - y1))
-    x_center = x0 + width * 0.5
-    y_center = y0 + height * 0.5
-
-    return cv2.boxPoints(((x_center, y_center), (width, height), np.rad2deg(angle)))
+    points = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+    rotated_points = [
+        rotate_point(p[0], p[1], x1, y1, np.rad2deg(angle)) for p in points
+    ]
+    return np.asarray(rotated_points)
 
 
 def non_max_suppression(
