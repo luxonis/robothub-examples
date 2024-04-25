@@ -16,6 +16,25 @@ import robothub as rh
 from pipeline import create_pipeline
 from wrappers import DepthaiLiveViewWrapper
 
+# Get the root logger and change its log level and handlers
+root_logger = log.getLogger()
+
+# Clear existing handlers
+for handler in root_logger.handlers[:]:
+    root_logger.removeHandler(handler)
+
+# Set new log level
+root_logger.setLevel(log.DEBUG)
+
+# Create a new handler with the desired format
+new_handler = log.StreamHandler()
+new_formatter = log.Formatter('%(levelname)s | %(funcName)s:%(lineno)s => %(message)s')
+new_handler.setFormatter(new_formatter)
+
+# Add the new handler to the root logger
+root_logger.addHandler(new_handler)
+
+
 
 class Application(rh.BaseDepthAIApplication):
 
