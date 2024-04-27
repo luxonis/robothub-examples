@@ -33,7 +33,7 @@ def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamer
     node.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
     node.setPreviewNumFramesPool(4)
     node.setPreviewSize(1280, 720)
-    node.setVideoSize(1920, 1080)
+    node.setVideoSize(3840, 2160)
     node.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
     node.setFps(fps)
     return node
