@@ -1,4 +1,5 @@
 {
   "fps": 2,
-  "manual_focus": 150
+  "manual_focus": 150,
+  "resolution": "4k"
 }

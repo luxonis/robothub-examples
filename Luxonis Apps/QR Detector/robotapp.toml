@@ -21,6 +21,21 @@ visual = "section"
 title = "Camera config"
 
 [[configuration]]
+field = "choice"
+key = "resolution"
+label = "Resolution"
+style = "radio"
+allow_multiple = false
+options = [
+  { key = "720p", label = "720p" },
+  { key = "1080p", label = "1080p" },
+  { key = "4k", label = "4k" },
+  { key = "4000x3000", label = "4000x3000" },
+  { key = "5312x6000", label = "5312x6000", default=true },
+  { key = "48MP", label = "48MO" }
+]
+
+[[configuration]]
 key = "fps"
 label = "FPS"
 field = "num_range"

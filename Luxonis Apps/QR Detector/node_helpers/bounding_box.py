@@ -11,6 +11,7 @@ class BoundingBox:
                  sequence_number: int = 0):
         self.frame_sequence_number: int = sequence_number
         self.label = ""
+        self.crop = None
 
         self.confidence = confidence
 
@@ -42,6 +43,9 @@ class BoundingBox:
 
     def set_label(self, label: str):
         self.label = label
+
+    def set_crop(self, crop):
+        self.crop = crop
 
     @classmethod
     def from_absolute(cls, xmin: int, xmax: int, ymin: int, ymax: int, confidence: float, image_width: int, image_height: int,

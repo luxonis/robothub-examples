@@ -96,7 +96,8 @@ class ReconstructQrDetections(host_node.BaseNode):
         if self._crop_count != self.TOTAL_CROP_COUNT - 1:  # counting crops from zero
             return
         log.debug(f"Sending results for sequence number: {self._sequence_number}")
-        bboxes_after_nms = self._perform_nms_on_bboxes()
+        # bboxes_after_nms = self._perform_nms_on_bboxes()
+        bboxes_after_nms = self._bounding_boxes
         if len(bboxes_after_nms) > 1:
             # make sure all detections are from the same frame
             if self._bounding_boxes[0].getSequenceNum() != self._bounding_boxes[-1].getSequenceNum():
@@ -108,15 +109,16 @@ class ReconstructQrDetections(host_node.BaseNode):
 
         self._bounding_boxes.clear()
 
-    def _perform_nms_on_bboxes(self) -> list[BoundingBox]:
+    @staticmethod
+    def perform_nms_on_bboxes(bounding_boxes: list[BoundingBox]) -> list[BoundingBox]:
         confidence_threshold = 0.5
         overlap_threshold = 0.1
-        confidences = [bbox.confidence for bbox in self._bounding_boxes]
-        nms_boxes = [bbox.as_nms_box() for bbox in self._bounding_boxes]
+        confidences = [bbox.confidence for bbox in bounding_boxes]
+        nms_boxes = [bbox.as_nms_box() for bbox in bounding_boxes]
         indices = cv2.dnn.NMSBoxes(nms_boxes, confidences, confidence_threshold, overlap_threshold)
         bboxes_after_nms = []
         for index in indices:
-            bboxes_after_nms.append(self._bounding_boxes[index])
+            bboxes_after_nms.append(bounding_boxes[index])
         return bboxes_after_nms
 
     def _update_coord_offset(self):

@@ -15,41 +15,56 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
     if rh.CONFIGURATION["manual_focus"] != 0:
         rgb_sensor.initialControl.setManualFocus(rh.CONFIGURATION["manual_focus"])
 
-    video_encoder = create_h264_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
-    isp_downsize_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.isp, resize=(1280, 720), frame_type=dai.RawImgFrame.Type.NV12)
-    isp_downsize_manip.out.link(video_encoder.input)
-
     script_node = create_script_node(pipeline=pipeline, script_name="app_pipeline/script_node.py")
 
+    crop_from_high_res_manip = create_image_manip(pipeline=pipeline, source=script_node.outputs["image_manip_crop"],
+                                                  keep_aspect_ration=False, frame_type=dai.RawImgFrame.Type.BGR888p, blocking_input_queue=True,
+                                                  input_queue_size=3, wait_for_config=True, max_output_frame_size=2_000_000)
+
     image_manip_nn_crop = create_image_manip(pipeline=pipeline, source=script_node.outputs["image_manip_nn_crop"],
-                                             wait_for_config=True, resize=(1280, 720), frames_pool=20)
+                                             wait_for_config=True, resize=(1280, 720), frames_pool=10, blocking_input_queue=True)
     image_manip_nn_crop.inputImage.setBlocking(True)
+
+    isp_to_16_9_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.isp, crop=(0, 0.251, 1, 0.749), input_queue_size=2,
+                                           max_output_frame_size=5312 * 2988 * 3, frames_pool=2)
+    isp_to_preview_manip = create_image_manip(pipeline=pipeline, source=isp_to_16_9_manip.out, resize=(1280, 720),
+                                              keep_aspect_ration=True, frame_type=dai.RawImgFrame.Type.BGR888p, blocking_input_queue=True,
+                                              input_queue_size=2, max_output_frame_size=1280 * 720 * 3, frames_pool=9)
     script_node.outputs["image_manip_nn_crop_cfg"].link(image_manip_nn_crop.inputConfig)
     script_node.inputs["rgb_frame"].setBlocking(True)
 
     qr_detection_nn = create_yolo_nn(pipeline=pipeline, source=image_manip_nn_crop.out,
                                      model_path="models/qrdet-n_openvino_2022.1_5shave.blob",
                                      confidence_threshold=0.5)
-    qr_detection_nn.setNumPoolFrames(20)
+    qr_detection_nn.setNumPoolFrames(10)
 
     # linking
-    rgb_sensor.preview.link(script_node.inputs["rgb_frame"])
+    script_node.outputs["image_manip_crop_cfg"].link(crop_from_high_res_manip.inputConfig)
+    qr_detection_nn.out.link(script_node.inputs["qr_detection_nn"])
+    isp_to_preview_manip.out.link(script_node.inputs["rgb_frame"])
+    isp_to_16_9_manip.out.link(script_node.inputs["rgb_isp_high_res"])
     rgb_input.out.link(rgb_sensor.inputControl)
 
     # outputs
     create_output(pipeline=pipeline, node=qr_detection_nn.out, stream_name="qr_detection_out")
-    create_output(pipeline=pipeline, node=video_encoder.bitstream, stream_name="video_h264_encoded")
-    create_output(pipeline=pipeline, node=rgb_sensor.isp, stream_name="rgb_isp_high_res")
+    create_output(pipeline=pipeline, node=rgb_sensor.preview, stream_name="preview")
+    create_output(pipeline=pipeline, node=crop_from_high_res_manip.out, stream_name="crop_from_high_res")
 
 
 def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamera:
+    resolution_mapping = {"1080p": dai.ColorCameraProperties.SensorResolution.THE_1080_P,
+                          "720p": dai.ColorCameraProperties.SensorResolution.THE_720_P,
+                          "4k": dai.ColorCameraProperties.SensorResolution.THE_4_K,
+                          "4000x3000": dai.ColorCameraProperties.SensorResolution.THE_4000X3000,
+                          "5312x6000": dai.ColorCameraProperties.SensorResolution.THE_5312X6000,
+                          "48MP": dai.ColorCameraProperties.SensorResolution.THE_48_MP,
+                          }
     node = pipeline.createColorCamera()
     node.setBoardSocket(dai.CameraBoardSocket.RGB)
     node.setInterleaved(False)
     node.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
-    node.setNumFramesPool(2, 2, 5, 1, 5)
-    node.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
-    node.setPreviewSize(1280, 720)
+    node.setNumFramesPool(2, 2, 2, 2, 1)
+    node.setResolution(resolution_mapping[rh.CONFIGURATION["resolution"]])
     node.setFps(fps)
     return node
 
@@ -78,19 +93,24 @@ def create_h264_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEnc
     rh_encoder.input.setBlocking(False)
     rh_encoder.setKeyframeFrequency(fps)
     rh_encoder.setRateControlMode(dai.VideoEncoderProperties.RateControlMode.CBR)
-    rh_encoder.setNumFramesPool(3)
+    rh_encoder.setNumFramesPool(1)
     return rh_encoder
 
 
-def create_image_manip(pipeline: dai.Pipeline, source: dai.Node.Output,
-                       resize: tuple[int, int],
+def create_image_manip(pipeline: dai.Pipeline, source: dai.Node.Output, max_output_frame_size: int = None,
+                       resize: tuple[int, int] = None, crop: tuple[float, float, float, float] = None,
                        keep_aspect_ration: bool = False,
                        frame_type: dai.RawImgFrame.Type = dai.RawImgFrame.Type.BGR888p, output_frame_dims: int = 3,
                        blocking_input_queue: bool = False, input_queue_size: int = 4, frames_pool: int = 9,
                        wait_for_config: bool = False) -> dai.node.ImageManip:
     image_manip = pipeline.createImageManip()
-    image_manip.setResize(*resize)
-    image_manip.setMaxOutputFrameSize(resize[0] * resize[1] * output_frame_dims)
+    if crop is not None:
+        image_manip.initialConfig.setCropRect(crop[0], crop[1], crop[2], crop[3])
+    if resize is not None:
+        image_manip.setResize(*resize)
+        image_manip.setMaxOutputFrameSize(resize[0] * resize[1] * output_frame_dims)
+    if max_output_frame_size is not None:
+        image_manip.setMaxOutputFrameSize(max_output_frame_size)
     image_manip.initialConfig.setKeepAspectRatio(keep_aspect_ration)
 
     image_manip.setFrameType(frame_type)
@@ -112,7 +132,7 @@ def create_yolo_nn(pipeline: dai.Pipeline, source: dai.Node.Output, model_path: 
     nn_yolo.setIouThreshold(0.5)
     nn_yolo.setNumInferenceThreads(2)
     nn_yolo.input.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
-    nn_yolo.input.setQueueSize(9)
+    nn_yolo.input.setQueueSize(3)
     source.link(nn_yolo.input)
     return nn_yolo
 

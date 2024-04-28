@@ -13,6 +13,15 @@ from app_pipeline import host_node, messages, oak_pipeline
 # cv2.imshow("bugfix", np.zeros((10, 10, 3), dtype=np.uint8))
 # cv2.destroyWindow("bugfix")
 
+RESOLUTION_MAPPING = {
+    "720p": (1280, 720),
+    "1080p": (1920, 1080),
+    "4k": (3840, 2160),
+    "4000x3000": (4000, 3000),
+    "5312x6000": (5312, 6000),
+    "48MP": (5312, 6000)
+}
+
 
 class Application(rh.BaseDepthAIApplication):
 
@@ -22,8 +31,11 @@ class Application(rh.BaseDepthAIApplication):
         super().__init__()
         rh.CONFIGURATION["h264_frame_width"] = 1280
         rh.CONFIGURATION["h264_frame_height"] = 720
+        rh.CONFIGURATION["high_res_frame_width"] = RESOLUTION_MAPPING[rh.CONFIGURATION["resolution"]][0]
+        rh.CONFIGURATION["high_res_frame_height"] = RESOLUTION_MAPPING[rh.CONFIGURATION["resolution"]][1]
 
     def setup_pipeline(self) -> dai.Pipeline:
+        log.info(f"Configuration: {rh.CONFIGURATION}")
         pipeline = dai.Pipeline()
         oak_pipeline.create_pipeline(pipeline=pipeline)
         return pipeline
@@ -32,17 +44,16 @@ class Application(rh.BaseDepthAIApplication):
         log.info(f"DepthAi version: {dai.__version__}")
 
         self.rgb_control = device.getInputQueue(name="rgb_input")
-        video_h264_encoded = host_node.Bridge(device=device, out_name="video_h264_encoded", blocking=False, queue_size=3)
-        rgb_video_high_res = host_node.Bridge(device=device, out_name="rgb_isp_high_res", blocking=False, queue_size=2)
+        preview = host_node.Bridge(device=device, out_name="preview", blocking=False, queue_size=3)
         qr_detection_out = host_node.Bridge(device=device, out_name="qr_detection_out", blocking=False, queue_size=3)
+        crop_from_high_res = device.getOutputQueue(name="crop_from_high_res", maxSize=10, blocking=True)
 
         qr_bboxes = host_node.ReconstructQrDetections(input_node=qr_detection_out)
-        qr_boxes_and_frame_sync = host_node.Sync(inputs=[video_h264_encoded, rgb_video_high_res, qr_bboxes],
-                                                 input_names=["rgb_h264", "rgb_video_high_res", "qr_bboxes"],
+        qr_boxes_and_frame_sync = host_node.Sync(inputs=[preview, qr_bboxes],
+                                                 input_names=["rgb_preview", "qr_bboxes"],
                                                  output_message_obj=messages.FramesWithDetections)
-        qr_code_decoder = host_node.QrCodeDecoder(input_node=qr_boxes_and_frame_sync)
-        video_reporter = host_node.VideoReporter(input_node=video_h264_encoded)
-        host_node.ResultsReporter(input_node=qr_code_decoder, video_reporter_trigger=video_reporter.trigger_video_report)
+        qr_code_decoder = host_node.QrCodeDecoder(input_node=qr_boxes_and_frame_sync, high_res_queue=crop_from_high_res)
+        host_node.ResultsReporter(input_node=qr_code_decoder)
         host_node.Monitor(input_node=qr_code_decoder, name="qr_boxes_and_frame_sync")
 
         log.info(f"Application started")

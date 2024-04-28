@@ -23,13 +23,11 @@ class QrBoundingBoxes(Message):
 
 @dataclass(slots=True, kw_only=True)
 class FramesWithDetections(Message):
-    rgb_h264: dai.ImgFrame
-    rgb_video_high_res: dai.ImgFrame
+    rgb_preview: dai.ImgFrame
     qr_bboxes: QrBoundingBoxes
 
 
 @dataclass(slots=True, kw_only=True)
 class RhReport(Message):
     context_image: np.ndarray
-    original_image: np.ndarray
     qr_bboxes: QrBoundingBoxes

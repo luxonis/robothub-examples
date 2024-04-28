@@ -1,5 +1,6 @@
 import logging as log
 
+import depthai as dai
 import robothub as rh
 import zxingcpp
 
@@ -13,21 +14,30 @@ class QrCodeDecoder(host_node.BaseNode):
     DECODE_CHANNEL = 0  # blue channel should be enough for QR decoding
     PADDING = 20
 
-    def __init__(self, input_node: host_node.BaseNode):
+    def __init__(self, input_node: host_node.BaseNode, high_res_queue: dai.DataOutputQueue):
         super().__init__()
         input_node.set_callback(callback=self.__callback)
+        self._high_res_queue = high_res_queue
 
     @rh.decorators.measure_average_performance(report_every_minutes=1)
     def __callback(self, frames_and_detections: messages.FramesWithDetections):
         qr_bboxes = frames_and_detections.qr_bboxes
-        high_res_frame = frames_and_detections.rgb_video_high_res.getCvFrame()
+        expected_crops = len(qr_bboxes.bounding_boxes)
+        i = 0
         for bbox in qr_bboxes.bounding_boxes:
-            xmin, ymin, xmax, ymax = bbox.transform(width=1920 * 2, height=1080 * 2)
-            # cv2.rectangle(high_res_frame, (int(xmin), int(ymin)), (int(xmax), int(ymax)), (0, 0, 255), 2)
-            qr_code_crop = high_res_frame[ymin - self.PADDING:ymax + self.PADDING, xmin - self.PADDING:xmax + self.PADDING, self.DECODE_CHANNEL]
-            width, height = qr_code_crop.shape
+            log.info(f"Getting crop {i} of {expected_crops}")
+            i += 1
+            crop = self._high_res_queue.get()
+            bbox.set_crop(crop=crop)
+
+        qr_bboxes.bounding_boxes = host_node.ReconstructQrDetections.perform_nms_on_bboxes(bounding_boxes=qr_bboxes.bounding_boxes)
+
+        for bbox in qr_bboxes.bounding_boxes:
+            crop_frame = bbox.crop.getCvFrame()
+            crop_frame = crop_frame[:, :, self.DECODE_CHANNEL]
+            width, height= crop_frame.shape
             if width > 0 and height > 0:
-                decoded_codes = zxingcpp.read_barcodes(qr_code_crop)
+                decoded_codes = zxingcpp.read_barcodes(crop_frame)
                 if len(decoded_codes) > 0:
                     decoded_code = decoded_codes[0]
                     bbox.set_label(label=decoded_code.text)

@@ -1,3 +1,4 @@
+import cv2
 import robothub as rh
 
 from app_pipeline import host_node
@@ -15,10 +16,13 @@ class Monitor(host_node.BaseNode):
                                              device_mxid=rh.DEVICE_MXID)
 
     def __callback(self, message: FramesWithDetections):
-        img = message.rgb_h264.getCvFrame()
+        img = message.rgb_preview.getCvFrame()
         bboxes = message.qr_bboxes.bounding_boxes
         for bbox in bboxes:
             label = f"{bbox.label}, {bbox.confidence:.3f}"
-            self._live_view.add_rectangle(rectangle=(bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax), label=label)
-
-        self._live_view.publish(h264_frame=img)
+            # draw bounding box
+            cv2.rectangle(img, (bbox.xmin, bbox.ymin), (bbox.xmax, bbox.ymax), color=(255, 255, 255))
+            # draw label
+            cv2.putText(img, label, (bbox.xmin, bbox.ymin - 1), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.imshow(self.name, img)
+        cv2.waitKey(1)
