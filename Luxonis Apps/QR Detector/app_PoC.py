@@ -1,13 +1,12 @@
 import csv
-import cv2
-import depthai
-import numpy as np
 import time
-import zxingcpp
-
 from datetime import datetime
 from pathlib import Path
 
+import cv2
+import depthai
+import numpy as np
+import zxingcpp
 
 OUTPUT_TO_FILE = False
 OUTPUT_FILENAME = "results.txt"

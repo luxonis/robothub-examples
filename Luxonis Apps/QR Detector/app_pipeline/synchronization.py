@@ -1,4 +1,3 @@
-
 import logging as log
 from typing import Any
 
@@ -20,6 +19,7 @@ class Synchronizer:
 
         if len(self.__msgs[sequence_number]) == self.__number_of_messages_per_sequence_number:
             messages: dict = self.__msgs.pop(sequence_number)
+            messages["sequence_number"] = sequence_number
             self.__send_synchronized_messages(messages)
             # remove older sequence_numbers
             keys_to_remove = []
@@ -41,6 +41,3 @@ class Synchronizer:
     def __send_synchronized_messages(self, messages: dict):
         for callback in self.__callbacks:
             callback(messages)
-
-
-

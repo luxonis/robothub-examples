@@ -1,29 +1,45 @@
 import depthai as dai
-import json
-
+import robothub as rh
 from depthai_sdk.components.nn_helper import Path
 
-import robothub as rh
 
-
-def create_pipeline(pipeline: dai.Pipeline, device: dai.Device) -> None:
-
+def create_pipeline(pipeline: dai.Pipeline) -> None:
     rgb_sensor = create_rgb_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
     rgb_input = pipeline.createXLinkIn()
     rgb_input.setStreamName("rgb_input")
+    if rh.CONFIGURATION["enable_manual_exposure"]:
+        rgb_sensor.initialControl.setManualExposure(rh.CONFIGURATION["manual_exposure"], rh.CONFIGURATION["manual_iso"])
+    else:
+        rgb_sensor.initialControl.setAutoExposureLimit(rh.CONFIGURATION["exposure_limit"])
 
-    rgb_h264_encoder = create_h264_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
+    if rh.CONFIGURATION["manual_focus"] != 0:
+        rgb_sensor.initialControl.setManualFocus(rh.CONFIGURATION["manual_focus"])
+
+    video_encoder = create_h264_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
+    isp_downsize_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.isp, resize=(1280, 720), frame_type=dai.RawImgFrame.Type.NV12)
+    isp_downsize_manip.out.link(video_encoder.input)
+
+    script_node = create_script_node(pipeline=pipeline, script_name="app_pipeline/script_node.py")
+
+    image_manip_nn_crop = create_image_manip(pipeline=pipeline, source=script_node.outputs["image_manip_nn_crop"],
+                                             wait_for_config=True, resize=(1280, 720), frames_pool=20)
+    image_manip_nn_crop.inputImage.setBlocking(True)
+    script_node.outputs["image_manip_nn_crop_cfg"].link(image_manip_nn_crop.inputConfig)
+    script_node.inputs["rgb_frame"].setBlocking(True)
+
+    qr_detection_nn = create_yolo_nn(pipeline=pipeline, source=image_manip_nn_crop.out,
+                                     model_path="models/qrdet-n_openvino_2022.1_5shave.blob",
+                                     confidence_threshold=0.5)
+    qr_detection_nn.setNumPoolFrames(20)
+
     # linking
+    rgb_sensor.preview.link(script_node.inputs["rgb_frame"])
     rgb_input.out.link(rgb_sensor.inputControl)
-    rgb_sensor.video.link(rgb_h264_encoder.input)
-
-    # detection nn
-
-    # linking
-
 
     # outputs
-    create_output(pipeline=pipeline, node=stereo_depth_encoder.bitstream, stream_name="stereo_depth")
+    create_output(pipeline=pipeline, node=qr_detection_nn.out, stream_name="qr_detection_out")
+    create_output(pipeline=pipeline, node=video_encoder.bitstream, stream_name="video_h264_encoded")
+    create_output(pipeline=pipeline, node=rgb_sensor.isp, stream_name="rgb_isp_high_res")
 
 
 def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamera:
@@ -31,53 +47,27 @@ def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamer
     node.setBoardSocket(dai.CameraBoardSocket.RGB)
     node.setInterleaved(False)
     node.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
-    node.setPreviewNumFramesPool(4)
-    node.setPreviewSize(1280, 720)
-    node.setVideoSize(3840, 2160)
+    node.setNumFramesPool(2, 2, 5, 1, 5)
     node.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
+    node.setPreviewSize(1280, 720)
     node.setFps(fps)
     return node
 
 
-def create_left_sensor(pipeline: dai.Pipeline, fps: float, stereo_pair: dai.StereoPair) -> dai.node.MonoCamera:
-    left = pipeline.createMonoCamera()
-    left.setBoardSocket(stereo_pair.left)
-    left.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
-    left.setFps(fps)
-    return left
+def create_script_node(pipeline, script_name: str):
+    script_node = pipeline.createScript()
+    script_node.setScript(load_script(script_name=script_name))
+
+    return script_node
 
 
-def create_right_sensor(pipeline, fps, stereo_pair: dai.StereoPair):
-    right = pipeline.createMonoCamera()
-    right.setBoardSocket(stereo_pair.right)
-    right.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
-    right.setFps(fps)
-    return right
-
-
-def create_stereo(pipeline: dai.Pipeline) -> dai.node.StereoDepth:
-    stereo = pipeline.createStereoDepth()
-    stereo.setDepthAlign(dai.CameraBoardSocket.CAM_A)
-    stereo.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_5x5)
-    stereo.initialConfig.setLeftRightCheck(True)
-    config = stereo.initialConfig.get()
-    config.postProcessing.decimationFilter.decimationFactor = 1
-    config.postProcessing.speckleFilter.enable = False
-    config.postProcessing.speckleFilter.speckleRange = 50
-    config.postProcessing.temporalFilter.enable = True
-    config.postProcessing.decimationFilter.decimationFactor = 1
-    config.postProcessing.thresholdFilter.minRange = 400
-    config.postProcessing.thresholdFilter.maxRange = 15000
-    stereo.initialConfig.set(config)
-    return stereo
-
-
-def create_colormap(pipeline: dai.Pipeline, disparity: float) -> dai.node.ImageManip:
-    colormap = pipeline.createImageManip()
-    colormap.initialConfig.setColormap(dai.Colormap.JET, disparity)
-    colormap.initialConfig.setFrameType(dai.ImgFrame.Type.NV12)
-    colormap.setMaxOutputFrameSize(3110400)
-    return colormap
+def load_script(script_name: str):
+    from string import Template
+    with open(script_name, 'r') as file:
+        code = Template(file.read()).substitute(
+            DEBUG=''
+        )
+    return code
 
 
 def create_h264_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEncoder:
@@ -92,23 +82,19 @@ def create_h264_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEnc
     return rh_encoder
 
 
-def create_depth_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEncoder:
-    encoder = pipeline.createVideoEncoder()
-    encoder_profile = dai.VideoEncoderProperties.Profile.H264_MAIN
-    encoder.setDefaultProfilePreset(fps, encoder_profile)
-    return encoder
-
-
-def create_image_manip(pipeline: dai.Pipeline, source: dai.Node.Output, resize: tuple[int, int],
+def create_image_manip(pipeline: dai.Pipeline, source: dai.Node.Output,
+                       resize: tuple[int, int],
                        keep_aspect_ration: bool = False,
                        frame_type: dai.RawImgFrame.Type = dai.RawImgFrame.Type.BGR888p, output_frame_dims: int = 3,
-                       blocking_input_queue: bool = False, input_queue_size: int = 4, frames_pool: int = 4,
+                       blocking_input_queue: bool = False, input_queue_size: int = 4, frames_pool: int = 9,
                        wait_for_config: bool = False) -> dai.node.ImageManip:
     image_manip = pipeline.createImageManip()
     image_manip.setResize(*resize)
-    image_manip.setFrameType(frame_type)
     image_manip.setMaxOutputFrameSize(resize[0] * resize[1] * output_frame_dims)
     image_manip.initialConfig.setKeepAspectRatio(keep_aspect_ration)
+
+    image_manip.setFrameType(frame_type)
+
     image_manip.inputImage.setBlocking(blocking_input_queue)
     image_manip.inputImage.setQueueSize(input_queue_size)
     image_manip.setNumFramesPool(frames_pool)
@@ -117,22 +103,18 @@ def create_image_manip(pipeline: dai.Pipeline, source: dai.Node.Output, resize: 
     return image_manip
 
 
-def create_detecting_nn(pipeline: dai.Pipeline, model: str, source: dai.Node.Output) -> dai.node.NeuralNetwork:
-    model_config = Path("nn_models/detection_config.json")
-    with model_config.open() as f:
-        config = json.loads(f.read())
-    node = pipeline.createYoloDetectionNetwork()
-    nn_metadata = config["nn_config"]["NN_specific_metadata"]
-    node.setNumClasses(nn_metadata["classes"])
-    node.setCoordinateSize(nn_metadata["coordinates"])
-    node.setAnchors(nn_metadata["anchors"])
-    node.setAnchorMasks(nn_metadata["anchor_masks"])
-    node.setIouThreshold(nn_metadata["iou_threshold"])
-    node.input.setBlocking(False)
-    blob = dai.OpenVINO.Blob(Path(model).resolve())
-    node.setBlob(blob)
-    source.link(node.input)
-    return node
+def create_yolo_nn(pipeline: dai.Pipeline, source: dai.Node.Output, model_path: str, confidence_threshold: float) -> dai.node.NeuralNetwork:
+    nn_yolo = pipeline.createYoloDetectionNetwork()
+    nn_yolo.setBlobPath(Path(model_path))
+    nn_yolo.setConfidenceThreshold(confidence_threshold)
+    nn_yolo.setNumClasses(1)
+    nn_yolo.setCoordinateSize(4)
+    nn_yolo.setIouThreshold(0.5)
+    nn_yolo.setNumInferenceThreads(2)
+    nn_yolo.input.setBlocking(True)  # set blocking, otherwise configs in queue might be overwritten
+    nn_yolo.input.setQueueSize(9)
+    source.link(nn_yolo.input)
+    return nn_yolo
 
 
 def create_output(pipeline: dai.Pipeline, node: dai.Node.Output, stream_name: str):

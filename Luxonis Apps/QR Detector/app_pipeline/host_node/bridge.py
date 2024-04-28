@@ -4,6 +4,7 @@ import time
 
 import depthai as dai
 import robothub as rh
+
 from app_pipeline import host_node
 
 
