@@ -1,3 +1,5 @@
+import logging as log
+
 import robothub as rh
 import zxingcpp
 
@@ -23,9 +25,11 @@ class QrCodeDecoder(host_node.BaseNode):
             xmin, ymin, xmax, ymax = bbox.transform(width=1920 * 2, height=1080 * 2)
             # cv2.rectangle(high_res_frame, (int(xmin), int(ymin)), (int(xmax), int(ymax)), (0, 0, 255), 2)
             qr_code_crop = high_res_frame[ymin - self.PADDING:ymax + self.PADDING, xmin - self.PADDING:xmax + self.PADDING, self.DECODE_CHANNEL]
-            decoded_codes = zxingcpp.read_barcodes(qr_code_crop)
-            if len(decoded_codes) > 0:
-                decoded_code = decoded_codes[0]
-                bbox.set_label(label=decoded_code.text)
+            width, height = qr_code_crop.shape
+            if width > 0 and height > 0:
+                decoded_codes = zxingcpp.read_barcodes(qr_code_crop)
+                if len(decoded_codes) > 0:
+                    decoded_code = decoded_codes[0]
+                    bbox.set_label(label=decoded_code.text)
         # cv2.imshow("4k", high_res_frame)
         self.send_message(frames_and_detections)
