@@ -33,7 +33,7 @@ class ResultsReporter(host_node.BaseNode):
             if qr_code.label and qr_code.label not in self._qr_code_memory:
                 self._qr_code_memory[qr_code.label] = 0
                 new_qr_codes[qr_code.label] = qr_code
-            else:
+            elif qr_code.label:
                 existing_qr_codes[qr_code.label] = qr_code
 
         if new_qr_codes:
