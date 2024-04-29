@@ -28,29 +28,12 @@ class Application(rh.BaseDepthAIApplication):
         )
         self.open_library_client = OpenLibraryClient()
 
-    @property
-    def can_search(self):
-        """Search can only be initiated if not currently searching,
-        the last search was conducted over 3 seconds ago,
-        and at least two or more words have been detected for the search query"""
-
-        return (
-            not self.open_library_client.searching
-            and (datetime.now() - self.last_successful_search) > timedelta(seconds=3)
-            and len(self.ocr.get_query_detections()) >= 2
-        )
-
     def setup_pipeline(self) -> dai.Pipeline:
         """Define the pipeline using DepthAI."""
 
         log.info(f"App config: {rh.CONFIGURATION}")
         log.info("Creating camera pipeline")
         return create_pipeline()
-
-    def finish_search(self, search_results: list[SearchResult]):
-        frontend_notifier.send_search_results(search_results)
-        self.last_successful_search = datetime.now()
-        self.query_bboxes = []
 
     def manage_device(self, device: dai.Device):
         h264_queue: dai.DataOutputQueue = device.getOutputQueue(
@@ -62,8 +45,6 @@ class Application(rh.BaseDepthAIApplication):
         nn_queue: dai.DataOutputQueue = device.getOutputQueue(
             "nn_out", maxSize=30, blocking=False
         )
-
-        self.live_view = rh.DepthaiLiveView("Live view", "live_view", *CAM_SIZE)
 
         log.info("Application running")
         while rh.app_is_running():
@@ -91,6 +72,23 @@ class Application(rh.BaseDepthAIApplication):
                 visualization_bboxes,
                 self.query_bboxes,
             )
+
+    @property
+    def can_search(self):
+        """Search can only be initiated if not currently searching,
+        the last search was conducted over 3 seconds ago,
+        and at least two or more words have been detected for the search query"""
+
+        return (
+            not self.open_library_client.searching
+            and (datetime.now() - self.last_successful_search) > timedelta(seconds=3)
+            and len(self.ocr.get_query_detections()) >= 2
+        )
+
+    def finish_search(self, search_results: list[SearchResult]):
+        frontend_notifier.send_search_results(search_results)
+        self.last_successful_search = datetime.now()
+        self.query_bboxes = []
 
     def on_stop(self):
         super().on_stop()
