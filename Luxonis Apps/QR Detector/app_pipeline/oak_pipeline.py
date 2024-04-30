@@ -16,7 +16,9 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
         rgb_sensor.initialControl.setManualFocus(rh.CONFIGURATION["manual_focus"])
 
     video_encoder = create_h264_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
-    isp_downsize_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.isp, resize=(1280, 720), frame_type=dai.RawImgFrame.Type.NV12)
+    isp_downsize_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.isp, resize=(1280, 720), frame_type=dai.RawImgFrame.Type.NV12,
+                                            frames_pool=3,
+                                            blocking_input_queue=True)
     isp_downsize_manip.out.link(video_encoder.input)
 
     script_node = create_script_node(pipeline=pipeline, script_name="app_pipeline/script_node.py")
