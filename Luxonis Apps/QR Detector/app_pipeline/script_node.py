@@ -17,11 +17,13 @@ while True:
         xmax, ymax = xmin + STEP, ymin + STEP
         cfg = ImageManipConfig()
         cfg.setCropRect(xmin, ymin, xmax, ymax)
+        cfg.setResize(1000, 1000)
+        cfg.setFrameType(ImgFrame.Type.BGR888p)
         cfg.setKeepAspectRatio(False)
 
-        node.io['image_manip_nn_crop_cfg'].send(cfg)
-        node.io['image_manip_nn_crop'].send(rgb_frame)
-    high_res_frame = node.io["rgb_isp_high_res"].get()
+        node.io['image_manip_1to1_crop_cfg'].send(cfg)
+        node.io['image_manip_1to1_crop'].send(rgb_frame)
+
     counter = 0
     for i in range(NUMBER_OF_CROPPED_IMAGES):
         qr_detections = node.io["qr_detection_nn"].get()
@@ -38,5 +40,5 @@ while True:
             cfg.setKeepAspectRatio(False)
             cfg.setFrameType(ImgFrame.Type.BGR888p)
 
-            node.io['image_manip_crop_cfg'].send(cfg)
-            node.io['image_manip_crop'].send(high_res_frame)
+            node.io['to_qr_crop_manip_cfg'].send(cfg)
+            node.io['to_qr_crop_manip'].send(high_res_frame)

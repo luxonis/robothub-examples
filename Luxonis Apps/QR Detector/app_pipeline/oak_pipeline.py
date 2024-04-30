@@ -17,37 +17,31 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
 
     script_node = create_script_node(pipeline=pipeline, script_name="app_pipeline/script_node.py")
 
-    crop_from_high_res_manip = create_image_manip(pipeline=pipeline, source=script_node.outputs["image_manip_crop"],
-                                                  keep_aspect_ration=False, frame_type=dai.RawImgFrame.Type.BGR888p, blocking_input_queue=True,
-                                                  input_queue_size=3, wait_for_config=True, max_output_frame_size=2_000_000)
+    image_manip_1to1_crop = create_image_manip(pipeline=pipeline, source=script_node.outputs["image_manip_1to1_crop"], wait_for_config=True,
+                                               resize=(1000, 1000), frames_pool=2, frame_type=dai.RawImgFrame.Type.BGR888p)
+    script_node.outputs["image_manip_1to1_crop_cfg"].link(image_manip_1to1_crop.inputConfig)
 
-    image_manip_nn_crop = create_image_manip(pipeline=pipeline, source=script_node.outputs["image_manip_nn_crop"],
-                                             wait_for_config=True, resize=(1280, 720), frames_pool=10, blocking_input_queue=True)
-    image_manip_nn_crop.inputImage.setBlocking(True)
+    image_manip_nn_input_crop = create_image_manip(pipeline=pipeline, source=image_manip_1to1_crop.out,
+                                                   resize=(512, 512), frames_pool=5, blocking_input_queue=True)
 
-    isp_to_16_9_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.isp, crop=(0, 0.251, 1, 0.749), input_queue_size=2,
-                                           max_output_frame_size=5312 * 2988 * 3, frames_pool=2)
-    isp_to_preview_manip = create_image_manip(pipeline=pipeline, source=isp_to_16_9_manip.out, resize=(1280, 720),
-                                              keep_aspect_ration=True, frame_type=dai.RawImgFrame.Type.BGR888p, blocking_input_queue=True,
-                                              input_queue_size=2, max_output_frame_size=1280 * 720 * 3, frames_pool=9)
-    script_node.outputs["image_manip_nn_crop_cfg"].link(image_manip_nn_crop.inputConfig)
+    to_qr_crop_manip = create_image_manip(pipeline=pipeline, source=script_node.outputs["to_qr_crop_manip"],
+                                          keep_aspect_ration=False, frame_type=dai.RawImgFrame.Type.BGR888p, blocking_input_queue=True,
+                                          input_queue_size=3, wait_for_config=True, max_output_frame_size=2_000_000)
+    script_node.outputs["to_qr_crop_manip_cfg"].link(image_manip_1to1_crop.inputConfig)
+
     script_node.inputs["rgb_frame"].setBlocking(True)
 
-    qr_detection_nn = create_yolo_nn(pipeline=pipeline, source=image_manip_nn_crop.out,
-                                     model_path="models/qrdet-n_openvino_2022.1_5shave.blob",
+    qr_detection_nn = create_yolo_nn(pipeline=pipeline, source=image_manip_nn_input_crop.out,
+                                     model_path="models/qrdet-512x512_n_openvino_2022.1_6shave.blob",
                                      confidence_threshold=0.5)
     qr_detection_nn.setNumPoolFrames(10)
 
     # linking
-    script_node.outputs["image_manip_crop_cfg"].link(crop_from_high_res_manip.inputConfig)
     qr_detection_nn.out.link(script_node.inputs["qr_detection_nn"])
-    isp_to_preview_manip.out.link(script_node.inputs["rgb_frame"])
-    isp_to_16_9_manip.out.link(script_node.inputs["rgb_isp_high_res"])
     rgb_input.out.link(rgb_sensor.inputControl)
 
     # outputs
     create_output(pipeline=pipeline, node=qr_detection_nn.out, stream_name="qr_detection_out")
-    create_output(pipeline=pipeline, node=rgb_sensor.preview, stream_name="preview")
     create_output(pipeline=pipeline, node=crop_from_high_res_manip.out, stream_name="crop_from_high_res")
 
 
