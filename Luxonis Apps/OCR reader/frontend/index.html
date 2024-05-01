@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Reader</title>
+    <link rel="stylesheet" href="./index.css">
+    <script src="./index.js" defer></script>
+</head>
+
+
+
+<body>
+    <main class="main-container">
+        <h1>OCR Reader</h1>
+        <p class="info-text">
+            Please hold up either the spine of a book or its cover to the camera. OCR Reader will then process the text
+            and attempt to find it on <a class="external-link" href="https://openlibrary.org"
+                target="_blank">https://openlibrary.org</a>.
+        </p>
+        <div class="stream-status-container">
+            <div class="video-stream-container" id="videoStreamContainer">
+                <rh-video stream-key="live_view" />
+            </div>
+            <div id="statusBadge" class="status idle">No book visible</div>
+        </div>
+        <h1>Search results</h1>
+        <ul id="resultList" class="result-list">
+            <h3 class="no-results">No results yet</h3>
+        </ul>
+    </main>
+</body>
+
+</html>
