@@ -1,5 +1,6 @@
 import logging as log
 
+import cv2
 import depthai as dai
 import numpy as np
 import robothub as rh
@@ -52,6 +53,16 @@ class HighResFramesGatherer(host_node.BaseNode):
         image7 = self._frames[6].getCvFrame()
         image8 = self._frames[7].getCvFrame()
         image9 = self._frames[8].getCvFrame()
+        cv2.imshow("image1", image1)
+        cv2.imshow("image2", image2)
+        cv2.imshow("image3", image3)
+        cv2.imshow("image4", image4)
+        cv2.imshow("image5", image5)
+        cv2.imshow("image6", image6)
+        cv2.imshow("image7", image7)
+        cv2.imshow("image8", image8)
+        cv2.imshow("image9", image9)
+
 
         image_width = image1.shape[1]
         image_height = image1.shape[0]
@@ -63,15 +74,18 @@ class HighResFramesGatherer(host_node.BaseNode):
 
         merged_image = np.zeros((merged_image_height, merged_image_width, 3), dtype=np.uint8)
 
+        # draw the situation to understand this
         merged_image[: image_height, : image_width] = image1
-        merged_image[: image_height, image_width: image_width * 2] = image2
-        merged_image[: image_height, image_width * 2: image_width * 3] = image3
-        merged_image[image_height: image_height * 2, : image_width] = image4
-        merged_image[image_height: image_height * 2, image_width: image_width * 2] = image5
-        merged_image[image_height: image_height * 2, image_width * 2: image_width * 3] = image6
-        merged_image[image_height * 2: image_height * 3, : image_width] = image7
-        merged_image[image_height * 2: image_height * 3, image_width: image_width * 2] = image8
-        merged_image[image_height * 2: image_height * 3, image_width * 2: image_width * 3] = image9
+        merged_image[image_height - overlap_height: image_height * 2 - overlap_height, : image_width] = image2
+        merged_image[image_height * 2 - 2 * overlap_height: image_height * 3 - 2 * overlap_height, : image_width] = image3
+        merged_image[: image_height, image_width - overlap_width: image_width * 2 - overlap_width] = image4
+        merged_image[image_height - overlap_height: image_height * 2 - overlap_height,
+        image_width - overlap_width: image_width * 2 - overlap_width] = image5
+        merged_image[image_height * 2 - 2 * overlap_height: image_height * 3 - 2 * overlap_height,
+        image_width - overlap_width: image_width * 2 - overlap_width] = image6
+        merged_image[: image_height, image_width * 2 - 2 * overlap_width: image_width * 3 - 2 * overlap_width] = image7
+        merged_image[image_height - overlap_height: image_height * 2 - overlap_height, image_width * 2 - 2 * overlap_width: image_width * 3 - 2 * overlap_width] = image8
+        merged_image[image_height * 2 - 2 * overlap_height: image_height * 3 - 2 * overlap_height, image_width * 2 - 2 * overlap_width: image_width * 3 - 2 * overlap_width] = image9
         return merged_image
 
 

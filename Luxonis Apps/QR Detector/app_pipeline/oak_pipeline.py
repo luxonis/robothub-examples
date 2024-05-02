@@ -21,15 +21,15 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
 
     image_manip_1to1_crop = create_image_manip(pipeline=pipeline, source=script_node.outputs["image_manip_1to1_crop"], wait_for_config=True,
                                                resize=(rh.CONFIGURATION["high_res_crop_width"], rh.CONFIGURATION["high_res_crop_height"]),
-                                               frames_pool=9, frame_type=dai.RawImgFrame.Type.BGR888p)
+                                               frames_pool=9, frame_type=dai.RawImgFrame.Type.BGR888p, input_queue_size=9, blocking_input_queue=True)
     script_node.outputs["image_manip_1to1_crop_cfg"].link(image_manip_1to1_crop.inputConfig)
 
     image_manip_nn_input_crop = create_image_manip(pipeline=pipeline, source=image_manip_1to1_crop.out,
-                                                   resize=(512, 512), frames_pool=9, blocking_input_queue=True)
+                                                   resize=(512, 512), frames_pool=9, blocking_input_queue=True, input_queue_size=9)
 
     to_qr_crop_manip = create_image_manip(pipeline=pipeline, source=script_node.outputs["to_qr_crop_manip"],
                                           keep_aspect_ration=False, frame_type=dai.RawImgFrame.Type.BGR888p, blocking_input_queue=True,
-                                          input_queue_size=3, wait_for_config=True, max_output_frame_size=2_000_000)
+                                          input_queue_size=5, wait_for_config=True, max_output_frame_size=2_000_000)
     script_node.outputs["to_qr_crop_manip_cfg"].link(to_qr_crop_manip.inputConfig)
 
     qr_detection_nn = create_yolo_nn(pipeline=pipeline, source=image_manip_nn_input_crop.out,

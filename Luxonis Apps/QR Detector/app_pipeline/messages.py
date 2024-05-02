@@ -22,14 +22,14 @@ class QrBoundingBoxes(Message):
 
 
 @dataclass(slots=True, kw_only=True)
-class FramesWithDetections(Message):
-    high_res_rgb: np.ndarray
-    qr_bboxes: QrBoundingBoxes
+class HighResFrame(Message):
+    frame: np.ndarray
 
 
 @dataclass(slots=True, kw_only=True)
-class HighResFrame(Message):
-    frame: np.ndarray
+class FramesWithDetections(Message):
+    high_res_rgb: HighResFrame
+    qr_bboxes: QrBoundingBoxes
 
 
 @dataclass(slots=True, kw_only=True)

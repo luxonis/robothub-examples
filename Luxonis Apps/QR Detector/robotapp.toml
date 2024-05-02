@@ -51,7 +51,7 @@ field = "num_range"
 step = 125
 min = 100
 max = 30000
-initial_value = 10000
+initial_value = 20000
 
 [[configuration]]
 key = "enable_manual_exposure"
