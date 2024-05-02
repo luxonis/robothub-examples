@@ -6,6 +6,10 @@ This applications shows how to perform Optical Character Recognition (OCR) and s
 
 OCR reader utilizes two neural networks for text detection and text recognition. Text detection model runs directly on the camera, while the text recognition model runs on the host.
 
+## Pipeline
+
+![OCR_reader_pipeline](https://github.com/luxonis/robothub-examples/assets/99871801/e598c789-68f2-44a0-b184-a14cebbc3d6c)
+
 ## Features
 
 -   Real-time OCR
