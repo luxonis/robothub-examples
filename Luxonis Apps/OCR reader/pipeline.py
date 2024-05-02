@@ -15,8 +15,8 @@ def create_output(pipeline: dai.Pipeline, input: dai.Node.Output, stream_name: s
 
 def create_pipeline():
     pipeline = dai.Pipeline()
-    version = "2021.2"
-    pipeline.setOpenVINOVersion(version=dai.OpenVINO.Version.VERSION_2021_2)
+    version = "2021.4"
+    pipeline.setOpenVINOVersion(version=dai.OpenVINO.Version.VERSION_2021_4)
 
     color_cam: dai.node.ColorCamera = pipeline.create(dai.node.ColorCamera)
     color_cam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
