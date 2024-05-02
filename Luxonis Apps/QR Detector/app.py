@@ -4,6 +4,8 @@ import depthai as dai
 import robothub as rh
 
 from app_pipeline import host_node, messages, oak_pipeline
+from app_pipeline import script_node
+
 
 ### cv2 and av bug workaround on some linux systems - uncomment in local dev
 
@@ -33,6 +35,9 @@ class Application(rh.BaseDepthAIApplication):
         rh.CONFIGURATION["h264_frame_height"] = 720
         rh.CONFIGURATION["high_res_frame_width"] = RESOLUTION_MAPPING[rh.CONFIGURATION["resolution"]][0]
         rh.CONFIGURATION["high_res_frame_height"] = RESOLUTION_MAPPING[rh.CONFIGURATION["resolution"]][1]
+        rh.CONFIGURATION["crop_count"] = script_node.NUMBER_OF_CROPPED_IMAGES
+        rh.CONFIGURATION["high_res_crop_width"] = 1000
+        rh.CONFIGURATION["high_res_crop_height"] = 1000
 
     def setup_pipeline(self) -> dai.Pipeline:
         log.info(f"Configuration: {rh.CONFIGURATION}")
@@ -44,15 +49,16 @@ class Application(rh.BaseDepthAIApplication):
         log.info(f"DepthAi version: {dai.__version__}")
 
         self.rgb_control = device.getInputQueue(name="rgb_input")
-        preview = host_node.Bridge(device=device, out_name="preview", blocking=False, queue_size=3)
+        high_res_frames = host_node.Bridge(device=device, out_name="high_res_frames", blocking=False, queue_size=3)
+        qr_crops_queue = device.getOutputQueue(name="qr_crops", maxSize=10, blocking=True)
         qr_detection_out = host_node.Bridge(device=device, out_name="qr_detection_out", blocking=False, queue_size=3)
-        crop_from_high_res = device.getOutputQueue(name="crop_from_high_res", maxSize=10, blocking=True)
 
         qr_bboxes = host_node.ReconstructQrDetections(input_node=qr_detection_out)
-        qr_boxes_and_frame_sync = host_node.Sync(inputs=[preview, qr_bboxes],
-                                                 input_names=["rgb_preview", "qr_bboxes"],
+        high_res_frames = host_node.HighResFramesGatherer(input_node=high_res_frames)
+        qr_boxes_and_frame_sync = host_node.Sync(inputs=[high_res_frames, qr_bboxes],
+                                                 input_names=["high_res_rgb", "qr_bboxes"],
                                                  output_message_obj=messages.FramesWithDetections)
-        qr_code_decoder = host_node.QrCodeDecoder(input_node=qr_boxes_and_frame_sync, high_res_queue=crop_from_high_res)
+        qr_code_decoder = host_node.QrCodeDecoder(input_node=qr_boxes_and_frame_sync, qr_crop_queue=qr_crops_queue)
         host_node.ResultsReporter(input_node=qr_code_decoder)
         host_node.Monitor(input_node=qr_code_decoder, name="qr_boxes_and_frame_sync")
 

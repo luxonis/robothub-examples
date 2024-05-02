@@ -16,7 +16,7 @@ class Monitor(host_node.BaseNode):
                                              device_mxid=rh.DEVICE_MXID)
 
     def __callback(self, message: FramesWithDetections):
-        img = message.rgb_preview.getCvFrame()
+        img = message.high_res_rgb.getCvFrame()
         bboxes = message.qr_bboxes.bounding_boxes
         for bbox in bboxes:
             label = f"{bbox.label}, {bbox.confidence:.3f}"

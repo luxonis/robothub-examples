@@ -5,7 +5,7 @@ import numpy as np
 
 from node_helpers import BoundingBox
 
-__all__ = ["Message", "FramesWithDetections", "QrBoundingBoxes", "RhReport"]
+__all__ = ["Message", "FramesWithDetections", "QrBoundingBoxes", "RhReport", "HighResFrame"]
 
 
 @dataclass(slots=True, kw_only=True)
@@ -23,8 +23,13 @@ class QrBoundingBoxes(Message):
 
 @dataclass(slots=True, kw_only=True)
 class FramesWithDetections(Message):
-    rgb_preview: dai.ImgFrame
+    high_res_rgb: np.ndarray
     qr_bboxes: QrBoundingBoxes
+
+
+@dataclass(slots=True, kw_only=True)
+class HighResFrame(Message):
+    frame: np.ndarray
 
 
 @dataclass(slots=True, kw_only=True)

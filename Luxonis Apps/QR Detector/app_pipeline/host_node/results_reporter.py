@@ -37,7 +37,7 @@ class ResultsReporter(host_node.BaseNode):
 
         if new_qr_codes:
             log.info(f"New QR codes found: {new_qr_codes.keys()}")
-            context_image = frames_and_detections.rgb_preview.getCvFrame()
+            context_image = frames_and_detections.high_res_rgb.getCvFrame()
             qr_boxes = messages.QrBoundingBoxes(bounding_boxes=list(new_qr_codes.values()), sequence_number=frames_and_detections.getSequenceNum())
             for bbox in qr_boxes.bounding_boxes:
                 xmin, ymin, xmax, ymax = bbox.transform(width=1280, height=720)

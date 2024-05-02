@@ -16,25 +16,28 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
         rgb_sensor.initialControl.setManualFocus(rh.CONFIGURATION["manual_focus"])
 
     script_node = create_script_node(pipeline=pipeline, script_name="app_pipeline/script_node.py")
+    rgb_sensor.isp.link(script_node.inputs["rgb_frame"])
+    script_node.inputs["rgb_frame"].setBlocking(True)
 
     image_manip_1to1_crop = create_image_manip(pipeline=pipeline, source=script_node.outputs["image_manip_1to1_crop"], wait_for_config=True,
-                                               resize=(1000, 1000), frames_pool=2, frame_type=dai.RawImgFrame.Type.BGR888p)
+                                               resize=(rh.CONFIGURATION["high_res_crop_width"], rh.CONFIGURATION["high_res_crop_height"]),
+                                               frames_pool=9, frame_type=dai.RawImgFrame.Type.BGR888p)
     script_node.outputs["image_manip_1to1_crop_cfg"].link(image_manip_1to1_crop.inputConfig)
 
     image_manip_nn_input_crop = create_image_manip(pipeline=pipeline, source=image_manip_1to1_crop.out,
-                                                   resize=(512, 512), frames_pool=5, blocking_input_queue=True)
+                                                   resize=(512, 512), frames_pool=9, blocking_input_queue=True)
 
     to_qr_crop_manip = create_image_manip(pipeline=pipeline, source=script_node.outputs["to_qr_crop_manip"],
                                           keep_aspect_ration=False, frame_type=dai.RawImgFrame.Type.BGR888p, blocking_input_queue=True,
                                           input_queue_size=3, wait_for_config=True, max_output_frame_size=2_000_000)
-    script_node.outputs["to_qr_crop_manip_cfg"].link(image_manip_1to1_crop.inputConfig)
-
-    script_node.inputs["rgb_frame"].setBlocking(True)
+    script_node.outputs["to_qr_crop_manip_cfg"].link(to_qr_crop_manip.inputConfig)
 
     qr_detection_nn = create_yolo_nn(pipeline=pipeline, source=image_manip_nn_input_crop.out,
                                      model_path="models/qrdet-512x512_n_openvino_2022.1_6shave.blob",
                                      confidence_threshold=0.5)
     qr_detection_nn.setNumPoolFrames(10)
+    qr_detection_nn.input.setBlocking(True)
+    qr_detection_nn.input.setQueueSize(9)
 
     # linking
     qr_detection_nn.out.link(script_node.inputs["qr_detection_nn"])
@@ -42,7 +45,8 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
 
     # outputs
     create_output(pipeline=pipeline, node=qr_detection_nn.out, stream_name="qr_detection_out")
-    create_output(pipeline=pipeline, node=crop_from_high_res_manip.out, stream_name="crop_from_high_res")
+    create_output(pipeline=pipeline, node=to_qr_crop_manip.out, stream_name="qr_crops")
+    create_output(pipeline=pipeline, node=image_manip_1to1_crop.out, stream_name="high_res_frames")
 
 
 def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamera:
@@ -57,7 +61,7 @@ def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamer
     node.setBoardSocket(dai.CameraBoardSocket.RGB)
     node.setInterleaved(False)
     node.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
-    node.setNumFramesPool(2, 2, 2, 2, 1)
+    node.setNumFramesPool(2, 3, 2, 2, 1)
     node.setResolution(resolution_mapping[rh.CONFIGURATION["resolution"]])
     node.setFps(fps)
     return node

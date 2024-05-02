@@ -14,10 +14,10 @@ class QrCodeDecoder(host_node.BaseNode):
     DECODE_CHANNEL = 0  # blue channel should be enough for QR decoding
     PADDING = 20
 
-    def __init__(self, input_node: host_node.BaseNode, high_res_queue: dai.DataOutputQueue):
+    def __init__(self, input_node: host_node.BaseNode, qr_crop_queue: dai.DataOutputQueue):
         super().__init__()
         input_node.set_callback(callback=self.__callback)
-        self._high_res_queue = high_res_queue
+        self._qr_crop_queue = qr_crop_queue
 
     @rh.decorators.measure_average_performance(report_every_minutes=1)
     def __callback(self, frames_and_detections: messages.FramesWithDetections):
@@ -27,7 +27,7 @@ class QrCodeDecoder(host_node.BaseNode):
         for bbox in qr_bboxes.bounding_boxes:
             log.info(f"Getting crop {i} of {expected_crops}")
             i += 1
-            crop = self._high_res_queue.get()
+            crop = self._qr_crop_queue.get()
             bbox.set_crop(crop=crop)
 
         qr_bboxes.bounding_boxes = host_node.ReconstructQrDetections.perform_nms_on_bboxes(bounding_boxes=qr_bboxes.bounding_boxes)
