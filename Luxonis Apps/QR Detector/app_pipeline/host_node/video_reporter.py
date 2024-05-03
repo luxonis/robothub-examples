@@ -23,7 +23,7 @@ class VideoReporter(host_node.BaseNode):
         if self._last_video_event_sent.has_elapsed(time_in_seconds=60 * 10):
             self._last_video_event_sent.reset()
             self._buffer.save_video_event(before_seconds=20, after_seconds=20, title="Video Report", fps=8,
-                                          frame_width=rh.CONFIGURATION["h264_frame_width"], frame_height=rh.CONFIGURATION["h264_frame_height"],
+                                          frame_width=rh.CONFIGURATION["merged_image_size"], frame_height=rh.CONFIGURATION["merged_image_size"],
                                           on_complete=self._send_video_event)
 
     def _send_video_event(self, video_path: str):

@@ -37,10 +37,10 @@ class ResultsReporter(host_node.BaseNode):
 
         if new_qr_codes:
             log.info(f"New QR codes found: {new_qr_codes.keys()}")
-            context_image = frames_and_detections.high_res_rgb.getCvFrame()
+            context_image = frames_and_detections.high_res_rgb.frame
             qr_boxes = messages.QrBoundingBoxes(bounding_boxes=list(new_qr_codes.values()), sequence_number=frames_and_detections.getSequenceNum())
             for bbox in qr_boxes.bounding_boxes:
-                xmin, ymin, xmax, ymax = bbox.transform(width=1280, height=720)
+                xmin, ymin, xmax, ymax = bbox.transform(width=1500, height=1500)
                 context_image = cv2.rectangle(context_image, (int(xmin), int(ymin)), (int(xmax), int(ymax)), (0, 0, 255), 2)
                 # write label on the frame
                 label = f"{bbox.label}, {bbox.confidence:.3f}"
@@ -53,7 +53,7 @@ class ResultsReporter(host_node.BaseNode):
             else:
                 log.warning(f"Too many reports in buffer, dropping {rh_report.getSequenceNum()=}")
 
-        if self._last_rh_report_sent.has_elapsed(time_in_seconds=40) and len(self._rh_report_buffer) > 0:
+        if self._last_rh_report_sent.has_elapsed(time_in_seconds=35) and len(self._rh_report_buffer) > 0:
             self._last_rh_report_sent.reset()
             rh_report: messages.RhReport = self._rh_report_buffer.popleft()
             log.info(f"Sending QR code report with {len(rh_report.qr_bboxes.bounding_boxes)} QR codes")

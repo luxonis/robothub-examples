@@ -31,13 +31,13 @@ class Application(rh.BaseDepthAIApplication):
 
     def __init__(self):
         super().__init__()
-        rh.CONFIGURATION["h264_frame_width"] = 1280
-        rh.CONFIGURATION["h264_frame_height"] = 720
         rh.CONFIGURATION["high_res_frame_width"] = RESOLUTION_MAPPING[rh.CONFIGURATION["resolution"]][0]
         rh.CONFIGURATION["high_res_frame_height"] = RESOLUTION_MAPPING[rh.CONFIGURATION["resolution"]][1]
         rh.CONFIGURATION["crop_count"] = script_node.NUMBER_OF_CROPPED_IMAGES
-        rh.CONFIGURATION["high_res_crop_width"] = 1000
-        rh.CONFIGURATION["high_res_crop_height"] = 1000
+        rh.CONFIGURATION["high_res_crop_width"] = 600
+        rh.CONFIGURATION["high_res_crop_height"] = 600
+        rh.CONFIGURATION["merged_image_overlap"] = 0.25
+        rh.CONFIGURATION["merged_image_size"] = 1500
 
     def setup_pipeline(self) -> dai.Pipeline:
         log.info(f"Configuration: {rh.CONFIGURATION}")
@@ -51,7 +51,7 @@ class Application(rh.BaseDepthAIApplication):
         self.rgb_control = device.getInputQueue(name="rgb_input")
         high_res_frames = host_node.Bridge(device=device, out_name="high_res_frames", blocking=False, queue_size=3)
         qr_crops_queue = device.getOutputQueue(name="qr_crops", maxSize=10, blocking=True)
-        qr_detection_out = host_node.Bridge(device=device, out_name="qr_detection_out", blocking=False, queue_size=3)
+        qr_detection_out = host_node.Bridge(device=device, out_name="qr_detection_out", blocking=False, queue_size=9)
 
         qr_bboxes = host_node.ReconstructQrDetections(input_node=qr_detection_out)
         high_res_frames = host_node.HighResFramesGatherer(input_node=high_res_frames)
