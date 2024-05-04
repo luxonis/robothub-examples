@@ -42,9 +42,17 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
     qr_detection_nn.input.setBlocking(True)
     qr_detection_nn.input.setQueueSize(9)
 
+    # script node inputs
+    script_node_input = pipeline.createXLinkIn()
+    script_node_input.setStreamName("script_node_input")
+    script_node_qr_crops_input = pipeline.createXLinkIn()
+    script_node_qr_crops_input.setStreamName("script_node_qr_crops_input")
+
     # linking
     qr_detection_nn.out.link(script_node_qr_crops.inputs["qr_detection_nn"])
     rgb_input.out.link(rgb_sensor.inputControl)
+    script_node_input.out.link(script_node.inputs["script_node_input"])
+    script_node_qr_crops_input.out.link(script_node_qr_crops.inputs["script_node_qr_crops_input"])
 
     # outputs
     create_output(pipeline=pipeline, node=qr_detection_nn.out, stream_name="qr_detection_out")

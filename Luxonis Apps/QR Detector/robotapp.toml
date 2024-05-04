@@ -8,13 +8,13 @@ description = "This is a generated description. Replace it with your own."
 application = "app.py#Application"
 workdir = "/app"
 
-#[runtime.runs_on]
-#type = "image"
-#name = "ghcr.io/luxonis/robothub-app-v2:2024.110.1321-rvc2-regular"
-
 [runtime.runs_on]
-type = "custom"
-dockerfile = "Dockerfile"
+type = "image"
+name = "ghcr.io/luxonis/qr_detector:v1.0.0"
+
+#[runtime.runs_on]
+#type = "custom"
+#dockerfile = "Dockerfile"
 
 [[configuration]]
 visual = "section"

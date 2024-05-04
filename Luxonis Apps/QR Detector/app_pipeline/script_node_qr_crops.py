@@ -1,4 +1,5 @@
 
+
 NUMBER_OF_CROPPED_IMAGES = 9
 STEP = 0.3
 OVERLAP = 0.1
@@ -27,6 +28,10 @@ def clamp(num, minimum, maximum):
 
 
 def run():
+    message = node.io["script_node_qr_crops_input"].get()
+    data = message.getData()
+    node.error(f"Data received: {data[0]}")
+    resolution = data[0]  # 0 for 5312x6000, 1 for 4k
     while True:
         rgb_frame = node.io["rgb_frame"].get()
         counter = 0

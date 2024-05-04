@@ -49,6 +49,11 @@ class Application(rh.BaseDepthAIApplication):
         log.info(f"DepthAi version: {dai.__version__}")
 
         self.rgb_control = device.getInputQueue(name="rgb_input")
+        script_node_input = device.getInputQueue(name="script_node_input")
+        script_node_qr_crops_input = device.getInputQueue(name="script_node_qr_crops_input")
+        self._send_resolution_config_to_script_node(script_node_input)
+        self._send_resolution_config_to_script_node(script_node_qr_crops_input)
+
         high_res_frames = host_node.Bridge(device=device, out_name="high_res_frames", blocking=False, queue_size=3)
         qr_crops_queue = device.getOutputQueue(name="qr_crops", maxSize=10, blocking=True)
         qr_detection_out = host_node.Bridge(device=device, out_name="qr_detection_out", blocking=False, queue_size=9)
@@ -64,6 +69,12 @@ class Application(rh.BaseDepthAIApplication):
 
         log.info(f"Application started")
         host_node.Bridge.run(device_stop_event=self._device_stop_event)
+
+    def _send_resolution_config_to_script_node(self, input_queue: dai.DataInputQueue):
+        message = dai.Buffer()
+        data = [0] if rh.CONFIGURATION["resolution"] == "5312x6000" else [1]
+        message.setData(data)
+        input_queue.send(message)
 
     def on_configuration_changed(self, configuration_changes: dict) -> None:
         log.info(f"CONFIGURATION CHANGES: {configuration_changes}")

@@ -30,7 +30,8 @@ class QrCodeDecoder(host_node.BaseNode):
             i += 1
             crop = self._qr_crop_queue.get()
             bbox.set_crop(crop=crop)
-            cv2.imshow(f"crop{i}", bbox.crop.getCvFrame())
+            if rh.LOCAL_DEV:
+                cv2.imshow(f"crop{i}", bbox.crop.getCvFrame())
 
         qr_bboxes.bounding_boxes = host_node.ReconstructQrDetections.perform_nms_on_bboxes(bounding_boxes=qr_bboxes.bounding_boxes)
 
