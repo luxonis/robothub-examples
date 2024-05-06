@@ -29,6 +29,10 @@ class FindStart:
             return True
 
     @classmethod
-    def reset(cls):
+    def enable(cls):
         log.warning("Resetting FindStart")
         cls._find_start = True
+
+    @classmethod
+    def disable(cls):
+        cls._find_start = False

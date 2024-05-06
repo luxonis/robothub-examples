@@ -55,9 +55,9 @@ class Application(rh.BaseDepthAIApplication):
         self._send_resolution_config_to_script_node(script_node_input)
         self._send_resolution_config_to_script_node(script_node_qr_crops_input)
 
-        high_res_frames = host_node.Bridge(device=device, out_name="high_res_frames", blocking=False, queue_size=3)
+        high_res_frames = host_node.Bridge(device=device, out_name="high_res_frames", blocking=False, queue_size=20)
         qr_crops_queue = device.getOutputQueue(name="qr_crops", maxSize=10, blocking=True)
-        qr_detection_out = host_node.Bridge(device=device, out_name="qr_detection_out", blocking=False, queue_size=9)
+        qr_detection_out = host_node.Bridge(device=device, out_name="qr_detection_out", blocking=False, queue_size=40)
 
         qr_bboxes = host_node.ReconstructQrDetections(input_node=qr_detection_out)
         high_res_frames = host_node.HighResFramesGatherer(input_node=high_res_frames)

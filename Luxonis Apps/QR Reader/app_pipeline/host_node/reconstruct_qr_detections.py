@@ -21,6 +21,7 @@ class ReconstructQrDetections(host_node.BaseNode):
         input_node.set_callback(callback=self.__callback)
         self._TOTAL_CROP_COUNT = script_node.NUMBER_OF_CROPPED_IMAGES
         self._find_start = FindStart(sequence_length=self._TOTAL_CROP_COUNT)
+        self._find_start.disable()
         self._sequence_number = 0
         self._crop_count = 0
         self._x_offset = 0
@@ -45,8 +46,9 @@ class ReconstructQrDetections(host_node.BaseNode):
         self._increase_crop_count()
         self._update_coord_offset()
 
-    def _transform_to_frame_space(self, detections: dai.ImgDetections):
+    def _transform_to_frame_space(self, detections: dai.ImgDetections) -> None:
         log.debug(f"{self._crop_count=} xoff: {self._x_offset} yoff: {self._y_offset}")
+        new_bboxes = []
         for detection in detections.detections:
             detection: dai.ImgDetection
             xmin_abs_crop = int(detection.xmin * self._CROP_WIDTH)
@@ -80,19 +82,22 @@ class ReconstructQrDetections(host_node.BaseNode):
         if self._crop_count != self._TOTAL_CROP_COUNT - 1:  # counting crops from zero
             return
         log.debug(f"Sending results for sequence number: {self._sequence_number}")
-        # bboxes_after_nms = self._perform_nms_on_bboxes()
-        bboxes_after_nms = self._bounding_boxes
-        if len(bboxes_after_nms) > 1:
+        bboxes = self._bounding_boxes
+        if len(bboxes) > 1:
+            log.debug(f"BBoxes: {bboxes}")
             # make sure all detections are from the same frame
-            if self._bounding_boxes[0].getSequenceNum() != self._bounding_boxes[-1].getSequenceNum():
-                log.critical(
-                    f"Sequence numbers are not the same: {self._bounding_boxes[0].getSequenceNum()} != {self._bounding_boxes[-1].getSequenceNum()}")
-                FindStart.reset()
-                self._crop_count = 0
-        for i in range(len(bboxes_after_nms)):
-            bbox = bboxes_after_nms[i]
+            if bboxes[0].getSequenceNum() != bboxes[-1].getSequenceNum():
+                log.warning(
+                    f"QR detections Sequence numbers are not the same: {bboxes[0].getSequenceNum()} != {bboxes[-1].getSequenceNum()}")
+                # FindStart.enable()
+                self._crop_count = len([bbox for bbox in bboxes if bbox.getSequenceNum() != bboxes[0].getSequenceNum])
+                self._update_coord_offset()
+                self._bounding_boxes.clear()
+                return
+        for i in range(len(bboxes)):
+            bbox = bboxes[i]
             bbox.counter = i
-        message = messages.QrBoundingBoxes(bounding_boxes=bboxes_after_nms, sequence_number=self._sequence_number)
+        message = messages.QrBoundingBoxes(bounding_boxes=bboxes, sequence_number=self._sequence_number)
         self.send_message(message=message)
 
         self._bounding_boxes.clear()

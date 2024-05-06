@@ -46,7 +46,7 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
 
     to_qr_crop_manip = create_image_manip(pipeline=pipeline, source=script_node_qr_crops.outputs["to_qr_crop_manip"],
                                           keep_aspect_ration=False, frame_type=dai.RawImgFrame.Type.BGR888p, blocking_input_queue=True,
-                                          input_queue_size=5, wait_for_config=True, max_output_frame_size=4_000_000)
+                                          input_queue_size=5, wait_for_config=True, max_output_frame_size=5_000_000)
     script_node_qr_crops.outputs["to_qr_crop_manip_cfg"].link(to_qr_crop_manip.inputConfig)
 
     qr_detection_nn = create_yolo_nn(pipeline=pipeline, source=image_manip_nn_input_crop.out,

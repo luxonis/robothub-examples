@@ -40,7 +40,11 @@ class BoundingBox:
 
     def __str__(self):
         return f"BBox: xmin:{self.xmin}, xmax:{self.xmax}," \
-               f" ymin:{self.ymin}, ymax:{self.ymax}"
+               f" ymin:{self.ymin}, ymax:{self.ymax}, seq_num:{self.frame_sequence_number}"
+
+    def __repr__(self):
+        return f"BBox: xmin:{self.xmin}, xmax:{self.xmax}," \
+               f" ymin:{self.ymin}, ymax:{self.ymax}, seq_num:{self.frame_sequence_number}"
 
     def set_label(self, label: str):
         self.label = label
