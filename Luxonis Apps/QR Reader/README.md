@@ -37,6 +37,10 @@ The limit inference speed for the QR detection neural network (YOLO8) used in th
 The way to make the QR detection faster, the high resolution frame would have to be split into fewer
 crops. Splitting the frame into 4 crops would allow the app run at 7-8 FPS, splitting it into 2 crops would allow for 15FPS etc...
 
+There is no LiveView when running as a LuxonisHub app. Run the app locally to see a live video feed.
+
+It is usually better to use manual focus, otherwise the autofocus is relatively slow because of the low overall FPS rate
+
 
 ## Runtime
 
