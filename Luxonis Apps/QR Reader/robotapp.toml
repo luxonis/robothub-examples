@@ -45,7 +45,7 @@ initial_value = 20000
 key = "enable_manual_exposure"
 label = "Enable Manual Exposure and ISO"
 field = "boolean"
-initial_value = true
+initial_value = false
 
 [[configuration]]
 key = "manual_exposure"
