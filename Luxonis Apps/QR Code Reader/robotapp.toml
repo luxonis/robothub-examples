@@ -28,8 +28,8 @@ style = "radio"
 allow_multiple = false
 options = [
   { key = "1080p", label = "1080p" },
-  { key = "4k", label = "4k" },
-  { key = "5312x6000", label = "5312x6000", default=true }
+  { key = "4k", label = "4k", default=true },
+  { key = "5312x6000", label = "5312x6000" }
 ]
 
 [[configuration]]
