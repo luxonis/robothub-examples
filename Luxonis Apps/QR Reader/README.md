@@ -2,7 +2,10 @@
 
 ## Demo
 
+https://github.com/luxonis/robothub-examples/assets/99871801/88e4ae38-d4db-4838-8751-8eb58c74e2de
+
 ## Pipeline
+![QR_Detector_pipeline](https://github.com/luxonis/robothub-examples/assets/99871801/1325afaf-2ef9-4c16-9e60-c7754dfeeab4)
 
 ## Description
 
