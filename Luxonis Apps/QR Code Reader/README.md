@@ -9,49 +9,52 @@ https://github.com/luxonis/robothub-examples/assets/99871801/88e4ae38-d4db-4838-
 
 ## Description
 
-The QR Code Reader app is specifically designed to take full advantage of the __IMX582__ sensor. It is integrated into the OAK-1 MAX where it
-runs at 32MP mode (5312x6000 pixels). On other OAKs it needs to be setup to run with the 4k resolution.
+The QR Code Reader app is tailored to fully utilize the __IMX582__ sensor (32MP = 5312x6000 pixels) integrated into the __OAK-1 MAX__. For other OAK models,
+it should be configured to run at __4K resolution.__
 
-To take the full advantage of high resolutions, the QR code detection part works like this (The 5312x6000 resolution variant. The 4k variant is very similar, mainly the crop sizes are different.):
+To maximize high resolution capabilities, the QR code detection process functions as follows for the 5312x6000 resolution variant
+(the 4K variant follows a similar process with different crop sizes):
 
-1. Split the high resolution image into nine equally sized crops (1000x1000x3). The goal here is to get as close as possible to the neural input frame size, which is 512x512.
-2. Run QR code detection inference on each of them
-3. Take the QR code detection results and for each detected QR code make a QR code crop on the high resolution image
-4. In the app, run QR code decoding on the QR code crops
-5. When running locally, visualize results using cv2. When running as a LuxonisHub app, send results as image events to LuxonisHub
+1. __Image Cropping:__ The high resolution image is split into nine equally sized crops (1000x1000x3), closely matching the neural input frame size of 512x512.
+2. __QR Code Detection:__ Inference is run on each of the cropped sections.
+3. __QR Code Cropping:__ For each detected QR code, a crop is made on the high resolution image.
+4. __QR Code Decoding:__ The app decodes the QR codes from these crops.
+5. __Visualization:__ Locally, results are visualized using OpenCV (cv2), while for LuxonisHub deployment, results are sent as image events.
 
 ### Advantages
 
-The QR code Reader app can read QR codes which appear very small in the frame. This means the QR code is either far away, or 
-it is small, or some combination of the two. The app achieves this by.
+The QR Code Reader app excels at reading small QR codes that are far away or simply small, or a combination of both. 
 
-In our internal testing, we were able to correctly detect and decode a 1,3cm x 1,3cm QR code which was 1m away from the OAK-1 MAX. 
+In internal tests, the app successfully detected and __decoded a 1.3cm x 1.3cm QR code from 1 meter away__ using the __OAK-1 MAX.__
 
 ### Limitations
 
-Every frame is split into 9 smaller frames and each of them is fed into QR code detection neural network. When running this app on the __5312x6000 on the OAK-1 MAX,__
-this allows maximum of 2FPS. When 4k resolution is used, the app can run at around 3.3 FPS. For the neural network this means
-it runs inference at 18FPS and 30FPS.
+- __Frame Rate:__ With the 5312x6000 resolution on the OAK-1 MAX, the app runs at a maximum of 2 FPS. 
+At 4K resolution, the app achieves around 3.3 FPS, corresponding to neural inference speeds of 18 FPS and 30 FPS, respectively. 
+The QR code detection neural network (YOLOv8) used in this app maxes out at 30 FPS.
 
-The limit inference speed for the QR code detection neural network (YOLO8) used in this app is around 30FPS.
-The way to make the QR code detection faster, the high resolution frame would have to be split into fewer
-crops. Splitting the frame into 4 crops would allow the app run at 7-8 FPS, splitting it into 2 crops would allow for 15FPS etc...
+- __Crop Splitting:__ The app's speed can be increased by reducing the number of crops. 
+Splitting the frame into 4 crops allows 7-8 FPS, while splitting it into 2 crops permits up to 15 FPS.
 
-There is no LiveView when running as a LuxonisHub app. Run the app locally to see a live video feed.
+- ive View: Live View is unavailable when running as a LuxonisHub app. For live video feed, run the app locally.
 
-It is usually better to use manual focus, otherwise the autofocus is relatively slow because of the low overall FPS rate
+- Autofocus: Manual focus is preferable, as autofocus is relatively slow at lower FPS rates.
 
 
 ## Runtime
 
-You can run this app locally:
+### Local execution
+
+Run the app locally with:
 
     python app.py
 
-make sure to install all dependencies
+Ensure all dependencies are installed.
 
-You can run this app in LuxonisHub. It is available in the __Luxonis Apps__ section under the name __QR Code Reader__
+### LuxonisHub Execution
+
+The app is available in LuxonisHub under the __Luxonis Apps__ section as __QR Code Reader__.
 
 ## Dependencies
 
-see `requirements.txt`
+Refer to  `requirements.txt`
