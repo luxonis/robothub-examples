@@ -1,0 +1,4 @@
+depthai==2.25.0.0
+opencv-python
+robothub==2.6.0
+zxing-cpp==2.2.0
