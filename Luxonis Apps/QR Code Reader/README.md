@@ -43,6 +43,8 @@ Splitting the frame into 4 crops allows 7-8 FPS, while splitting it into 2 crops
 
 ## Runtime
 
+A lot of data gets transferred from OAK to you controller (pc, laptop, etc...), it is essential to use USB3 or at least 1Gbps ethernet.
+
 ### Local execution
 
 Run the app locally with:
