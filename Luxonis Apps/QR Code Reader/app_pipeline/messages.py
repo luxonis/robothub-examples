@@ -29,6 +29,7 @@ class HighResFrame(Message):
 @dataclass(slots=True, kw_only=True)
 class FramesWithDetections(Message):
     high_res_rgb: HighResFrame
+    h264_frame: dai.ImgFrame
     qr_bboxes: QrBoundingBoxes
 
 

@@ -27,6 +27,16 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
     image_manip_1to1_crop = create_image_manip(pipeline=pipeline, source=script_node.outputs["image_manip_1to1_crop"], wait_for_config=True,
                                                resize=(rh.CONFIGURATION["high_res_crop_width"], rh.CONFIGURATION["high_res_crop_height"]),
                                                frames_pool=9, frame_type=dai.RawImgFrame.Type.BGR888p, input_queue_size=9, blocking_input_queue=True)
+    encoder_crop = (0.029, 0.083, 0.97, 0.9166) if rh.CONFIGURATION["resolution"] == "5312x6000" else (0, 0, 1, 1)
+    encoder_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.isp, wait_for_config=False,
+                                       resize=(rh.CONFIGURATION["encoder_frame_width"], rh.CONFIGURATION["encoder_frame_height"]),
+                                       crop=encoder_crop,
+                                       frames_pool=2, frame_type=dai.RawImgFrame.Type.NV12, input_queue_size=2, blocking_input_queue=False)
+    h264_encoder = create_h264_encoder(pipeline=pipeline, fps=4)
+    encoder_manip.out.link(h264_encoder.input)
+    h264_encoder.setNumFramesPool(2)
+    h264_encoder.input.setBlocking(False)
+    h264_encoder.input.setQueueSize(2)
     script_node.outputs["image_manip_1to1_crop_cfg"].link(image_manip_1to1_crop.inputConfig)
 
     nn_input_width = 512
@@ -79,6 +89,7 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
     create_output(pipeline=pipeline, node=qr_detection_nn.out, stream_name="qr_detection_out")
     create_output(pipeline=pipeline, node=to_qr_crop_manip.out, stream_name="qr_crops")
     create_output(pipeline=pipeline, node=image_manip_1to1_crop.out, stream_name="high_res_frames")
+    create_output(pipeline=pipeline, node=h264_encoder.bitstream, stream_name="h264_stream")
 
 
 def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamera:
