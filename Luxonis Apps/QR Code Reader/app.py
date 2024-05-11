@@ -39,6 +39,8 @@ class Application(rh.BaseDepthAIApplication):
         rh.CONFIGURATION["merged_image_overlap"] = 0.25 if rh.CONFIGURATION["resolution"] == "5312x6000" else 0.25
         rh.CONFIGURATION["merged_image_width"] = 1500 if rh.CONFIGURATION["resolution"] == "5312x6000" else 1920
         rh.CONFIGURATION["merged_image_height"] = 1500 if rh.CONFIGURATION["resolution"] == "5312x6000" else 1080
+        rh.CONFIGURATION["encoder_frame_width"] = 512 if rh.CONFIGURATION["resolution"] == "5312x6000" else 1920
+        rh.CONFIGURATION["encoder_frame_height"] = 512 if rh.CONFIGURATION["resolution"] == "5312x6000" else 1080
 
     def setup_pipeline(self) -> dai.Pipeline:
         log.info(f"Configuration: {rh.CONFIGURATION}")
@@ -58,11 +60,12 @@ class Application(rh.BaseDepthAIApplication):
         high_res_frames = host_node.Bridge(device=device, out_name="high_res_frames", blocking=False, queue_size=20)
         qr_crops_queue = device.getOutputQueue(name="qr_crops", maxSize=10, blocking=True)
         qr_detection_out = host_node.Bridge(device=device, out_name="qr_detection_out", blocking=False, queue_size=40)
+        h264_frames = host_node.Bridge(device=device, out_name="h264_stream", blocking=False, queue_size=2)
 
         qr_bboxes = host_node.ReconstructQrDetections(input_node=qr_detection_out)
         high_res_frames = host_node.HighResFramesGatherer(input_node=high_res_frames)
-        qr_boxes_and_frame_sync = host_node.Sync(inputs=[high_res_frames, qr_bboxes],
-                                                 input_names=["high_res_rgb", "qr_bboxes"],
+        qr_boxes_and_frame_sync = host_node.Sync(inputs=[high_res_frames, qr_bboxes, h264_frames],
+                                                 input_names=["high_res_rgb", "qr_bboxes", "h264_frame"],
                                                  output_message_obj=messages.FramesWithDetections)
         qr_code_decoder = host_node.QrCodeDecoder(input_node=qr_boxes_and_frame_sync, qr_crop_queue=qr_crops_queue)
         host_node.ResultsReporter(input_node=qr_code_decoder)
