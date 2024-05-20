@@ -36,12 +36,14 @@ The QR code detection neural network (YOLOv8) used in this app maxes out at 30 F
 - __Crop Splitting:__ The app's speed can be increased by reducing the number of crops. 
 Splitting the frame into 4 crops allows 7-8 FPS, while splitting it into 2 crops permits up to 15 FPS.
 
-- ive View: Live View is unavailable when running as a LuxonisHub app. For live video feed, run the app locally.
+- Live View: Live View is available at 512x512 when running at the 5312x6000 resolution.
 
 - Autofocus: Manual focus is preferable, as autofocus is relatively slow at lower FPS rates.
 
 
 ## Runtime
+
+A lot of data gets transferred from OAK to you controller (pc, laptop, etc...), it is essential to use USB3 or at least 1Gbps ethernet.
 
 ### Local execution
 
