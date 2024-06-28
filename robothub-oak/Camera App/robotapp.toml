@@ -1,0 +1,15 @@
+config_version = "2.0"
+configuration = []
+
+[info]
+name = "Luxonis Camera App"
+description = "Luxonis Camera App"
+
+[runtime]
+application = "app.py#CameraApp"
+workdir = "/app"
+requirements = ["stereo_depth"]
+
+[runtime.runs_on]
+type = "custom"
+dockerfile = "Dockerfile"
