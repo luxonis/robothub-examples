@@ -1,4 +1,7 @@
-depthai==2.25.0.0
+depthai==2.27.0.0
 opencv-python
 robothub==2.6.0
 zxing-cpp==2.2.0
+toml
+depthai-sdk==1.10.0
+av
