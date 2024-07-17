@@ -11,6 +11,7 @@ class BoundingBox:
                  sequence_number: int = 0):
         self.frame_sequence_number: int = sequence_number
         self.label = ""
+        self.code_format = ""
         self.crop = None
         self.counter = 0
 
@@ -48,6 +49,9 @@ class BoundingBox:
 
     def set_label(self, label: str):
         self.label = label
+
+    def set_format(self, code_format: str):
+        self.code_format = code_format
 
     def set_crop(self, crop):
         self.crop = crop
