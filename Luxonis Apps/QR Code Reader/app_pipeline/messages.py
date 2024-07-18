@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import depthai as dai
 import numpy as np
+from datetime import datetime
 
 from node_helpers import BoundingBox
 
@@ -37,3 +38,11 @@ class FramesWithDetections(Message):
 class RhReport(Message):
     context_image: np.ndarray
     qr_bboxes: QrBoundingBoxes
+
+
+@dataclass(slots=True, kw_only=True)
+class WebReport(Message):
+    crop_image: np.ndarray
+    label: str
+    code_format: str
+    timestamp: datetime
