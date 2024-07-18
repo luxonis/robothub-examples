@@ -73,3 +73,19 @@ step = 1
 min = 0
 max = 255
 initial_value = 0
+
+[[configuration]]
+key = "enable_web_reporter"
+label = "Enable sending reports to customer URL."
+field = "boolean"
+initial_value = true
+
+[[configuration]]
+field = "text"
+key = "url"
+label = "Customer URL to which the application sends reports."
+prefix = ""
+initial_value = "http://127.0.0.1:5000/webhook"
+
+
+
