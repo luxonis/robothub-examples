@@ -7,3 +7,4 @@ from .reconstruct_qr_detections import *
 from .results_reporter import *
 from .sync import *
 from .video_reporter import *
+from .web_reporter import *
