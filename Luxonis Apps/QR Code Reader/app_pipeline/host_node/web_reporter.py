@@ -1,15 +1,13 @@
 import logging as log
 from collections import deque
 
-import cv2
+import robothub as rh
 from datetime import datetime
 import requests
 
 from app_pipeline import host_node, messages
 
 __all__ = ["WebReporter"]
-
-SERVER_URL = "http://127.0.0.1:5000/webhook"  # TODO This is only for tests
 
 
 class WebReporter(host_node.BaseNode):
@@ -66,9 +64,9 @@ class WebReporter(host_node.BaseNode):
 
     @staticmethod
     def __send_report(report: messages.WebReport) -> None:
-        """Send the report on the customer URL."""
+        """Send the report on the customer URL. URL is from robotapp.toml configuration file."""
         try:
-            response = requests.post(SERVER_URL, json=report.to_dict())
+            response = requests.post(rh.CONFIGURATION["url"], json=report.to_dict())
             if response.status_code == 200:
                 log.info("[WebReporter] Data was successfully received!")
             else:
