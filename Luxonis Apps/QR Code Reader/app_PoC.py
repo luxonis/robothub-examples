@@ -98,7 +98,7 @@ for i in range(NUMBER_OF_CROPPED_IMAGES):
 # YoloDetectionNetwork
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/yolo_detection_network/
 nn_yolo = pipeline.create(depthai.node.YoloDetectionNetwork)
-nn_yolo.setBlobPath(str((Path(__file__).parent / Path('qr_model_512x288_rvc2_openvino_2022.1_6shave.blob')).resolve().absolute()))
+nn_yolo.setBlobPath(str((Path('models\qr_model_512x288_rvc2_openvino_2022.1_6shave.blob')).resolve().absolute()))
 nn_yolo.setConfidenceThreshold(CONFIDENCE_THRESHOLD)
 nn_yolo.setNumClasses(1)
 nn_yolo.setCoordinateSize(4)
