@@ -40,8 +40,6 @@ class WebReporter(host_node.BaseNode):
             qr_boxes = messages.QrBoundingBoxes(bounding_boxes=list(new_qr_codes.values()),
                                                 sequence_number=frames_and_detections.getSequenceNum())
             for bbox in qr_boxes.bounding_boxes:
-                cv2.imshow("Shape", bbox.crop.getCvFrame())  # TODO Remove. It only for debug
-
                 web_report = messages.WebReport(crop_image=bbox.crop.getCvFrame(), label=bbox.label,
                                                 code_format=bbox.code_format, timestamp=datetime.now(),
                                                 sequence_number=frames_and_detections.getSequenceNum())
