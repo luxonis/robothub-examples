@@ -68,6 +68,8 @@ class Application(rh.BaseDepthAIApplication):
                                                  input_names=["high_res_rgb", "qr_bboxes", "h264_frame"],
                                                  output_message_obj=messages.FramesWithDetections)
         qr_code_decoder = host_node.QrCodeDecoder(input_node=qr_boxes_and_frame_sync, qr_crop_queue=qr_crops_queue)
+        if rh.CONFIGURATION["enable_web_reporter"]:
+            host_node.WebReporter(input_node=qr_code_decoder)
         host_node.ResultsReporter(input_node=qr_code_decoder)
         host_node.Monitor(input_node=qr_code_decoder, name="qr_boxes_and_frame_sync")
 
