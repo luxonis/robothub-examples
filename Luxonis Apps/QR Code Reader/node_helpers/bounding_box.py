@@ -51,7 +51,7 @@ class BoundingBox:
         self.label = label
 
     def set_format(self, code_format: str):
-        self.code_format = code_format
+        self.code_format = code_format.replace('BarcodeFormat.', '')
 
     def set_crop(self, crop):
         self.crop = crop
