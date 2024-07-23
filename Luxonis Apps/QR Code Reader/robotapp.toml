@@ -88,5 +88,9 @@ label = "Customer URL to which the application sends reports."
 prefix = ""
 initial_value = "http://127.0.0.1:5000/webhook"
 
-
+[[configuration]]
+key = "barcode_mode"
+label = "Enable barcode recognition and decoding (barcodes only)."
+field = "boolean"
+initial_value = true
 
