@@ -1,0 +1,8 @@
+{
+    "evenBetterToml.taplo.configFile.path": "/.vscode/taplo.toml",
+    "eslint.workingDirectories": [
+        "src"
+    ],
+    "editor.tabSize": 2,
+    "ros.distro": "humble"
+}
