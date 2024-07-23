@@ -79,7 +79,7 @@ initial_value = 0
 key = "enable_web_reporter"
 label = "Enable sending reports to customer URL."
 field = "boolean"
-initial_value = true
+initial_value = false
 
 [[configuration]]
 field = "text"
@@ -92,5 +92,5 @@ initial_value = "http://127.0.0.1:5000/webhook"
 key = "barcode_mode"
 label = "Enable barcode recognition and decoding (barcodes only)."
 field = "boolean"
-initial_value = true
+initial_value = false
 
