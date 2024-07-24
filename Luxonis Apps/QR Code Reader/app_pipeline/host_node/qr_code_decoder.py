@@ -69,6 +69,7 @@ class QrCodeDecoder(host_node.BaseNode):
                         log.warning(f"More than one QR code detected in crop {i}")
                     decoded_code = decoded_codes[0]
                     bbox.set_label(label=decoded_code.text)
+                    bbox.set_format(code_format=str(decoded_code.format))
         # cv2.imshow("4k", high_res_frame)
         if len(qr_bboxes.bounding_boxes) > 0:
             if qr_bboxes.bounding_boxes[0].crop.getSequenceNum() != qr_bboxes.bounding_boxes[-1].crop.getSequenceNum():

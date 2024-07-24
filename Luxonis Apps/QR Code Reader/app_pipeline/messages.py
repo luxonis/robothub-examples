@@ -2,6 +2,9 @@ from dataclasses import dataclass
 
 import depthai as dai
 import numpy as np
+from datetime import datetime
+import cv2
+import base64
 
 from node_helpers import BoundingBox
 
@@ -37,3 +40,25 @@ class FramesWithDetections(Message):
 class RhReport(Message):
     context_image: np.ndarray
     qr_bboxes: QrBoundingBoxes
+
+
+@dataclass(slots=True, kw_only=True)
+class WebReport(Message):
+    crop_image: np.ndarray
+    label: str
+    code_format: str
+    timestamp: datetime
+
+    def to_dict(self) -> dict:
+        return {
+            "label": self.label,
+            "code_format": self.code_format,
+            "timestamp": str(self.timestamp),
+            "crop_image": self.__encode_image_to_base64()
+        }
+
+    def __encode_image_to_base64(self) -> str:
+        """Convert np.ndarray to string."""
+        _, buffer = cv2.imencode('.jpg', self.crop_image)
+        encoded_string = base64.b64encode(buffer).decode('utf-8')
+        return encoded_string

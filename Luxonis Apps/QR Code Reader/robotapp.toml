@@ -1,3 +1,4 @@
+# https://docs.luxonis.com/cloud/perception-apps/configuration/
 config_version = "2.0"
 
 [info]
@@ -73,3 +74,23 @@ step = 1
 min = 0
 max = 255
 initial_value = 0
+
+[[configuration]]
+key = "enable_web_reporter"
+label = "Enable sending reports to customer URL."
+field = "boolean"
+initial_value = false
+
+[[configuration]]
+field = "text"
+key = "url"
+label = "Customer URL to which the application sends reports."
+prefix = ""
+initial_value = "http://127.0.0.1:5000/webhook"
+
+[[configuration]]
+key = "barcode_mode"
+label = "Enable barcode recognition and decoding (barcodes only)."
+field = "boolean"
+initial_value = false
+

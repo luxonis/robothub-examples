@@ -18,6 +18,7 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
 
     script_node = create_script_node(pipeline=pipeline, script_name="app_pipeline/script_node.py")
     script_node_qr_crops = create_script_node(pipeline=pipeline, script_name="app_pipeline/script_node_qr_crops.py")
+    # camera (isp) > script
     rgb_sensor.isp.link(script_node.inputs["rgb_frame"])
     rgb_sensor.isp.link(script_node_qr_crops.inputs["rgb_frame"])
     script_node.inputs["rgb_frame"].setBlocking(True)
@@ -39,16 +40,23 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
     h264_encoder.input.setQueueSize(2)
     script_node.outputs["image_manip_1to1_crop_cfg"].link(image_manip_1to1_crop.inputConfig)
 
-    nn_input_width = 512
-    nn_input_height = 512 if rh.CONFIGURATION["resolution"] == "5312x6000" else 288
-    if rh.CONFIGURATION["resolution"] == "5312x6000":
-        nn_model_path = "models/qrdet-512x512_openvino_2022.1_3shave.blob"
-    elif rh.CONFIGURATION["resolution"] == "4k":
-        nn_model_path = "models/qrdet-512x288_openvino_2022.1_5shave.blob"
-    elif rh.CONFIGURATION["resolution"] == "1080p":
-        nn_model_path = "models/qr_model_512x288_rvc2_openvino_2022.1_6shave.blob"
+    if rh.CONFIGURATION["barcode_mode"]:
+        nn_input_width = 416
+        nn_input_height = 416
+        nn_model_path = "models\\barcode-det_best-416x416_openvino_2022.1_6shave.blob"
+        nn_confidence_threshold = 0.75
     else:
-        raise ValueError(f"Unknown resolution: {rh.CONFIGURATION['resolution']}")
+        nn_input_width = 512
+        nn_input_height = 512 if rh.CONFIGURATION["resolution"] == "5312x6000" else 288
+        nn_confidence_threshold = 0.5
+        if rh.CONFIGURATION["resolution"] == "5312x6000":
+            nn_model_path = "models/qrdet-512x512_openvino_2022.1_3shave.blob"
+        elif rh.CONFIGURATION["resolution"] == "4k":
+            nn_model_path = "models/qrdet-512x288_openvino_2022.1_5shave.blob"
+        elif rh.CONFIGURATION["resolution"] == "1080p":
+            nn_model_path = "models/qr_model_512x288_rvc2_openvino_2022.1_6shave.blob"
+        else:
+            raise ValueError(f"Unknown resolution: {rh.CONFIGURATION['resolution']}")
 
     image_manip_nn_input_crop = create_image_manip(pipeline=pipeline, source=image_manip_1to1_crop.out,
                                                    resize=(nn_input_width, nn_input_height), frames_pool=9, blocking_input_queue=True,
@@ -61,7 +69,7 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
 
     qr_detection_nn = create_yolo_nn(pipeline=pipeline, source=image_manip_nn_input_crop.out,
                                      model_path=nn_model_path,
-                                     confidence_threshold=0.5)
+                                     confidence_threshold=nn_confidence_threshold)
     qr_detection_nn.setNumPoolFrames(10)
     qr_detection_nn.input.setBlocking(True)
     qr_detection_nn.input.setQueueSize(9)

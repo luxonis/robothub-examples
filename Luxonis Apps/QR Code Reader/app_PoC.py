@@ -11,10 +11,14 @@ import zxingcpp
 OUTPUT_TO_FILE = False
 OUTPUT_FILENAME = "results.txt"
 
-NN_INPUT_SIZE_W = 512
-NN_INPUT_SIZE_H = 288
+# NN_INPUT_SIZE_W = 512
+# NN_INPUT_SIZE_H = 288
 
-CONFIDENCE_THRESHOLD = 0.2
+NN_INPUT_SIZE_W = 416
+NN_INPUT_SIZE_H = 416
+
+
+CONFIDENCE_THRESHOLD = 0.75
 
 NUMBER_OF_CROPPED_IMAGES = 9
 crop_vals = [(0.0, 0.0), (0.0, 0.3), (0.0, 0.6), (0.3, 0.0), (0.3, 0.3), (0.3, 0.6), (0.6, 0.0), (0.6, 0.3), (0.6, 0.6)]
@@ -34,7 +38,7 @@ cam = pipeline.create(depthai.node.ColorCamera)
 cam.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
 cam.setColorOrder(depthai.ColorCameraProperties.ColorOrder.BGR)
 cam.setInterleaved(False)
-cam.setPreviewSize(1920,1080)
+cam.setPreviewSize(1920, 1080)
 
 # Script
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/script/
@@ -98,7 +102,8 @@ for i in range(NUMBER_OF_CROPPED_IMAGES):
 # YoloDetectionNetwork
 # https://docs.luxonis.com/projects/api/en/latest/components/nodes/yolo_detection_network/
 nn_yolo = pipeline.create(depthai.node.YoloDetectionNetwork)
-nn_yolo.setBlobPath(str((Path(__file__).parent / Path('qr_model_512x288_rvc2_openvino_2022.1_6shave.blob')).resolve().absolute()))
+# nn_yolo.setBlobPath(str((Path('models\\qr_model_512x288_rvc2_openvino_2022.1_6shave.blob')).resolve().absolute()))
+nn_yolo.setBlobPath(str((Path('models/barcode-det_best-416x416_openvino_2022.1_6shave.blob')).resolve().absolute()))
 nn_yolo.setConfidenceThreshold(CONFIDENCE_THRESHOLD)
 nn_yolo.setNumClasses(1)
 nn_yolo.setCoordinateSize(4)
