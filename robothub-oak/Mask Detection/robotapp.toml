@@ -1,0 +1,73 @@
+config_version = "2.0"
+
+[info]
+name = "Mask detection"
+description = "Detects if people are wearing masks"
+
+[runtime]
+application = "app.py#ExampleApplication"
+workdir = "/app"
+
+[runtime.runs_on]
+type = "custom"
+dockerfile = "Dockerfile"
+
+[[configuration]]
+field = "boolean"
+key = "mask_detections"
+label = "Enable mask detections"
+initial_value = true
+
+[[configuration]]
+field = "choice"
+key = "mask_detections_mode"
+label = "Send mask detections when"
+style = "dropdown"
+allow_multiple = false
+options = [
+  { key = "not_wearing", label = "Not wearing", default = true },
+  { key = "wearing", label = "Wearing" },
+  { key = "change", label = "Change" },
+]
+
+[[configuration]]
+visual = "divider"
+
+[[configuration]]
+field = "boolean"
+key = "helmet_detections"
+label = "Enable helmet detections"
+initial_value = false
+
+[[configuration]]
+field = "choice"
+key = "helmet_detections_mode"
+label = "Send helmet detections when"
+style = "dropdown"
+allow_multiple = false
+options = [
+  { key = "not_wearing", label = "Not wearing", default = true },
+  { key = "wearing", label = "Wearing" },
+  { key = "change", label = "Change" },
+]
+
+[[configuration]]
+visual = "divider"
+
+[[configuration]]
+field = "boolean"
+key = "vest_detections"
+label = "Enable vest detections"
+initial_value = false
+
+[[configuration]]
+field = "choice"
+key = "vest_detections_mode"
+label = "Send vest detections when"
+style = "dropdown"
+allow_multiple = false
+options = [
+  { key = "not_wearing", label = "Not wearing", default = true },
+  { key = "wearing", label = "Wearing" },
+  { key = "change", label = "Change" },
+]
