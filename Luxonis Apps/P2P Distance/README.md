@@ -26,3 +26,8 @@ where $x, y, z$ are the coordinates of the two selected points. $z$ is taken fro
 $$
 \text{cm\_per\_px} = \frac{2 \cdot z \cdot \tan\left(\frac{\text{HFOV}}{2} \cdot \frac{\pi}{180}\right)}{\text{HPixels}}
 $$
+
+## Ideas to implement
+- pinned points
+- add confidence interval
+- drag points and multiple measument lines

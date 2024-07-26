@@ -13,14 +13,17 @@ class PointDistanceDrawer:
         self.points = []
         self.distance = -1
 
+    def update_distance(self, distance):
+        self.distance = distance
+
     def click_event(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
             if len(self.points) == 2:
                 self.points.clear()
             # print(f"x: {x}, y: {y}, z: {param['depthFrame'][y, x] / 10.0:.2f} cm")
             self.points.append((x, y))
-            if len(self.points) == 2:
-                self.distance = param['distance_calculator'].calculate_distance(self.points, param['depthFrame'], param['frame'])
+            # if len(self.points) == 2:
+                # self.distance = param['distance_calculator'].calculate_distance(self.points, param['depthFrame'], param['frame'])
 
     def draw(self, img):
         self.draw_point(img)
@@ -76,7 +79,7 @@ class DistanceCalculator:
         depth2 = depthFrame[y2, x2] / 1000.0
 
         if depth1 == 0 or depth2 == 0:
-            print("Invalid depth")
+            # print("Invalid depth")
             return -1
             
         cm_per_px_p1 = self.convert_pixel_to_cm(depth1)
@@ -163,7 +166,7 @@ with dai.Device(pipeline) as device:
         depthFrameColored = cv2.applyColorMap((depthFrame * (255.0 / stereo.initialConfig.getMaxDisparity())).astype(np.uint8), cvColorMap)
 
         cv2.setMouseCallback("rectifiedLeft", drawer.click_event, {'depthFrame': depthFrame, 'frame': rectifLeftFrame, 'distance_calculator': distance_calculator})
-        distance_calculator.calculate_distance(drawer.points, depthFrame, rectifLeftFrame)
+        drawer.update_distance(distance_calculator.calculate_distance(drawer.points, depthFrame, rectifLeftFrame))
         drawer.draw(rectifLeftFrame)
         cv2.imshow("rectifiedLeft", rectifLeftFrame)
 
