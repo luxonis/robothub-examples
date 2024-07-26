@@ -48,7 +48,7 @@ class DistanceCalculator:
 
 
 LR_CHECK = True
-EXTENDED = False # extended disparity for lowering minimal distance for depth calculation
+EXTENDED = True # extended disparity for lowering minimal distance for depth calculation
 MEDIAN = dai.MedianFilter.KERNEL_5x5
 SUBPIXEL = False # for long range measurement
 
