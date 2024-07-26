@@ -49,7 +49,7 @@ class DistanceCalculator:
 
 LR_CHECK = True
 EXTENDED = False # extended disparity for lowering minimal distance for depth calculation
-MEDIAN = dai.MedianFilter.KERNEL_7x7
+MEDIAN = dai.MedianFilter.KERNEL_5x5
 SUBPIXEL = False # for long range measurement
 
 pipeline = dai.Pipeline()
@@ -126,7 +126,10 @@ with dai.Device(pipeline) as device:
 
         cv2.imshow("depth", depthFrameColored)
 
-        if cv2.waitKey(1) == ord('q'):
+        key = cv2.waitKey(1)
+        if key == ord('q'):
             break
+        elif key == ord('c'):
+            point_tracker.clear()
 
 cv2.destroyAllWindows()
