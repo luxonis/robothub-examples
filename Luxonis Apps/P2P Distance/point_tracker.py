@@ -2,36 +2,41 @@ import cv2
 
 class PointTracker:
     def __init__(self):
-        self.tracker1 = cv2.legacy.TrackerCSRT_create()
-        self.tracker2 = cv2.legacy.TrackerCSRT_create()
+        self.trackers = []
         self.points = []
-        self.bbox_radius = 20
+        self.bbox_radius = 25
 
     def add_point(self, frame, point):
         if len(self.points) == 2:
             self.clear()
         bbox = (point[0] - self.bbox_radius, point[1] - self.bbox_radius, self.bbox_radius*2, self.bbox_radius*2)
-        if len(self.points) == 1:
-            self.tracker2 = cv2.legacy.TrackerCSRT_create()
-            self.tracker2.init(frame, bbox)
-        else:
-            self.tracker1 = cv2.legacy.TrackerCSRT_create()
-            self.tracker1.init(frame, bbox)
+        tracker = cv2.legacy.TrackerCSRT_create()
+        tracker.init(frame, bbox)
+        self.trackers.append(tracker)
         self.points.append(point)
 
     def update(self, frame):
-        if len(self.points) != 2:
+        if len(self.points) == 0:
             return None, None
-        success1, bbox1 = self.tracker1.update(frame)
-        success2, bbox2 = self.tracker2.update(frame)
-        if success1 and success2:
-            p1 = (int(bbox1[0] + bbox1[2] / 2), int(bbox1[1] + bbox1[3] / 2))
-            p2 = (int(bbox2[0] + bbox2[2] / 2), int(bbox2[1] + bbox2[3] / 2))
-            self.points = [p1, p2]
-            return p1, p2
+
+        updated_points = []
+        for i in range(len(self.points)):
+            success, bbox = self.trackers[i].update(frame)
+            if success:
+                updated_point = (int(bbox[0] + bbox[2] / 2), int(bbox[1] + bbox[3] / 2))
+                updated_points.append(updated_point)
+            else:
+                updated_points.append(None)
+
+        self.points = [p for p in updated_points if p is not None]
+        self.trackers = [self.trackers[i] for i in range(len(self.trackers)) if updated_points[i] is not None]
+
+        if len(self.points) == 2:
+            return self.points[0], self.points[1]
+        elif len(self.points) == 1:
+            return self.points[0], None
         return None, None
 
     def clear(self):
         self.points.clear()
-        self.tracker1.clear()
-        self.tracker2.clear()
+        self.trackers.clear()
