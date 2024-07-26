@@ -5,8 +5,8 @@ class PointDistanceDrawer:
     lineColor = (200, 0, 200)
     circleRadius = 2
 
-    def __init__(self):
-        self.points = []
+    def __init__(self, point_tracker):
+        self.point_tracker = point_tracker
         self.distance = -1
 
     def update_distance(self, distance):
@@ -14,25 +14,20 @@ class PointDistanceDrawer:
 
     def click_event(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
-            if len(self.points) == 2:
-                self.points.clear()
-            # print(f"x: {x}, y: {y}, z: {param['depthFrame'][y, x] / 10.0:.2f} cm")
-            self.points.append((x, y))
-            # if len(self.points) == 2:
-                # self.distance = param['distance_calculator'].calculate_distance(self.points, param['depthFrame'], param['frame'])
+            self.point_tracker.add_point(param['frame'], (x, y))
 
     def draw(self, img):
         self.draw_point(img)
         self.draw_line(img)
 
     def draw_point(self, img):
-        for point in self.points:
+        for point in self.point_tracker.points:
             cv2.circle(img, point, self.circleRadius, self.pointColor, -1, cv2.LINE_AA, 0)
 
     def draw_line(self, img):
-        if len(self.points) != 2:
+        if len(self.point_tracker.points) != 2:
             return
-        p1, p2 = self.points
+        p1, p2 = self.point_tracker.points
         distance = self.distance
         cv2.line(img, p1, p2, self.lineColor, 1, cv2.LINE_AA, 0)
 

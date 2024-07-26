@@ -5,6 +5,7 @@ import numpy as np
 import depthai as dai
 
 from drawers.point_distance_drawer import PointDistanceDrawer
+from point_tracker import PointTracker
 
 class DistanceCalculator:
     hfov = None
@@ -79,7 +80,7 @@ stereo.setSubpixel(SUBPIXEL)
 
 config = stereo.initialConfig.get()
 config.postProcessing.speckleFilter.enable = True
-config.postProcessing.speckleFilter.speckleRange = 50
+config.postProcessing.speckleFilter.speckleRange = 1000
 config.postProcessing.temporalFilter.enable = False
 config.postProcessing.spatialFilter.enable = True
 config.postProcessing.spatialFilter.holeFillingRadius = 2
@@ -95,13 +96,18 @@ monoRight.out.link(stereo.right)
 stereo.depth.link(xoutDepth.input)
 stereo.rectifiedLeft.link(xoutRectifLeft.input)
 
+# Trackers 
+tracker1 = cv2.legacy.TrackerCSRT_create()
+tracker2 = cv2.legacy.TrackerCSRT_create()
+
 # Connect to device and start pipeline
 with dai.Device(pipeline) as device:
     qDepth = device.getOutputQueue(name="depth", maxSize=4, blocking=False)
     qRectifLeft = device.getOutputQueue(name="rectifiedLeft", maxSize=4, blocking=False)
 
-    drawer = PointDistanceDrawer()
-    distance_calculator = DistanceCalculator(71.86, 640)
+    distance_calculator = DistanceCalculator(hfov=71.86, image_w=640)
+    point_tracker = PointTracker()
+    drawer = PointDistanceDrawer(point_tracker)
 
     while True:
         inDepth = qDepth.get()
@@ -113,13 +119,12 @@ with dai.Device(pipeline) as device:
         cvColorMap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), cv2.COLORMAP_JET)
         depthFrameColored = cv2.applyColorMap((depthFrame * (255.0 / stereo.initialConfig.getMaxDisparity())).astype(np.uint8), cvColorMap)
 
-        cv2.setMouseCallback("rectifiedLeft", drawer.click_event, {'depthFrame': depthFrame, 'frame': rectifLeftFrame, 'distance_calculator': distance_calculator})
-        drawer.update_distance(distance_calculator.calculate_distance(drawer.points, depthFrame, rectifLeftFrame))
+        cv2.setMouseCallback("rectifiedLeft", drawer.click_event, {'depthFrame': depthFrame, 'frame': rectifLeftFrame, 'distance_calculator': distance_calculator, 'point_tracker': point_tracker})
+        drawer.update_distance(distance_calculator.calculate_distance(point_tracker.points, depthFrame, rectifLeftFrame))
         drawer.draw(rectifLeftFrame)
         cv2.imshow("rectifiedLeft", rectifLeftFrame)
 
         cv2.imshow("depth", depthFrameColored)
-
 
         if cv2.waitKey(1) == ord('q'):
             break
