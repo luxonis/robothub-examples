@@ -12,7 +12,7 @@ This repository contains an application built on top of [DepthAI](https://docs.l
 
 ## Usage
 1. Run the python script `app_poc.py` 
-2. **Select Points**: Click on the video window to select two points. The distance will be displayed at a line between them.
+2. **Select Points**: Click on the video window to select two points. The distance will be displayed at a line between them. Press 'c' to clear points or simply click to the next point to create new measurement.
 3. Press 'q' to exit.
 
 ## Method for Calculating Distance
@@ -24,7 +24,7 @@ $$
 where $x, y, z$ are the coordinates of the two selected points. $z$ is taken from the depth map, coordinates $x$ and $y$ are in pixels and is converted to cm as follows:
 
 $$
-\text{cm\_per\_px} = \frac{2 \cdot z \cdot \tan\left(\frac{\text{HFOV}}{2} \cdot \frac{\pi}{180}\right)}{\text{HPixels}}
+\text{cm per px} = \frac{2 \cdot z \cdot \tan\left(\frac{\text{HFOV}}{2} \cdot \frac{\pi}{180}\right)}{\text{HPixels}}
 $$
 
 ## Ideas to implement

@@ -120,6 +120,7 @@ with dai.Device(pipeline) as device:
         depthFrameColored = cv2.applyColorMap((depthFrame * (255.0 / stereo.initialConfig.getMaxDisparity())).astype(np.uint8), cvColorMap)
 
         cv2.setMouseCallback("rectifiedLeft", drawer.click_event, {'depthFrame': depthFrame, 'frame': rectifLeftFrame, 'distance_calculator': distance_calculator, 'point_tracker': point_tracker})
+        point_tracker.update(rectifLeftFrame)
         drawer.update_distance(distance_calculator.calculate_distance(point_tracker.points, depthFrame, rectifLeftFrame))
         drawer.draw(rectifLeftFrame)
         cv2.imshow("rectifiedLeft", rectifLeftFrame)
