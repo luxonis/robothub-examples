@@ -3,6 +3,7 @@
 import cv2
 import numpy as np
 import depthai as dai
+from datetime import timedelta
 
 from drawers.point_distance_drawer import PointDistanceDrawer
 from point_tracker import PointTracker
@@ -19,7 +20,7 @@ class DistanceCalculator:
         view_width_cm = 2 * z * np.tan(np.radians(self.hfov / 2))
         return view_width_cm / self.image_w
 
-    def calculate_distance(self, points, depthFrame, frame):
+    def calculate_distance(self, points, depthFrame):
         if len(points) != 2:
             return -1
         x1, y1 = points[0]
@@ -51,24 +52,45 @@ LR_CHECK = True
 EXTENDED = False # extended disparity for lowering minimal distance for depth calculation
 MEDIAN = dai.MedianFilter.KERNEL_7x7
 SUBPIXEL = False # for long range measurement
+fps = 30
+downscaleColor = True
+rgbWeight = 1
+depthWeight = 0
 
 pipeline = dai.Pipeline()
+device = dai.Device()
 
 # define sources and outputs
 monoLeft = pipeline.create(dai.node.MonoCamera)
 monoRight = pipeline.create(dai.node.MonoCamera)
-
+colorCam = pipeline.create(dai.node.ColorCamera)
 stereo = pipeline.create(dai.node.StereoDepth)
+sync = pipeline.create(dai.node.Sync)
 
-xoutDepth = pipeline.create(dai.node.XLinkOut)
-xoutRectifLeft = pipeline.create(dai.node.XLinkOut)
+xoutMain = pipeline.create(dai.node.XLinkOut)
 
-xoutDepth.setStreamName("depth")
-xoutRectifLeft.setStreamName("rectifiedLeft")
+xoutMain.setStreamName("main")
 
 # properties
+colorCam.setBoardSocket(dai.CameraBoardSocket.CAM_A)
+colorCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+colorCam.setFps(fps)
+colorCam.setCamera('color')
+if downscaleColor: colorCam.setIspScale(2, 3)
+
+# RBG needs fixed focus to properly align with depth
+try:
+    calibData = device.readCalibration2()
+    lensPosition = calibData.getLensPosition(dai.CameraBoardSocket.CAM_A)
+    if lensPosition:
+        colorCam.initialControl.setManualFocus(lensPosition)
+except:
+    raise
+
 monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
+monoLeft.setCamera('left')
 monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
+monoRight.setCamera('right')
 
 stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
 stereo.initialConfig.setMedianFilter(MEDIAN)
@@ -89,41 +111,52 @@ config.postProcessing.thresholdFilter.maxRange = 15000
 config.postProcessing.decimationFilter.decimationFactor = 1
 stereo.initialConfig.set(config)
 
+stereo.setDepthAlign(dai.CameraBoardSocket.CAM_A)
+sync.setSyncThreshold(timedelta(milliseconds=50))
+
 # link
 monoLeft.out.link(stereo.left)
 monoRight.out.link(stereo.right)
-stereo.disparity.link(xoutDepth.input)
-stereo.rectifiedLeft.link(xoutRectifLeft.input)
+
+stereo.disparity.link(sync.inputs['disparity'])
+colorCam.isp.link(sync.inputs['video'])
+
+sync.out.link(xoutMain.input)
 
 # Trackers 
 tracker1 = cv2.legacy.TrackerCSRT_create()
 tracker2 = cv2.legacy.TrackerCSRT_create()
 
 # Connect to device and start pipeline
-with dai.Device(pipeline) as device:
-    qDepth = device.getOutputQueue(name="depth", maxSize=4, blocking=False)
-    qRectifLeft = device.getOutputQueue(name="rectifiedLeft", maxSize=4, blocking=False)
+with device:
+    device.startPipeline(pipeline)
+
+    qMain = device.getOutputQueue(name="main", maxSize=10, blocking=False)
 
     distance_calculator = DistanceCalculator(hfov=71.86, image_w=640)
     point_tracker = PointTracker()
     drawer = PointDistanceDrawer(point_tracker)
 
     while True:
-        inDepth = qDepth.get()
-        depthFrame = inDepth.getFrame()
-
-        depthFrameNormalized = (depthFrame * (255 / stereo.initialConfig.getMaxDisparity())).astype(np.uint8)
-        depthFrameColored = cv2.applyColorMap(depthFrameNormalized, cv2.COLORMAP_JET)
-        cv2.imshow("depth", depthFrameColored)
-
-        inRectifLeft = qRectifLeft.get()
-        rectifLeftFrame = cv2.cvtColor(inRectifLeft.getFrame(), cv2.COLOR_GRAY2BGR)
-
-        cv2.setMouseCallback("rectifiedLeft", drawer.click_event, {'depthFrame': depthFrame, 'frame': rectifLeftFrame, 'distance_calculator': distance_calculator, 'point_tracker': point_tracker})
-        point_tracker.update(rectifLeftFrame)
-        drawer.update_distance(distance_calculator.calculate_distance(point_tracker.points, depthFrame, rectifLeftFrame))
-        drawer.draw(rectifLeftFrame)
-        cv2.imshow("rectifiedLeft", rectifLeftFrame)
+        msgGrp = qMain.get()
+        deepFrame = None
+        frames = {}
+        for name, msg in msgGrp:
+            frame = msg.getCvFrame()
+            if name == 'disparity':
+                deepFrame = msg.getFrame()
+                frame = (frame * (255 / stereo.initialConfig.getMaxDisparity())).astype(np.uint8)
+                frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
+            # convert all to BGR for blending
+            if (frame.ndim == 2):
+                frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+            frames[name] = frame
+        blended = cv2.addWeighted(frames['disparity'], depthWeight, frames['video'], rgbWeight, 0)
+        cv2.setMouseCallback("main", drawer.click_event, {'depthFrame': frames['disparity'], 'frame': blended, 'distance_calculator': distance_calculator, 'point_tracker': point_tracker})
+        point_tracker.update(frames['video'])
+        drawer.update_distance(distance_calculator.calculate_distance(point_tracker.points, deepFrame))
+        drawer.draw(blended)
+        cv2.imshow("main", blended)
 
         key = cv2.waitKey(1)
         if key == ord('q'):
