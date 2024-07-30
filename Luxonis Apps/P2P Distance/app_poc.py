@@ -48,8 +48,8 @@ class DistanceCalculator:
 
 
 LR_CHECK = True
-EXTENDED = True # extended disparity for lowering minimal distance for depth calculation
-MEDIAN = dai.MedianFilter.KERNEL_5x5
+EXTENDED = False # extended disparity for lowering minimal distance for depth calculation
+MEDIAN = dai.MedianFilter.KERNEL_7x7
 SUBPIXEL = False # for long range measurement
 
 pipeline = dai.Pipeline()
@@ -57,7 +57,6 @@ pipeline = dai.Pipeline()
 # define sources and outputs
 monoLeft = pipeline.create(dai.node.MonoCamera)
 monoRight = pipeline.create(dai.node.MonoCamera)
-monoCams = [monoLeft, monoRight]
 
 stereo = pipeline.create(dai.node.StereoDepth)
 
@@ -68,8 +67,8 @@ xoutDepth.setStreamName("depth")
 xoutRectifLeft.setStreamName("rectifiedLeft")
 
 # properties
-for monoCam in monoCams:
-    monoCam.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
+monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
+monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
 
 stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
 stereo.initialConfig.setMedianFilter(MEDIAN)
@@ -79,9 +78,9 @@ stereo.setExtendedDisparity(EXTENDED)
 stereo.setSubpixel(SUBPIXEL)
 
 config = stereo.initialConfig.get()
-config.postProcessing.speckleFilter.enable = True
-config.postProcessing.speckleFilter.speckleRange = 1000
-config.postProcessing.temporalFilter.enable = False
+config.postProcessing.speckleFilter.enable = False
+config.postProcessing.speckleFilter.speckleRange = 50
+config.postProcessing.temporalFilter.enable = True
 config.postProcessing.spatialFilter.enable = True
 config.postProcessing.spatialFilter.holeFillingRadius = 2
 config.postProcessing.spatialFilter.numIterations = 1
@@ -93,7 +92,7 @@ stereo.initialConfig.set(config)
 # link
 monoLeft.out.link(stereo.left)
 monoRight.out.link(stereo.right)
-stereo.depth.link(xoutDepth.input)
+stereo.disparity.link(xoutDepth.input)
 stereo.rectifiedLeft.link(xoutRectifLeft.input)
 
 # Trackers 
@@ -113,19 +112,18 @@ with dai.Device(pipeline) as device:
         inDepth = qDepth.get()
         depthFrame = inDepth.getFrame()
 
+        depthFrameNormalized = (depthFrame * (255 / stereo.initialConfig.getMaxDisparity())).astype(np.uint8)
+        depthFrameColored = cv2.applyColorMap(depthFrameNormalized, cv2.COLORMAP_JET)
+        cv2.imshow("depth", depthFrameColored)
+
         inRectifLeft = qRectifLeft.get()
         rectifLeftFrame = cv2.cvtColor(inRectifLeft.getFrame(), cv2.COLOR_GRAY2BGR)
-
-        cvColorMap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), cv2.COLORMAP_JET)
-        depthFrameColored = cv2.applyColorMap((depthFrame * (255.0 / stereo.initialConfig.getMaxDisparity())).astype(np.uint8), cvColorMap)
 
         cv2.setMouseCallback("rectifiedLeft", drawer.click_event, {'depthFrame': depthFrame, 'frame': rectifLeftFrame, 'distance_calculator': distance_calculator, 'point_tracker': point_tracker})
         point_tracker.update(rectifLeftFrame)
         drawer.update_distance(distance_calculator.calculate_distance(point_tracker.points, depthFrame, rectifLeftFrame))
         drawer.draw(rectifLeftFrame)
         cv2.imshow("rectifiedLeft", rectifLeftFrame)
-
-        cv2.imshow("depth", depthFrameColored)
 
         key = cv2.waitKey(1)
         if key == ord('q'):
