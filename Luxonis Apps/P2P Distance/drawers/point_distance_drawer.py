@@ -14,7 +14,7 @@ class PointDistanceDrawer:
 
     def click_event(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
-            self.point_tracker.add_point(param['frame'], (x, y))
+            self.point_tracker.add_point((x, y))
 
     def draw(self, img):
         self.draw_point(img)

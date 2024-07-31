@@ -5,23 +5,27 @@ class PointTracker:
         self.trackers = []
         self.points = []
         self.bbox_radius = 25
+        self.frame = None
 
-    def add_point(self, frame, point):
+    def set_frame(self, frame):
+        self.frame = frame
+
+    def add_point(self, point):
         if len(self.points) == 2:
             self.clear()
         bbox = (point[0] - self.bbox_radius, point[1] - self.bbox_radius, self.bbox_radius*2, self.bbox_radius*2)
         tracker = cv2.legacy.TrackerCSRT_create()
-        tracker.init(frame, bbox)
+        tracker.init(self.frame, bbox)
         self.trackers.append(tracker)
         self.points.append(point)
 
-    def update(self, frame):
+    def update(self):
         if len(self.points) == 0:
             return None, None
 
         updated_points = []
         for i in range(len(self.points)):
-            success, bbox = self.trackers[i].update(frame)
+            success, bbox = self.trackers[i].update(self.frame)
             if success:
                 updated_point = (int(bbox[0] + bbox[2] / 2), int(bbox[1] + bbox[3] / 2))
                 updated_points.append(updated_point)

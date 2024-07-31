@@ -25,11 +25,12 @@ class DistanceCalculator:
             return -1
         x1, y1 = points[0]
         x2, y2 = points[1]
-        depth1 = depthFrame[y1, x1] / 1000.0
-        depth2 = depthFrame[y2, x2] / 1000.0
 
+        # convert depth from mm to cm
+        depth1 = depthFrame[y1, x1] / 10 
+        depth2 = depthFrame[y2, x2] / 10
+        
         if depth1 == 0 or depth2 == 0:
-            # print("Invalid depth")
             return -1
             
         cm_per_px_p1 = self.convert_pixel_to_cm(depth1)
@@ -40,22 +41,29 @@ class DistanceCalculator:
         x2_cm = x2 * cm_per_px_p2
         y2_cm = y2 * cm_per_px_p2
 
+        # print("x1: ", x1_cm, "cm")
+        # print("y1: ", y1_cm, "cm")
+        # print("Depth1: ", depth1, "units")
+        # print("x2: ", x2_cm, "cm")
+        # print("y2: ", y2_cm, "cm")
+        # print("Depth2: ", depth2, "units")
+
         # 3D Euclidean distance 
         dist = np.sqrt((x2_cm - x1_cm)**2 + (y2_cm - y1_cm)**2 + (depth2 - depth1)**2)
         
-        # Convert from m to cm 
-        dist *= 100
         return dist
 
 
 LR_CHECK = True
-EXTENDED = False # extended disparity for lowering minimal distance for depth calculation
-MEDIAN = dai.MedianFilter.KERNEL_7x7
+EXTENDED = True # extended disparity for lowering minimal distance for depth calculation
+MEDIAN = dai.MedianFilter.KERNEL_3x3
 SUBPIXEL = False # for long range measurement
 fps = 30
 downscaleColor = True
 rgbWeight = 1
 depthWeight = 0
+hfov = 71.9
+image_w = 1280 # image width in pixels
 
 pipeline = dai.Pipeline()
 device = dai.Device()
@@ -77,15 +85,6 @@ colorCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
 colorCam.setFps(fps)
 colorCam.setCamera('color')
 if downscaleColor: colorCam.setIspScale(2, 3)
-
-# RBG needs fixed focus to properly align with depth
-try:
-    calibData = device.readCalibration2()
-    lensPosition = calibData.getLensPosition(dai.CameraBoardSocket.CAM_A)
-    if lensPosition:
-        colorCam.initialControl.setManualFocus(lensPosition)
-except:
-    raise
 
 monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
 monoLeft.setCamera('left')
@@ -119,6 +118,7 @@ monoLeft.out.link(stereo.left)
 monoRight.out.link(stereo.right)
 
 stereo.disparity.link(sync.inputs['disparity'])
+stereo.depth.link(sync.inputs['depth'])
 colorCam.isp.link(sync.inputs['video'])
 
 sync.out.link(xoutMain.input)
@@ -133,7 +133,7 @@ with device:
 
     qMain = device.getOutputQueue(name="main", maxSize=10, blocking=False)
 
-    distance_calculator = DistanceCalculator(hfov=71.86, image_w=640)
+    distance_calculator = DistanceCalculator(hfov, image_w)
     point_tracker = PointTracker()
     drawer = PointDistanceDrawer(point_tracker)
 
@@ -144,16 +144,22 @@ with device:
         for name, msg in msgGrp:
             frame = msg.getCvFrame()
             if name == 'disparity':
-                deepFrame = msg.getFrame()
                 frame = (frame * (255 / stereo.initialConfig.getMaxDisparity())).astype(np.uint8)
                 frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
             # convert all to BGR for blending
             if (frame.ndim == 2):
                 frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+            if name == 'depth':
+                deepFrame = msg.getFrame()
             frames[name] = frame
+
+        cv2.imshow("disparity", frames['disparity'])
+            
         blended = cv2.addWeighted(frames['disparity'], depthWeight, frames['video'], rgbWeight, 0)
-        cv2.setMouseCallback("main", drawer.click_event, {'depthFrame': frames['disparity'], 'frame': blended, 'distance_calculator': distance_calculator, 'point_tracker': point_tracker})
-        point_tracker.update(frames['video'])
+        point_tracker.set_frame(blended)
+        
+        cv2.setMouseCallback("main", drawer.click_event)
+        point_tracker.update()
         drawer.update_distance(distance_calculator.calculate_distance(point_tracker.points, deepFrame))
         drawer.draw(blended)
         cv2.imshow("main", blended)
