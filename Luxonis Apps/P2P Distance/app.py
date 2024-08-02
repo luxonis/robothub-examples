@@ -8,57 +8,9 @@ from datetime import timedelta
 from drawers.point_distance_drawer import PointDistanceDrawer
 from drawers.status_bar_drawer import StatusBarDrawer
 from point_tracker import PointTracker
+from distance_calculator import DistanceCalculator
 
 cv2.namedWindow("main", cv2.WINDOW_NORMAL)
-
-class DistanceCalculator:
-    hfov = None
-    image_w = None
-
-    def __init__(self, hfov, image_w):
-        self.hfov = hfov
-        self.image_w = image_w
-
-    def convert_pixel_to_cm(self, z):
-        view_width_cm = 2 * z * np.tan(np.radians(self.hfov / 2))
-        return view_width_cm / self.image_w
-
-    def calculate_distance(self, points, depthFrame):
-        if len(points) != 2:
-            return -1
-        x1, y1 = points[0]
-        x2, y2 = points[1]
-
-        # convert depth from mm to cm
-        depth1 = depthFrame[y1, x1] / 10 
-        depth2 = depthFrame[y2, x2] / 10
-        
-        if depth1 == 0 or depth2 == 0:
-            return -1
-            
-        cm_per_px_p1 = self.convert_pixel_to_cm(depth1)
-        cm_per_px_p2 = self.convert_pixel_to_cm(depth2)
-
-        x1_cm = x1 * cm_per_px_p1
-        y1_cm = y1 * cm_per_px_p1
-        x2_cm = x2 * cm_per_px_p2
-        y2_cm = y2 * cm_per_px_p2
-
-        # 3D Euclidean distance 
-        dist = np.sqrt((x2_cm - x1_cm)**2 + (y2_cm - y1_cm)**2 + (depth2 - depth1)**2)
-        
-        # print("x1: ", x1_cm, "cm")
-        # print("y1: ", y1_cm, "cm")
-        # print("Depth1: ", depth1, "cm")
-        # print("x2: ", x2_cm, "cm")
-        # print("y2: ", y2_cm, "cm")
-        # print("Depth2: ", depth2, "cm")
-        # print("Distance: ", dist, "cm")
-        # print("--------------------------------------")
-        # print()
-        
-        return dist
-
 
 LR_CHECK = True
 EXTENDED = True # extended disparity for lowering minimal distance for depth calculation
@@ -178,10 +130,13 @@ with device:
         
         cv2.setMouseCallback("main", points_drawer.click_event)
         point_tracker.update()
-        points_drawer.update_distance(distance_calculator.calculate_distance(point_tracker.points, deepFrame))
+        
+        dist, std = distance_calculator.calculate_distance(point_tracker.points, deepFrame)
         points_drawer.draw(blended)
+        points_drawer.draw_distance_line(blended, dist, std)
         # draw text on top if tracking is on or off
-        status_drawer.drawText(blended, "Tracking: ", point_tracker.tracking)
+        status_drawer.drawText(blended, "Tracking: ", point_tracker.tracking, line=0)
+        status_drawer.drawText(blended, "Confidence Interval: ", distance_calculator.show_confidence_interval, line=1)
         cv2.imshow("main", blended)
 
         key = cv2.waitKey(1)
@@ -189,8 +144,15 @@ with device:
             break
         elif key == ord('c'):
             point_tracker.clear()
+            distance_calculator.clear_distances()
         elif key == ord('t'):
             point_tracker.toggle_tracking()
-            
+            distance_calculator.clear_distances()
+            if not point_tracker.tracking:
+                distance_calculator.show_confidence_interval = False
+        elif key == ord('i'):
+            if point_tracker.tracking:
+                distance_calculator.clear_distances()
+                distance_calculator.toggle_confidence_interval()
 
 cv2.destroyAllWindows()
