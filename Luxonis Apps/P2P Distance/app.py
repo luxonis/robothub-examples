@@ -66,6 +66,7 @@ fps = 60
 downscaleColor = True
 rgbWeight = 1
 depthWeight = 0
+zeroDepthWeight = 0.2
 hfov = 71.9
 image_w = 1280 # image width in pixels
 
@@ -153,6 +154,14 @@ with device:
             if name == 'depth':
                 deepFrame = msg.getFrame()
             frames[name] = frame
+
+        # create a zero depth map overlayed on the video frame 
+        zero_depth_mask = (deepFrame == 0)
+        zero_depth_mask_color = np.zeros_like(frames['video'])
+
+        # convert to light red
+        zero_depth_mask_color[zero_depth_mask] = (0, 0, 255)
+        frames['video'] = cv2.addWeighted(frames['video'], 1, zero_depth_mask_color, zeroDepthWeight, 0)
 
         cv2.imshow("disparity", frames['disparity'])
             
