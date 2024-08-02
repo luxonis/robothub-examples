@@ -19,8 +19,14 @@ This repository contains an application built on top of [DepthAI](https://docs.l
 | Key | Action                           | Description                                                   |
 |-----|----------------------------------|---------------------------------------------------------------|
 | `q` | Quit                             | Closes the application.                                       |
-| `c` | Clear Points                     | Clears all the selected points.                                    |
-| `t` | Toggle Tracking                  | Toggles the tracking functionality on or off.       
+| `c` | Clear Points                     | Clears all the selected points.                               |
+| `t` | Toggle Tracking                  | Toggles the tracking functionality on or off.                 |
+| `i` | Toggle Confidence Interval       | Toggles showing confidence interval on or off.                |
+
+###### Confidence interval
+The standard deviation is time-based, since the distance is not static (due to depth value not being static), this feature collect the last 50 distance values and shows you the average plus a confidence interval. 
+
+>Showing the confidence interval is always disabled when tracking is off (since it only make sense when we are measuring the distance between same points in the space).
 
 ###### Zero Depth Mask Trackbar
 Dragging this shows pixels where depth value is unknown in red.
@@ -70,5 +76,4 @@ $$
 $$
 
 ## Ideas to implement
-- add confidence interval
 - drag points and multiple measument lines

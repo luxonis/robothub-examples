@@ -6,10 +6,10 @@ class DistanceCalculator:
     hfov = None
     image_w = None
 
-    def __init__(self, hfov, image_w, maxlen=10):
+    def __init__(self, hfov, image_w, maxlen=50):
         self.hfov = hfov
         self.image_w = image_w
-        self.distances = deque(maxlen=10)
+        self.distances = deque(maxlen=maxlen)
         self.show_confidence_interval = True
     
     def toggle_confidence_interval(self):
