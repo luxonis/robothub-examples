@@ -9,6 +9,8 @@ from drawers.point_distance_drawer import PointDistanceDrawer
 from drawers.status_bar_drawer import StatusBarDrawer
 from point_tracker import PointTracker
 
+cv2.namedWindow("main", cv2.WINDOW_NORMAL)
+
 class DistanceCalculator:
     hfov = None
     image_w = None
@@ -66,7 +68,7 @@ fps = 60
 downscaleColor = True
 rgbWeight = 1
 depthWeight = 0
-zeroDepthWeight = 0.2
+zeroDepthWeight = 0
 hfov = 71.9
 image_w = 1280 # image width in pixels
 
@@ -128,6 +130,10 @@ colorCam.isp.link(sync.inputs['video'])
 
 sync.out.link(xoutMain.input)
 
+def updateZeroDepthWeight(value):
+    global zeroDepthWeight
+    zeroDepthWeight = value / 100
+
 # Connect to device and start pipeline
 with device:
     device.startPipeline(pipeline)
@@ -138,6 +144,8 @@ with device:
     point_tracker = PointTracker()
     points_drawer = PointDistanceDrawer(point_tracker)
     status_drawer = StatusBarDrawer(textColor=(255, 255, 255), borderColor=(0, 0, 0), x=10, y=20)
+
+    status_drawer.drawTrackBar("Zero Depth Weight", 0, 100, updateZeroDepthWeight)
 
     while True:
         msgGrp = qMain.get()

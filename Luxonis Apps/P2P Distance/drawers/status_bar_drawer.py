@@ -5,12 +5,17 @@ class StatusBarDrawer:
     borderColor = (0, 0, 0)
     x = 10
     y = 20
+    windowName = "main"
 
-    def __init__(self, textColor=(255, 255, 255), borderColor=(0, 0, 0), x=10, y=20):
+    def __init__(self, windowName="main", textColor=(255, 255, 255), borderColor=(0, 0, 0), x=10, y=20):
+        self.windowName = windowName
         self.textColor = textColor
         self.borderColor = borderColor
         self.x = x
         self.y = y
+
+    def drawTrackBar(self, text, startingValue, endingValue, callback):
+        cv2.createTrackbar(text, self.windowName, startingValue, endingValue, callback)
 
     def drawText(self, img, text, status=None):
         # convert bool to string

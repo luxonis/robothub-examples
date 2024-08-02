@@ -22,6 +22,9 @@ This repository contains an application built on top of [DepthAI](https://docs.l
 | `c` | Clear Points                     | Clears all the selected points.                                    |
 | `t` | Toggle Tracking                  | Toggles the tracking functionality on or off.       
 
+###### Zero Depth Mask Trackbar
+Dragging this shows pixels where depth value is unknown in red.
+
 ## Method for Calculating Distance
 ### Euclidean formula 
 $$
