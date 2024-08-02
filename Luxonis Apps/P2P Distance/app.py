@@ -41,12 +41,12 @@ class DistanceCalculator:
         x2_cm = x2 * cm_per_px_p2
         y2_cm = y2 * cm_per_px_p2
 
-        # print("x1: ", x1_cm, "cm")
-        # print("y1: ", y1_cm, "cm")
-        # print("Depth1: ", depth1, "units")
-        # print("x2: ", x2_cm, "cm")
-        # print("y2: ", y2_cm, "cm")
-        # print("Depth2: ", depth2, "units")
+        print("x1: ", x1_cm, "cm")
+        print("y1: ", y1_cm, "cm")
+        print("Depth1: ", depth1, "units")
+        print("x2: ", x2_cm, "cm")
+        print("y2: ", y2_cm, "cm")
+        print("Depth2: ", depth2, "units")
 
         # 3D Euclidean distance 
         dist = np.sqrt((x2_cm - x1_cm)**2 + (y2_cm - y1_cm)**2 + (depth2 - depth1)**2)
@@ -56,9 +56,9 @@ class DistanceCalculator:
 
 LR_CHECK = True
 EXTENDED = True # extended disparity for lowering minimal distance for depth calculation
-MEDIAN = dai.MedianFilter.KERNEL_3x3
+MEDIAN = dai.MedianFilter.KERNEL_5x5
 SUBPIXEL = False # for long range measurement
-fps = 30
+fps = 60
 downscaleColor = True
 rgbWeight = 1
 depthWeight = 0
