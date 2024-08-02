@@ -12,8 +12,15 @@ This repository contains an application built on top of [DepthAI](https://docs.l
 
 ## Usage
 1. Run the python script `app.py` 
-2. **Select Points**: Click on the video window to select two points. The distance will be displayed at a line between them. Press 'c' to clear points or simply click to the next point to create new measurement.
-3. Press 'q' to exit.
+2. **Select Points**: Click on the video window to select two points. The distance will be displayed at a line between them.
+
+###### Shortcuts Guide
+
+| Key | Action                           | Description                                                   |
+|-----|----------------------------------|---------------------------------------------------------------|
+| `q` | Quit                             | Closes the application.                                       |
+| `c` | Clear Points                     | Clears all the selected points.                                    |
+| `t` | Toggle Tracking                  | Toggles the tracking functionality on or off.       
 
 ## Method for Calculating Distance
 ### Euclidean formula 
