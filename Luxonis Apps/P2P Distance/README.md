@@ -11,7 +11,7 @@ This repository contains an application built on top of [DepthAI](https://docs.l
 - NumPy
 
 ## Usage
-1. Run the python script `app_poc.py` 
+1. Run the python script `app.py` 
 2. **Select Points**: Click on the video window to select two points. The distance will be displayed at a line between them. Press 'c' to clear points or simply click to the next point to create new measurement.
 3. Press 'q' to exit.
 
@@ -29,7 +29,7 @@ $$
 
 
 ## Uncertainty calculation
-The only error-prone attribute in the calculation of the distance is the depth value. Since $x$ and $y$ are both calculated (as shown above) from coordinates in pixels and the depth value at the point, the error $\sigma_{dist}$ can be computed given the depth error rate $\epsilon_z$ as follows:
+The only error-prone attribute in the calculation of the distance is the depth value. Since $x$ and $y$ are both calculated (as shown above) from coordinates in pixels and the depth value at the point, the error $\epsilon_{dist}$ can be computed given the depth error rate $\epsilon_z$ (read more about [depth accuracy](https://docs.luxonis.com/hardware/platform/depth/depth-accuracy/)) as follows:
 
 $$
 \epsilon_{dist} = \sqrt{\left(\frac{\partial d}{\partial x_1}\epsilon_{x_1}\right)^2 + \left(\frac{\partial d}{\partial y_1}\epsilon_{y_1}\right)^2 + \left(\frac{\partial d}{\partial z_1}\epsilon_{z_1}\right)^2 + \left(\frac{\partial d}{\partial x_2}\epsilon_{x_2}\right)^2 + \left(\frac{\partial d}{\partial y_2}\epsilon_{y_2}\right)^2 + \left(\frac{\partial d}{\partial z_2}\epsilon_{z_2}\right)^2}

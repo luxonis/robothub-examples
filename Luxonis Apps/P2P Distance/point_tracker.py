@@ -6,6 +6,10 @@ class PointTracker:
         self.points = []
         self.bbox_radius = 25
         self.frame = None
+        self.tracking = True
+
+    def toggle_tracking(self):
+        self.tracking = not self.tracking
 
     def set_frame(self, frame):
         self.frame = frame
@@ -20,7 +24,7 @@ class PointTracker:
         self.points.append(point)
 
     def update(self):
-        if len(self.points) == 0:
+        if len(self.points) == 0 or not self.tracking:
             return None, None
 
         updated_points = []

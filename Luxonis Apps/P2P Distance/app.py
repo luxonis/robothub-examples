@@ -6,6 +6,7 @@ import depthai as dai
 from datetime import timedelta
 
 from drawers.point_distance_drawer import PointDistanceDrawer
+from drawers.status_bar_drawer import StatusBarDrawer
 from point_tracker import PointTracker
 
 class DistanceCalculator:
@@ -41,15 +42,18 @@ class DistanceCalculator:
         x2_cm = x2 * cm_per_px_p2
         y2_cm = y2 * cm_per_px_p2
 
-        print("x1: ", x1_cm, "cm")
-        print("y1: ", y1_cm, "cm")
-        print("Depth1: ", depth1, "units")
-        print("x2: ", x2_cm, "cm")
-        print("y2: ", y2_cm, "cm")
-        print("Depth2: ", depth2, "units")
-
         # 3D Euclidean distance 
         dist = np.sqrt((x2_cm - x1_cm)**2 + (y2_cm - y1_cm)**2 + (depth2 - depth1)**2)
+        
+        # print("x1: ", x1_cm, "cm")
+        # print("y1: ", y1_cm, "cm")
+        # print("Depth1: ", depth1, "cm")
+        # print("x2: ", x2_cm, "cm")
+        # print("y2: ", y2_cm, "cm")
+        # print("Depth2: ", depth2, "cm")
+        # print("Distance: ", dist, "cm")
+        # print("--------------------------------------")
+        # print()
         
         return dist
 
@@ -123,10 +127,6 @@ colorCam.isp.link(sync.inputs['video'])
 
 sync.out.link(xoutMain.input)
 
-# Trackers 
-tracker1 = cv2.legacy.TrackerCSRT_create()
-tracker2 = cv2.legacy.TrackerCSRT_create()
-
 # Connect to device and start pipeline
 with device:
     device.startPipeline(pipeline)
@@ -135,7 +135,8 @@ with device:
 
     distance_calculator = DistanceCalculator(hfov, image_w)
     point_tracker = PointTracker()
-    drawer = PointDistanceDrawer(point_tracker)
+    points_drawer = PointDistanceDrawer(point_tracker)
+    status_drawer = StatusBarDrawer(textColor=(255, 255, 255), borderColor=(0, 0, 0), x=10, y=20)
 
     while True:
         msgGrp = qMain.get()
@@ -158,10 +159,12 @@ with device:
         blended = cv2.addWeighted(frames['disparity'], depthWeight, frames['video'], rgbWeight, 0)
         point_tracker.set_frame(blended)
         
-        cv2.setMouseCallback("main", drawer.click_event)
+        cv2.setMouseCallback("main", points_drawer.click_event)
         point_tracker.update()
-        drawer.update_distance(distance_calculator.calculate_distance(point_tracker.points, deepFrame))
-        drawer.draw(blended)
+        points_drawer.update_distance(distance_calculator.calculate_distance(point_tracker.points, deepFrame))
+        points_drawer.draw(blended)
+        # draw text on top if tracking is on or off
+        status_drawer.drawText(blended, "Tracking: ", point_tracker.tracking)
         cv2.imshow("main", blended)
 
         key = cv2.waitKey(1)
@@ -169,5 +172,8 @@ with device:
             break
         elif key == ord('c'):
             point_tracker.clear()
+        elif key == ord('t'):
+            point_tracker.toggle_tracking()
+            
 
 cv2.destroyAllWindows()
