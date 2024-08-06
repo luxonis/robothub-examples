@@ -16,7 +16,7 @@ LR_CHECK = True
 EXTENDED = True # extended disparity for lowering minimal distance for depth calculation
 MEDIAN = dai.MedianFilter.KERNEL_5x5
 SUBPIXEL = False # for long range measurement
-fps = 60
+fps = 30
 downscaleColor = True
 rgbWeight = 1
 depthWeight = 0
@@ -40,7 +40,7 @@ xoutMain.setStreamName("main")
 
 # properties
 colorCam.setBoardSocket(dai.CameraBoardSocket.CAM_A)
-colorCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+colorCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P) # options 
 colorCam.setFps(fps)
 colorCam.setCamera('color')
 if downscaleColor: colorCam.setIspScale(2, 3)
@@ -131,7 +131,7 @@ with device:
         cv2.setMouseCallback("main", points_drawer.click_event)
         point_tracker.update()
         
-        dist, std = distance_calculator.calculate_distance(point_tracker.boxes, deepFrame)
+        dist, std = distance_calculator.calculate_distance(point_tracker.points, deepFrame)
         points_drawer.draw(blended)
         points_drawer.draw_distance_line(blended, dist, std)
         points_drawer.draw_depth_val(blended, deepFrame)

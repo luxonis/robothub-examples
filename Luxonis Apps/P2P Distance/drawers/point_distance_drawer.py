@@ -16,7 +16,7 @@ class PointDistanceDrawer:
         self.draw_point(img)
 
     def draw_point(self, img):
-        for bbox in self.point_tracker.boxes:
+        for bbox in self.point_tracker.get_boxes():
             mid = bbox[0] + bbox[2] // 2, bbox[1] + bbox[3] // 2 
             cv2.circle(img, mid, self.circleRadius, self.pointColor, -1, cv2.LINE_AA, 0)
             cv2.rectangle(img, (bbox[0], bbox[1]), 
@@ -24,10 +24,9 @@ class PointDistanceDrawer:
                       self.pointColor, 1, cv2.LINE_AA, 0)
 
     def draw_distance_line(self, img, distance, std):
-        if len(self.point_tracker.boxes) != 2:
+        if len(self.point_tracker.points) != 2:
             return
-        p1 = self.point_tracker.boxes[0][0] + self.point_tracker.boxes[0][2] // 2, self.point_tracker.boxes[0][1] + self.point_tracker.boxes[0][3] // 2
-        p2 = self.point_tracker.boxes[1][0] + self.point_tracker.boxes[1][2] // 2, self.point_tracker.boxes[1][1] + self.point_tracker.boxes[1][3] // 2
+        p1, p2 = self.point_tracker.get_points()
         cv2.line(img, p1, p2, self.lineColor, 1, cv2.LINE_AA, 0)
 
         text = f"{distance:.2f} cm"
@@ -54,7 +53,7 @@ class PointDistanceDrawer:
 
     def draw_depth_val(self, img, depthFrame):
         # draw on top of each point the depth value 
-        for bbox in self.point_tracker.boxes:
+        for bbox in self.point_tracker.get_boxes():
             point = bbox[0] + bbox[2] // 2, bbox[1] + bbox[3] // 2
             depth = depthFrame[point[1], point[0]] / 10
             # broder in black
