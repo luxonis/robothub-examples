@@ -36,11 +36,11 @@ class DistanceCalculator:
             return -1, -1
         return self.get_average_distance(), np.std(self.distances)
 
-    def calculate_distance(self, points, depthFrame):
-        if len(points) != 2:
+    def calculate_distance(self, boxes, depthFrame):
+        if len(boxes) != 2:
             return -1, -1
-        x1, y1 = points[0]
-        x2, y2 = points[1]
+        x1, y1 = boxes[0][0] + boxes[0][2] // 2, boxes[0][1] + boxes[0][3] // 2 
+        x2, y2 = boxes[1][0] + boxes[1][2] // 2, boxes[1][1] + boxes[1][3] // 2
 
         # convert depth from mm to cm
         depth1 = depthFrame[y1, x1] / 10 

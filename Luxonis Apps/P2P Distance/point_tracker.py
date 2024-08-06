@@ -3,7 +3,7 @@ import cv2
 class PointTracker:
     def __init__(self):
         self.trackers = []
-        self.points = []
+        self.boxes = []
         self.bbox_radius = 25
         self.frame = None
         self.tracking = True
@@ -14,37 +14,37 @@ class PointTracker:
     def set_frame(self, frame):
         self.frame = frame
 
+    def calculate_bbox_radius(self, point):
+        # calculate ideal dynamic adaptive bbox for better tracking 
+        return self.bbox_radius
+
     def add_point(self, point):
-        if len(self.points) == 2:
+        if len(self.boxes) == 2:
             self.clear()
-        bbox = (point[0] - self.bbox_radius, point[1] - self.bbox_radius, self.bbox_radius*2, self.bbox_radius*2)
-        tracker = cv2.legacy.TrackerCSRT_create()
+        bbox_radius = self.calculate_bbox_radius(point)
+        bbox = (point[0] - bbox_radius, point[1] - bbox_radius, bbox_radius*2, bbox_radius*2)
+        
+        tracker = cv2.TrackerCSRT.create()
         tracker.init(self.frame, bbox)
+        
         self.trackers.append(tracker)
-        self.points.append(point)
+        self.boxes.append(bbox)
 
     def update(self):
-        if len(self.points) == 0 or not self.tracking:
+        if len(self.boxes) == 0 or not self.tracking:
             return None, None
 
-        updated_points = []
-        for i in range(len(self.points)):
-            success, bbox = self.trackers[i].update(self.frame)
+        updated_boxes = []
+        for tracker in self.trackers:
+            success, bbox = tracker.update(self.frame)
             if success:
-                updated_point = (int(bbox[0] + bbox[2] / 2), int(bbox[1] + bbox[3] / 2))
-                updated_points.append(updated_point)
+                updated_boxes.append(bbox)
             else:
-                updated_points.append(None)
+                updated_boxes.append(None)
 
-        self.points = [p for p in updated_points if p is not None]
-        self.trackers = [self.trackers[i] for i in range(len(self.trackers)) if updated_points[i] is not None]
-
-        if len(self.points) == 2:
-            return self.points[0], self.points[1]
-        elif len(self.points) == 1:
-            return self.points[0], None
-        return None, None
+        self.boxes = updated_boxes
+        self.trackers = [tracker for tracker, bbox in zip(self.trackers, updated_boxes) if bbox is not None]
 
     def clear(self):
-        self.points.clear()
         self.trackers.clear()
+        self.boxes.clear()

@@ -123,7 +123,7 @@ with device:
         zero_depth_mask_color[zero_depth_mask] = (0, 0, 255)
         frames['video'] = cv2.addWeighted(frames['video'], 1, zero_depth_mask_color, zeroDepthWeight, 0)
 
-        cv2.imshow("disparity", frames['disparity'])
+        # cv2.imshow("disparity", frames['disparity'])
             
         blended = cv2.addWeighted(frames['disparity'], depthWeight, frames['video'], rgbWeight, 0)
         point_tracker.set_frame(blended)
@@ -131,12 +131,15 @@ with device:
         cv2.setMouseCallback("main", points_drawer.click_event)
         point_tracker.update()
         
-        dist, std = distance_calculator.calculate_distance(point_tracker.points, deepFrame)
+        dist, std = distance_calculator.calculate_distance(point_tracker.boxes, deepFrame)
         points_drawer.draw(blended)
         points_drawer.draw_distance_line(blended, dist, std)
-        # draw text on top if tracking is on or off
+        points_drawer.draw_depth_val(blended, deepFrame)
+
+        # draw status bar
         status_drawer.drawText(blended, "Tracking: ", point_tracker.tracking, line=0)
         status_drawer.drawText(blended, "Confidence Interval: ", distance_calculator.show_confidence_interval, line=1)
+
         cv2.imshow("main", blended)
 
         key = cv2.waitKey(1)
