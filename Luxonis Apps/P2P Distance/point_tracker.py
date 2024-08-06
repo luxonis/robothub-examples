@@ -38,12 +38,21 @@ class PointTracker:
         prev_gray = cv2.cvtColor(self.prev_frame, cv2.COLOR_BGR2GRAY)
         curr_gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
 
-        flow = cv2.calcOpticalFlowFarneback(prev_gray, curr_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+        # Subsample the images by taking every nth pixel (subsampling factor)
+        subsample_factor = 2
+        prev_gray_subsampled = prev_gray[::subsample_factor, ::subsample_factor]
+        curr_gray_subsampled = curr_gray[::subsample_factor, ::subsample_factor]
 
-        motion_magnetude = np.sqrt(flow[...,0]**2 + flow[...,1]**2)
-        mean = np.mean(motion_magnetude)
-        # print(mean)
-        return mean
+        # Calculate optical flow on the subsampled images
+        flow = cv2.calcOpticalFlowFarneback(prev_gray_subsampled, curr_gray_subsampled, None, 
+                                            pyr_scale=0.5, levels=1, winsize=13, iterations=2, 
+                                            poly_n=5, poly_sigma=1.1, flags=0)
+
+        # Compute motion magnitude
+        motion_magnitude = np.sqrt(flow[..., 0]**2 + flow[..., 1]**2)
+        mean_motion = np.mean(motion_magnitude)
+        
+        return mean_motion
 
     def calculate_bbox_radius(self, point):
         bbox_radius = self.bbox_radius # start with default value
@@ -117,10 +126,8 @@ class PointTracker:
                    abs(old_bbox[2] - new_bbox[2]) < self.debounce_threshold and \
                    abs(old_bbox[3] - new_bbox[3]) < self.debounce_threshold and \
                     self.calculate_global_motion() < self.motion_threshold: 
-                    print("debounce - keep the old bbox")
+                    # print("debounce - keep the old bbox")
                     new_bbox = old_bbox  # Keep the old bounding box
-                else:
-                    print("new bbox")
 
                 center_x = int(new_bbox[0] + new_bbox[2] // 2)
                 center_y = int(new_bbox[1] + new_bbox[3] // 2)

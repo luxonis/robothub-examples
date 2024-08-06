@@ -16,7 +16,7 @@ LR_CHECK = True
 EXTENDED = True # extended disparity for lowering minimal distance for depth calculation
 MEDIAN = dai.MedianFilter.KERNEL_5x5
 SUBPIXEL = False # for long range measurement
-fps = 30
+fps = 60
 downscaleColor = True
 rgbWeight = 1
 depthWeight = 0
@@ -40,7 +40,7 @@ xoutMain.setStreamName("main")
 
 # properties
 colorCam.setBoardSocket(dai.CameraBoardSocket.CAM_A)
-colorCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P) # options 
+colorCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_720_P) 
 colorCam.setFps(fps)
 colorCam.setCamera('color')
 if downscaleColor: colorCam.setIspScale(2, 3)
