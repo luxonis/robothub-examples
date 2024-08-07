@@ -52,7 +52,7 @@ monoRight.setCamera('right')
 
 stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
 stereo.initialConfig.setMedianFilter(MEDIAN)
-stereo.initialConfig.setConfidenceThreshold(250)
+stereo.initialConfig.setConfidenceThreshold(200)
 stereo.setLeftRightCheck(LR_CHECK)
 stereo.setExtendedDisparity(EXTENDED)
 stereo.setSubpixel(SUBPIXEL)

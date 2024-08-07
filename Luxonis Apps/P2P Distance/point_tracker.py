@@ -3,10 +3,11 @@ import numpy as np
 from skimage.metrics import structural_similarity as ssim
 
 class PointTracker:
-    bbox_increase_step = 5
+    bbox_increase_step = 3
+    bbox_padding_step = 5
     bbox_radius = 20 
     max_bbox_radius = 200
-    similarity_threshold = 0.4 # the higher the value, the more similar the images need to be
+    similarity_threshold = 0.5 # the higher the value, the more similar the images need to be
     debounce_threshold = 5
     motion_threshold = 0.8
 
@@ -72,10 +73,10 @@ class PointTracker:
 
             if edge_density > 0.1 or bbox_radius >= self.max_bbox_radius:
                 break
-
+            
             bbox_radius += self.bbox_increase_step
 
-        return bbox_radius
+        return bbox_radius + self.bbox_padding_step
 
     def get_edge_density(self, roi):
         edges = cv2.Canny(roi, 100, 200) 
@@ -109,7 +110,7 @@ class PointTracker:
         })
 
     def update(self):
-        if len(self.points) == 0 or not self.tracking:
+        if len(self.points) == 0:
             return
 
         for data in self.points:
@@ -117,34 +118,40 @@ class PointTracker:
             old_bbox = data['bbox']
             prev_roi = data['roi']
 
-            success, new_bbox = tracker.update(self.frame)
-            if success:
-                if new_bbox[0] < 0 or new_bbox[1] < 0 or new_bbox[0] + new_bbox[2] > self.frame.shape[1] or new_bbox[1] + new_bbox[3] > self.frame.shape[0]:
-                    continue
-                # debounce 
-                if abs(old_bbox[0] - new_bbox[0]) < self.debounce_threshold and \
-                   abs(old_bbox[1] - new_bbox[1]) < self.debounce_threshold and \
-                   abs(old_bbox[2] - new_bbox[2]) < self.debounce_threshold and \
-                   abs(old_bbox[3] - new_bbox[3]) < self.debounce_threshold and \
-                    self.calculate_global_motion() < self.motion_threshold: 
-                    # print("debounce - keep the old bbox")
-                    new_bbox = old_bbox  # Keep the old bounding box
+            new_roi = self.frame[old_bbox[1]:old_bbox[1]+old_bbox[3], old_bbox[0]:old_bbox[0]+old_bbox[2]]
 
-                center_x = int(new_bbox[0] + new_bbox[2] // 2)
-                center_y = int(new_bbox[1] + new_bbox[3] // 2)
+            if new_roi.shape[0] == 0 or new_roi.shape[1] == 0:
+                continue
 
-                new_roi = self.frame[new_bbox[1]:new_bbox[1]+new_bbox[3], new_bbox[0]:new_bbox[0]+new_bbox[2]]
+            data['roi'] = new_roi 
 
-                if new_roi.shape[0] == 0 or new_roi.shape[1] == 0:
-                    continue
+            if self.tracking:
+                success, new_bbox = tracker.update(self.frame)
+                if success:
+                    if new_bbox[0] < 0 or new_bbox[1] < 0 or new_bbox[0] + new_bbox[2] > self.frame.shape[1] or new_bbox[1] + new_bbox[3] > self.frame.shape[0]:
+                        # bbox out of frame
+                        continue
 
-                if self.roi_changed(prev_roi, new_roi):
-                    new_radius = self.calculate_bbox_radius((center_x, center_y))
-                    new_bbox = (center_x - new_radius, center_y - new_radius, new_radius*2, new_radius*2)
-                    tracker.init(self.frame, new_bbox)
+                    # debounce 
+                    if abs(old_bbox[0] - new_bbox[0]) < self.debounce_threshold and \
+                        abs(old_bbox[1] - new_bbox[1]) < self.debounce_threshold and \
+                        abs(old_bbox[2] - new_bbox[2]) < self.debounce_threshold and \
+                        abs(old_bbox[3] - new_bbox[3]) < self.debounce_threshold and \
+                        self.calculate_global_motion() < self.motion_threshold: 
+                        # print("debounce - keep the old bbox")
+                        new_bbox = old_bbox  # Keep the old bounding box
 
+                    data['bbox'] = new_bbox
+                    old_bbox = new_bbox
+
+            if self.roi_changed(prev_roi, new_roi):
+                center_x = int(old_bbox[0] + old_bbox[2] // 2)
+                center_y = int(old_bbox[1] + old_bbox[3] // 2)
+
+                new_radius = self.calculate_bbox_radius((center_x, center_y))
+                new_bbox = (center_x - new_radius, center_y - new_radius, new_radius*2, new_radius*2)
+                tracker.init(self.frame, new_bbox)
                 data['bbox'] = new_bbox
-                data['roi'] = new_roi 
 
     def clear(self):
         self.points.clear()
