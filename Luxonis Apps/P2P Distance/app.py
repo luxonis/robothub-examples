@@ -40,7 +40,7 @@ xoutMain.setStreamName("main")
 
 # properties
 colorCam.setBoardSocket(dai.CameraBoardSocket.CAM_A)
-colorCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_720_P) 
+colorCam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P) 
 colorCam.setFps(fps)
 colorCam.setCamera('color')
 if downscaleColor: colorCam.setIspScale(2, 3)
@@ -92,7 +92,9 @@ with device:
 
     qMain = device.getOutputQueue(name="main", maxSize=10, blocking=False)
 
-    distance_calculator = DistanceCalculator(hfov, image_w)
+    calibration = device.readCalibration()
+    K_RGB = calibration.getCameraIntrinsics(dai.CameraBoardSocket.CAM_A, dai.Size2f(1280, 720))
+    distance_calculator = DistanceCalculator(hfov, image_w, np.array(K_RGB))
     point_tracker = PointTracker()
     points_drawer = PointDistanceDrawer(point_tracker)
     status_drawer = StatusBarDrawer(textColor=(255, 255, 255), borderColor=(0, 0, 0), x=10, y=20)
@@ -124,14 +126,15 @@ with device:
         frames['video'] = cv2.addWeighted(frames['video'], 1, zero_depth_mask_color, zeroDepthWeight, 0)
 
         # cv2.imshow("disparity", frames['disparity'])
-            
+
         blended = cv2.addWeighted(frames['disparity'], depthWeight, frames['video'], rgbWeight, 0)
         point_tracker.set_frame(blended)
-        
+
         cv2.setMouseCallback("main", points_drawer.click_event)
         point_tracker.update()
-        
-        dist, std = distance_calculator.calculate_distance(point_tracker.points, deepFrame)
+
+        # dist, std = distance_calculator.calculate_distance(point_tracker.points, deepFrame)
+        dist, std = distance_calculator.calculate_distance_with_k(point_tracker.points, deepFrame)
         points_drawer.draw(blended)
         points_drawer.draw_distance_line(blended, dist, std)
         points_drawer.draw_depth_val(blended, deepFrame)

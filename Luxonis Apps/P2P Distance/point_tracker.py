@@ -39,7 +39,7 @@ class PointTracker:
         curr_gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
 
         # Subsample the images by taking every nth pixel (subsampling factor)
-        subsample_factor = 2
+        subsample_factor = 10
         prev_gray_subsampled = prev_gray[::subsample_factor, ::subsample_factor]
         curr_gray_subsampled = curr_gray[::subsample_factor, ::subsample_factor]
 
@@ -51,6 +51,7 @@ class PointTracker:
         # Compute motion magnitude
         motion_magnitude = np.sqrt(flow[..., 0]**2 + flow[..., 1]**2)
         mean_motion = np.mean(motion_magnitude)
+        # print(mean_motion)
         
         return mean_motion
 
