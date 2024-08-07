@@ -3,11 +3,11 @@ import numpy as np
 from skimage.metrics import structural_similarity as ssim
 
 class PointTracker:
-    bbox_increase_step = 3
+    bbox_increase_step = 10
     bbox_padding_step = 5
-    bbox_radius = 20 
+    bbox_radius = 10 
     max_bbox_radius = 200
-    similarity_threshold = 0.5 # the higher the value, the more similar the images need to be
+    similarity_threshold = 0.6 # the higher the value, the more similar the images need to be
     debounce_threshold = 5
     motion_threshold = 0.8
 

@@ -16,7 +16,7 @@ LR_CHECK = True
 EXTENDED = True # extended disparity for lowering minimal distance for depth calculation
 MEDIAN = dai.MedianFilter.KERNEL_5x5
 SUBPIXEL = False # for long range measurement
-fps = 60
+fps = 30
 downscaleColor = True
 rgbWeight = 1
 depthWeight = 0
@@ -95,6 +95,7 @@ with device:
     calibration = device.readCalibration()
     K_RGB = calibration.getCameraIntrinsics(dai.CameraBoardSocket.CAM_A, dai.Size2f(1280, 720))
     distance_calculator = DistanceCalculator(hfov, image_w, np.array(K_RGB))
+    
     point_tracker = PointTracker()
     points_drawer = PointDistanceDrawer(point_tracker)
     status_drawer = StatusBarDrawer(textColor=(255, 255, 255), borderColor=(0, 0, 0), x=10, y=20)
