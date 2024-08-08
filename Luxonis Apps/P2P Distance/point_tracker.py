@@ -8,7 +8,7 @@ class PointTracker:
     bbox_radius = 10 
     max_bbox_radius = 200
     similarity_threshold = 0.6 # the higher the value, the more similar the images need to be
-    debounce_threshold = 5
+    debounce_threshold = 3
     motion_threshold = 0.8
 
     def __init__(self):

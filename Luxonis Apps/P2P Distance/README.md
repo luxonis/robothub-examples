@@ -31,48 +31,37 @@ The standard deviation is time-based, since the distance is not static (due to d
 ###### Zero Depth Mask Trackbar
 Dragging this shows pixels where depth value is unknown in red.
 
-## Method for Calculating Distance
-### Euclidean formula 
-$$
-\text{distance} = \text{d} = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2 + (z_2 - z_1)^2}
-$$
+## Distance Calculation Using Camera Intrinsic Matrix (K Matrix)
 
-where $x, y, z$ are the coordinates of the two selected points. $z$ is taken from the depth map, coordinates $x$ and $y$ are in pixels and is converted to cm as follows:
+### Overview
 
-$$
-\text{cm per px} = f = \frac{2 \cdot z \cdot \tan\left(\frac{\text{HFOV}}{2} \cdot \frac{\pi}{180}\right)}{\text{HPixels}}
-$$
+The `DistanceCalculator` class includes a method for calculating the 3D Euclidean distance between two points using the camera's intrinsic matrix, also known as the **K matrix**.
 
+### What is the K Matrix 
 
-## Uncertainty calculation
-The only error-prone attribute in the calculation of the distance is the depth value. Since $x$ and $y$ are both calculated (as shown above) from coordinates in pixels and the depth value at the point, the error $\epsilon_{dist}$ can be computed given the depth error rate $\epsilon_z$ (read more about [depth accuracy](https://docs.luxonis.com/hardware/platform/depth/depth-accuracy/)) as follows:
+The K matrix, or intrinsic matrix, is a 3x3 matrix that contains the camera's internal parameters, including focal length and the optical center. It's essential for mapping 3D world coordinates to 2D image coordinates and vice versa. The K matrix is defined as:
 
 $$
-\epsilon_{dist} = \sqrt{\left(\frac{\partial d}{\partial x_1}\epsilon_{x_1}\right)^2 + \left(\frac{\partial d}{\partial y_1}\epsilon_{y_1}\right)^2 + \left(\frac{\partial d}{\partial z_1}\epsilon_{z_1}\right)^2 + \left(\frac{\partial d}{\partial x_2}\epsilon_{x_2}\right)^2 + \left(\frac{\partial d}{\partial y_2}\epsilon_{y_2}\right)^2 + \left(\frac{\partial d}{\partial z_2}\epsilon_{z_2}\right)^2}
+K = \begin{bmatrix}
+f_x & 0 & c_x \\
+0 & f_y & c_y \\
+0 & 0 & 1
+\end{bmatrix}
 $$
 
----
-#### $\epsilon_{x_i}$ and $\epsilon_{y_i}$ \(where $i \in \{1,2\}$\)
-The error in $\text{cm per px}$ with respect to $z$ is:
+- $f_x$  and  $f_y$  are the focal lengths in the x and y directions.
+- $c_x$  and  $c_y$  are the coordinates of the principal point (optical center).
+
+### Why the K Matrix?
+
+Calculating distance using the K matrix is more effective and precise, especially when dealing with real-world camera systems. By incorporating the K matrix, the method takes into account the specific properties of the camera, which can vary between camera models and setups. 
+
+### Calculation Details
+
+Given the homogenous vectors in the 2D camera coordinates system $\vec{u} = \begin{bmatrix} x_1 \\ y_1 \\ 1 \end{bmatrix}$ and depth value $z$ (in some distance unit, ex. cm). In our application, the $z$ value comes from [Stereo Node](https://docs.luxonis.com/software/depthai-components/nodes/stereo_depth). We can obtain the vector $\vec{p}$ in the 3D world:
 
 $$
-\epsilon_{\text{cm per px}} = \frac{\partial (\text{cm per px})}{\partial z_i} \cdot \epsilon_{z_i} = \frac{2 \cdot \tan\left(\frac{\text{HFOV}}{2} \cdot \frac{\pi}{180}\right)}{\text{HPixels}} \cdot \epsilon_{z_i}
-$$
-
-Now we propagate this to get:
-
-$$
-\epsilon_{x_i} = x_{px} \cdot \epsilon_{\text{cm per px}} \quad \text{and} \quad \epsilon_{y_i} = y_{px} \cdot \epsilon_{\text{cm per px}}
-$$
-
-where $x_{px}, y_{px}$ are the coordinates in pixels, and they have an error rate of 0.
-
----
-#### Partial derivatives
-Next step is to derive the partial derivatives in $\epsilon_{dist}$, we obtain:
-
-$$
-\frac{\partial d}{\partial x_i} = \frac{x_2-x_1}{d} \quad , \quad \frac{\partial d}{\partial y_i} = \frac{y_2 - y_1}{d} \quad \text{and} \quad \frac{\partial d}{\partial z_i} = \frac{z_2 - z_1}{d}
+\vec{p}=K^{-1} \cdot \vec{u} \cdot z
 $$
 
 ## Ideas to implement
