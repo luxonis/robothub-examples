@@ -16,7 +16,7 @@ LR_CHECK = True
 EXTENDED = False # extended disparity for lowering minimal distance for depth calculation
 MEDIAN = dai.MedianFilter.KERNEL_5x5
 SUBPIXEL = True # for long range measurement
-fps = 30
+fps = 60
 downscaleColor = True
 rgbWeight = 1
 depthWeight = 0
@@ -140,7 +140,7 @@ with device:
         points_drawer.draw_depth_val(blended, deepFrame)
 
         # draw status bar
-        status_drawer.drawText(blended, "Tracking: ", point_tracker.tracking, line=0)
+        status_drawer.drawText(blended, f"Mode: {point_tracker.mode['name']}", line=0)
         status_drawer.drawText(blended, "Confidence Interval: ", distance_calculator.show_confidence_interval, line=1)
 
         cv2.imshow("main", blended)
@@ -151,14 +151,22 @@ with device:
         elif key == ord('c'):
             point_tracker.clear()
             distance_calculator.clear_distances()
-        elif key == ord('t'):
-            point_tracker.toggle_tracking()
-            distance_calculator.clear_distances()
-            if not point_tracker.tracking:
-                distance_calculator.show_confidence_interval = False
         elif key == ord('i'):
-            if point_tracker.tracking:
+            if point_tracker.mode['tracking'] == 2:
                 distance_calculator.clear_distances()
                 distance_calculator.toggle_confidence_interval()
+        # change mode 1,2 ,3 
+        elif key == ord('1'):
+            point_tracker.set_mode(1)
+            distance_calculator.clear_distances()
+        elif key == ord('2'):
+            point_tracker.set_mode(2)
+            distance_calculator.clear_distances()
+            distance_calculator.show_confidence_interval = False
+        elif key == ord('3'):
+            point_tracker.set_mode(3)
+            distance_calculator.clear_distances()
+            distance_calculator.show_confidence_interval = False
+        
 
 cv2.destroyAllWindows()

@@ -3,22 +3,28 @@ import numpy as np
 from skimage.metrics import structural_similarity as ssim
 
 class PointTracker:
-    bbox_increase_step = 10
-    bbox_padding_step = 5
+    bbox_increase_step = 5
+    bbox_padding_step = 13 # what is added at the end of the bbox
     bbox_radius = 10 
     max_bbox_radius = 200
-    similarity_threshold = 0.6 # the higher the value, the more similar the images need to be
-    debounce_threshold = 3
-    motion_threshold = 0.8
+    similarity_threshold = 0.3 # the higher the value, the more similar the images need to be
+    debounce_threshold = 2
+    motion_threshold = 0.5
+    modes = {
+        1: {'name': 'tracking', 'tracking': 2},
+        2: {'name': 'meter', 'tracking': 1},
+        3: {'name': 'static', 'tracking': 0}
+    }
 
     def __init__(self):
         self.points = []
         self.frame = None
         self.prev_frame = None
-        self.tracking = True
+        self.mode = self.modes[1] 
 
-    def toggle_tracking(self):
-        self.tracking = not self.tracking
+    def set_mode(self, mode):
+        if mode == 2: self.clear()
+        self.mode = self.modes[mode]
 
     def set_frame(self, frame):
         self.prev_frame = self.frame
@@ -53,7 +59,7 @@ class PointTracker:
         motion_magnitude = np.sqrt(flow[..., 0]**2 + flow[..., 1]**2)
         mean_motion = np.mean(motion_magnitude)
         # print(mean_motion)
-        
+
         return mean_motion
 
     def calculate_bbox_radius(self, point):
@@ -73,7 +79,7 @@ class PointTracker:
 
             if edge_density > 0.1 or bbox_radius >= self.max_bbox_radius:
                 break
-            
+
             bbox_radius += self.bbox_increase_step
 
         return bbox_radius + self.bbox_padding_step
@@ -109,14 +115,43 @@ class PointTracker:
             'roi': self.frame[bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]],
         })
 
+        if self.mode['tracking'] == 1:
+            tracker = cv2.TrackerCSRT.create()
+            tracker.init(self.frame, bbox)
+
+            self.points.append({
+                'bbox': bbox,
+                'tracker': tracker,
+                'roi': self.frame[bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]],
+            })
+
+
+    def _debounce(self, old_bbox, new_bbox):
+       return all(abs(old_bbox[i] - new_bbox[i]) < self.debounce_threshold for i in range(4))
+
+    def _is_bbox_out_of_frame(self, bbox):
+        return (bbox[0] < 0 or bbox[1] < 0 or 
+            bbox[0] + bbox[2] > self.frame.shape[1] or 
+            bbox[1] + bbox[3] > self.frame.shape[0])
+
     def update(self):
         if len(self.points) == 0:
             return
 
-        for data in self.points:
+        # enumerate to know indices of points as well 
+        for i, data in enumerate(self.points):
             tracker = data['tracker']
             old_bbox = data['bbox']
             prev_roi = data['roi']
+
+            if self.mode['tracking'] == 2 or (self.mode['tracking'] == 1 and i == 1):
+                success, new_bbox = tracker.update(self.frame)
+                if success and not self._is_bbox_out_of_frame(new_bbox):
+                    if self._debounce(old_bbox, new_bbox) and self.calculate_global_motion() < self.motion_threshold:
+                        new_bbox = old_bbox  # keep the old bounding box
+
+                    data['bbox'] = new_bbox
+                    old_bbox = new_bbox
 
             new_roi = self.frame[old_bbox[1]:old_bbox[1]+old_bbox[3], old_bbox[0]:old_bbox[0]+old_bbox[2]]
 
@@ -125,25 +160,7 @@ class PointTracker:
 
             data['roi'] = new_roi 
 
-            if self.tracking:
-                success, new_bbox = tracker.update(self.frame)
-                if success:
-                    if new_bbox[0] < 0 or new_bbox[1] < 0 or new_bbox[0] + new_bbox[2] > self.frame.shape[1] or new_bbox[1] + new_bbox[3] > self.frame.shape[0]:
-                        # bbox out of frame
-                        continue
-
-                    # debounce 
-                    if abs(old_bbox[0] - new_bbox[0]) < self.debounce_threshold and \
-                        abs(old_bbox[1] - new_bbox[1]) < self.debounce_threshold and \
-                        abs(old_bbox[2] - new_bbox[2]) < self.debounce_threshold and \
-                        abs(old_bbox[3] - new_bbox[3]) < self.debounce_threshold and \
-                        self.calculate_global_motion() < self.motion_threshold: 
-                        # print("debounce - keep the old bbox")
-                        new_bbox = old_bbox  # Keep the old bounding box
-
-                    data['bbox'] = new_bbox
-                    old_bbox = new_bbox
-
+            # update bbox if roi has changed
             if self.roi_changed(prev_roi, new_roi):
                 center_x = int(old_bbox[0] + old_bbox[2] // 2)
                 center_y = int(old_bbox[1] + old_bbox[3] // 2)

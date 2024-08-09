@@ -11,17 +11,26 @@ This repository contains an application built on top of [DepthAI](https://docs.l
 - NumPy
 
 ## Usage
-1. Run the python script `app.py` 
-2. **Select Points**: Click on the video window to select two points. The distance will be displayed at a line between them.
+1. **Run the application**: Start the application by running the Python script `app.py` in your terminal.
+    ```bash
+    python app.py
+    ```
 
-###### Shortcuts Guide
+2. **Select Points**: Click on the video window to select two points. The distance between these points will be calculated and displayed with a line connecting them.
+
+3. **Interact with the application** using keyboard shortcuts:
+
+### Shortcuts Guide
 
 | Key | Action                           | Description                                                   |
 |-----|----------------------------------|---------------------------------------------------------------|
 | `q` | Quit                             | Closes the application.                                       |
 | `c` | Clear Points                     | Clears all the selected points.                               |
-| `t` | Toggle Tracking                  | Toggles the tracking functionality on or off.                 |
-| `i` | Toggle Confidence Interval       | Toggles showing confidence interval on or off.                |
+| `i` | Toggle Confidence Interval       | Toggles the display of the confidence interval for distance.  |
+| `1` | Switch to Tracking Mode          | Enables tracking for both selected points.                    |
+| `2` | Switch to Meter Mode             | Enables tracking for only one selected point.                 |
+| `3` | Switch to Static Mode            | Disables point tracking.                                      |
+
 
 ###### Confidence interval
 The standard deviation is time-based, since the distance is not static (due to depth value not being static), this feature collect the last 50 distance values and shows you the average plus a confidence interval. 
