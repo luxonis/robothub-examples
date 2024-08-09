@@ -13,16 +13,14 @@ from distance_calculator import DistanceCalculator
 cv2.namedWindow("main", cv2.WINDOW_NORMAL)
 
 LR_CHECK = True
-EXTENDED = True # extended disparity for lowering minimal distance for depth calculation
+EXTENDED = False # extended disparity for lowering minimal distance for depth calculation
 MEDIAN = dai.MedianFilter.KERNEL_5x5
-SUBPIXEL = False # for long range measurement
+SUBPIXEL = True # for long range measurement
 fps = 30
 downscaleColor = True
 rgbWeight = 1
 depthWeight = 0
 zeroDepthWeight = 0
-hfov = 71.9
-image_w = 1280 # image width in pixels
 
 pipeline = dai.Pipeline()
 device = dai.Device()
@@ -84,23 +82,24 @@ sync.out.link(xoutMain.input)
 
 def updateZeroDepthWeight(value):
     global zeroDepthWeight
-    zeroDepthWeight = value / 100
+    zeroDepthWeight = value*5 / 100
 
 # Connect to device and start pipeline
 with device:
     device.startPipeline(pipeline)
+    # device.setIrLaserDotProjectorIntensity(1.0)
 
     qMain = device.getOutputQueue(name="main", maxSize=10, blocking=False)
 
     calibration = device.readCalibration()
     K_RGB = calibration.getCameraIntrinsics(dai.CameraBoardSocket.CAM_A, dai.Size2f(1280, 720))
-    distance_calculator = DistanceCalculator(hfov, image_w, np.array(K_RGB))
+    distance_calculator = DistanceCalculator(np.array(K_RGB))
     
     point_tracker = PointTracker()
     points_drawer = PointDistanceDrawer(point_tracker)
     status_drawer = StatusBarDrawer(textColor=(255, 255, 255), borderColor=(0, 0, 0), x=10, y=20)
 
-    status_drawer.drawTrackBar("Zero Depth Weight", 0, 100, updateZeroDepthWeight)
+    status_drawer.drawTrackBar("Zero Depth Weight", 0, 20, updateZeroDepthWeight)
 
     while True:
         msgGrp = qMain.get()
