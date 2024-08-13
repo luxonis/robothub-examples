@@ -28,7 +28,7 @@ class DistanceCalculator:
             return -1, -1
         return self.get_average_distance(), np.std(self.distances)
 
-    def calculate_distance_with_k(self, points, depthFrame):
+    def calculate_distance(self, points, depthFrame):
         # calculate distance using the camera matrix 
         if len(points) != 2:
             return -1, -1

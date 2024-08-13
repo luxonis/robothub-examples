@@ -4,11 +4,14 @@ import cv2
 import numpy as np
 import depthai as dai
 from datetime import timedelta
+from datetime import datetime
+import time
 
 from drawers.point_distance_drawer import PointDistanceDrawer
 from drawers.status_bar_drawer import StatusBarDrawer
 from point_tracker import PointTracker
 from distance_calculator import DistanceCalculator
+from logging.logger import Logger
 
 cv2.namedWindow("main", cv2.WINDOW_NORMAL)
 
@@ -98,6 +101,32 @@ with device:
     point_tracker = PointTracker()
     points_drawer = PointDistanceDrawer(point_tracker)
     status_drawer = StatusBarDrawer(textColor=(255, 255, 255), borderColor=(0, 0, 0), x=10, y=20)
+    
+    logger = Logger()
+    # log info like date, time, camera, modes, fps, etc
+    # logger.log("info", f"Date: {datetime.now().strftime('%d.%m.%Y')}")
+    # logger.log("info", "Position of tested object: approximately in the middle of the frame.")
+    # logger.log("info", f"Time: {datetime.now().strftime('%H:%M:%S')}")
+    # logger.log("info", f"Camera: OAK-D S2")
+    # logger.log("info", f"FPS: {fps}")
+    # logger.log("info", f"LR_CHECK: {LR_CHECK}")
+    # logger.log("info", f"EXTENDED: {EXTENDED}")
+    # logger.log("info", f"MEDIAN: {MEDIAN}")
+    # logger.log("info", f"SUBPIXEL: {SUBPIXEL}")
+    # logger.log("info", f"downscaleColor: {downscaleColor}")
+    # logger.log("info", f"Mono Resolution: 400P")
+    # logger.log("info", f"Color Resolution: 1080P")
+    # logger.log("info", "Stereo Depth Preset: HIGH_DENSITY")
+    # logger.log("info", f"Postprocessing:")
+    # logger.log("info", f"  speckleFilter: {config.postProcessing.speckleFilter.enable}")
+    # logger.log("info", f"  speckleRange: {config.postProcessing.speckleFilter.speckleRange}")
+    # logger.log("info", f"  temporalFilter: {config.postProcessing.temporalFilter.enable}")
+    # logger.log("info", f"  spatialFilter: {config.postProcessing.spatialFilter.enable}")
+    # logger.log("info", f"  holeFillingRadius: {config.postProcessing.spatialFilter.holeFillingRadius}")
+    # logger.log("info", f"  numIterations: {config.postProcessing.spatialFilter.numIterations}")
+    # logger.log("info", f"  minRange: {config.postProcessing.thresholdFilter.minRange}")
+    # logger.log("info", f"  maxRange: {config.postProcessing.thresholdFilter.maxRange}")
+    # logger.log("info", f"  decimationFactor: {config.postProcessing.decimationFilter.decimationFactor}")
 
     status_drawer.drawTrackBar("Zero Depth Weight", 0, 20, updateZeroDepthWeight)
 
@@ -133,8 +162,16 @@ with device:
         cv2.setMouseCallback("main", points_drawer.click_event)
         point_tracker.update()
 
-        # dist, std = distance_calculator.calculate_distance(point_tracker.points, deepFrame)
-        dist, std = distance_calculator.calculate_distance_with_k(point_tracker.points, deepFrame)
+        dist, std = distance_calculator.calculate_distance(point_tracker.points, deepFrame)
+        if len(point_tracker.points) == 2 and dist != -1:
+            # points = point_tracker.get_points()
+            # z1 = deepFrame[points[0][1], points[0][0]] / 10
+            # z2 = deepFrame[points[1][1], points[1][0]] / 10 
+            z1 = 800
+            z2 = 800
+            
+            logger.log_distance(z1, z2, dist, actual_distance=34.1, mode=point_tracker.mode['name'])
+
         points_drawer.draw(blended)
         points_drawer.draw_distance_line(blended, dist, std)
         points_drawer.draw_depth_val(blended, deepFrame)
@@ -142,6 +179,7 @@ with device:
         # draw status bar
         status_drawer.drawText(blended, f"Mode: {point_tracker.mode['name']}", line=0)
         status_drawer.drawText(blended, "Confidence Interval: ", distance_calculator.show_confidence_interval, line=1)
+        status_drawer.drawText(blended, f"Logging: {logger.logging}", line=2)
 
         cv2.imshow("main", blended)
 
@@ -167,6 +205,9 @@ with device:
             point_tracker.set_mode(3)
             distance_calculator.clear_distances()
             distance_calculator.show_confidence_interval = False
+        elif key == ord('l'):
+            time.sleep(5) 
+            logger.toggle_logging()
         
 
 cv2.destroyAllWindows()

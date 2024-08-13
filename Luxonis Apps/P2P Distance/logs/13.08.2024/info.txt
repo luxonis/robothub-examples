@@ -1,0 +1,23 @@
+Date: 13.08.2024
+Position of tested object: approximately in the middle of the frame.
+Time: 12:53:59
+Camera: OAK-D S2
+FPS: 60
+LR_CHECK: True
+EXTENDED: False
+MEDIAN: MedianFilter.KERNEL_5x5
+SUBPIXEL: True
+downscaleColor: True
+Mono Resolution: 400P
+Color Resolution: 1080P
+Stereo Depth Preset: HIGH_DENSITY
+Postprocessing:
+  speckleFilter: False
+  speckleRange: 50
+  temporalFilter: True
+  spatialFilter: True
+  holeFillingRadius: 2
+  numIterations: 1
+  minRange: 400
+  maxRange: 15000
+  decimationFactor: 1
