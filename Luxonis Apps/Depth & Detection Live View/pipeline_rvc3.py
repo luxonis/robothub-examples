@@ -19,8 +19,8 @@ def create_pipeline(pipeline: dai.Pipeline, device: dai.Device) -> None:
     rgb_sensor.video.link(rgb_h264_encoder.input)
 
     # detection nn
-    image_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.preview, resize=(512, 288))
-    detection_nn = create_detecting_nn(pipeline, "nn_models/yolov6n-r2-adjusted-288x512.blob", source=image_manip.out)
+    image_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.preview, resize=(640, 640))
+    detection_nn = create_detecting_nn(pipeline, "nn_models/yolov6n_openvino_2022.3_RVC3_6shave.blob", source=image_manip.out)
 
     # outputs
     create_output(pipeline=pipeline, node=rgb_h264_encoder.bitstream, stream_name="rgb_h264")

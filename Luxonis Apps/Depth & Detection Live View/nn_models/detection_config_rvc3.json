@@ -1,7 +1,7 @@
 {
     "model":
     {
-        "model_name": "yolov6n_r2-adjusted-288x512",
+        "model_name": "yolov6n_openvino_2022.3_RVC3_6shave",
         "zoo": "depthai"
     },
     "nn_config":
