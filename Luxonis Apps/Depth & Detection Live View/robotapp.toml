@@ -9,8 +9,8 @@ application = "app.py#Application"
 workdir = "/app"
 
 [runtime.runs_on]
-type = "image"
-name = "ghcr.io/luxonis/robothub-app-v2:2024.110.1321-rvc2-regular"
+type = "custom"
+dockerfile = "Dockerfile" 
 
 [[configuration]]
 label = "FPS"

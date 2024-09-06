@@ -2,9 +2,8 @@ import depthai as dai
 import json
 
 from depthai_sdk.components.nn_helper import Path
-
 import robothub as rh
-
+    
 
 def create_pipeline(pipeline: dai.Pipeline, device: dai.Device) -> None:
     stereo_pairs: list[dai.StereoPair] = device.getStereoPairs()
@@ -21,32 +20,27 @@ def create_pipeline(pipeline: dai.Pipeline, device: dai.Device) -> None:
 
     # detection nn
     image_manip = create_image_manip(pipeline=pipeline, source=rgb_sensor.preview, resize=(640, 640))
-    detection_nn = create_detecting_nn(pipeline, "nn_models/yolov6n_coco_640x640.blob", source=image_manip.out)
+    detection_nn = create_detecting_nn(pipeline, "nn_models/yolov6n_openvino_2022.3_RVC3_6shave.blob", source=image_manip.out)
 
     # outputs
     create_output(pipeline=pipeline, node=rgb_h264_encoder.bitstream, stream_name="rgb_h264")
     create_output(pipeline=pipeline, node=detection_nn.out, stream_name="detection_nn")
+    
+    if is_stereo_device:
+        left_sensor = create_left_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
+        right_sensor = create_right_sensor(pipeline, fps=rh.CONFIGURATION["fps"])
 
-    if is_stereo_device is True:
-        left_sensor = create_left_sensor(pipeline, fps=rh.CONFIGURATION["fps"], stereo_pair=stereo_pairs[0])
-        right_sensor = create_right_sensor(pipeline, fps=rh.CONFIGURATION["fps"], stereo_pair=stereo_pairs[0])
-
-        left_input = pipeline.createXLinkIn()
-        right_input = pipeline.createXLinkIn()
-        left_input.setStreamName("left_input")
-        right_input.setStreamName("right_input")
-
-        left_input.out.link(left_sensor.inputControl)
-        right_input.out.link(right_sensor.inputControl)
         stereo = create_stereo(pipeline)
-        colormap = create_colormap(pipeline, disparity=stereo.initialConfig.getMaxDisparity())
+        script = create_script_node(pipeline)
+        img_manip = create_img_manip(pipeline)
         stereo_depth_encoder = create_depth_encoder(pipeline=pipeline, fps=rh.CONFIGURATION["fps"])
 
         # linking
         left_sensor.out.link(stereo.left)
         right_sensor.out.link(stereo.right)
-        stereo.disparity.link(colormap.inputImage)
-        colormap.out.link(stereo_depth_encoder.input)
+        stereo.disparity.link(script.inputs['depth'])
+        script.outputs['depth_out'].link(img_manip.inputImage)
+        img_manip.out.link(stereo_depth_encoder.input)
 
         # outputs
         create_output(pipeline=pipeline, node=stereo_depth_encoder.bitstream, stream_name="stereo_depth")
@@ -54,7 +48,7 @@ def create_pipeline(pipeline: dai.Pipeline, device: dai.Device) -> None:
 
 def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamera:
     node = pipeline.createColorCamera()
-    node.setBoardSocket(dai.CameraBoardSocket.RGB)
+    node.setBoardSocket(dai.CameraBoardSocket.CAM_A)
     node.setInterleaved(False)
     node.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
     node.setPreviewNumFramesPool(4)
@@ -65,24 +59,22 @@ def create_rgb_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.ColorCamer
     return node
 
 
-def create_left_sensor(pipeline: dai.Pipeline, fps: float, stereo_pair: dai.StereoPair) -> dai.node.MonoCamera:
-    left = pipeline.createMonoCamera()
-    left.setBoardSocket(stereo_pair.left)
-    left.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
+def create_left_sensor(pipeline: dai.Pipeline, fps: float) -> dai.node.MonoCamera:
+    left = pipeline.create(dai.node.MonoCamera)
+    left.setBoardSocket(dai.CameraBoardSocket.CAM_B)
     left.setFps(fps)
     return left
 
 
-def create_right_sensor(pipeline, fps, stereo_pair: dai.StereoPair):
-    right = pipeline.createMonoCamera()
-    right.setBoardSocket(stereo_pair.right)
-    right.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
+def create_right_sensor(pipeline : dai.Pipeline, fps: float) -> dai.node.MonoCamera:
+    right = pipeline.create(dai.node.MonoCamera)
+    right.setBoardSocket(dai.CameraBoardSocket.CAM_C)
     right.setFps(fps)
     return right
 
 
 def create_stereo(pipeline: dai.Pipeline) -> dai.node.StereoDepth:
-    stereo = pipeline.createStereoDepth()
+    stereo = pipeline.create(dai.node.StereoDepth)
     stereo.setDepthAlign(dai.CameraBoardSocket.CAM_A)
     stereo.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_5x5)
     stereo.initialConfig.setLeftRightCheck(True)
@@ -98,14 +90,6 @@ def create_stereo(pipeline: dai.Pipeline) -> dai.node.StereoDepth:
     return stereo
 
 
-def create_colormap(pipeline: dai.Pipeline, disparity: float) -> dai.node.ImageManip:
-    colormap = pipeline.createImageManip()
-    colormap.initialConfig.setColormap(dai.Colormap.JET, disparity)
-    colormap.initialConfig.setFrameType(dai.ImgFrame.Type.NV12)
-    colormap.setMaxOutputFrameSize(3110400)
-    return colormap
-
-
 def create_h264_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEncoder:
     rh_encoder = pipeline.createVideoEncoder()
     rh_encoder_profile = dai.VideoEncoderProperties.Profile.H264_MAIN
@@ -118,8 +102,59 @@ def create_h264_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEnc
     return rh_encoder
 
 
+def create_script_node(pipeline : dai.Pipeline):
+    script = pipeline.create(dai.node.Script)
+    script.setScript("""
+    import cv2
+    import numpy as np
+    import depthai as dai
+  
+    while True:
+        depth_out = node.io['depth'].tryGet()       
+
+        if depth_out is not None:
+              
+            frame = depth_out.getCvFrame()
+            frame = (frame // 12).astype(np.uint8)
+        
+            colormap = cv2.applyColorMap(np.arange(256, dtype=np.uint8), cv2.COLORMAP_JET)
+            colormap[0] = [0, 0, 0]  # zero (invalidated) pixels as black
+            frame = cv2.applyColorMap(frame, colormap)
+
+            H, W, C = frame.shape
+
+            # Split the interleaved image into separate channels
+            B = frame[:, :, 0].reshape(H * W)
+            G = frame[:, :, 1].reshape(H * W)
+            R = frame[:, :, 2].reshape(H * W)
+
+            # Stack them to create the planar image format
+            frame = np.concatenate((B, G, R), axis=0)
+
+            img = dai.ImgFrame()
+            img.set(depth_out.get())
+            img.setType(dai.ImgFrame.Type.BGR888p)
+            img.setFrame(frame)
+            img.setWidth(depth_out.getWidth())
+            img.setHeight(depth_out.getHeight())
+            img.setTimestamp(depth_out.getTimestamp())
+            img.setInstanceNum(depth_out.getInstanceNum())
+
+            node.io['depth_out'].send(img)
+    """)
+    
+    return script
+    
+    
+def create_img_manip(pipeline: dai.Pipeline) -> dai.node.ImageManip:
+    colormap = pipeline.create(dai.node.ImageManip)
+    colormap.initialConfig.setFrameType(dai.ImgFrame.Type.NV12)
+    colormap.setMaxOutputFrameSize(1280*800*3//2)
+    return colormap
+
+
 def create_depth_encoder(pipeline: dai.Pipeline, fps: float) -> dai.node.VideoEncoder:
-    encoder = pipeline.createVideoEncoder()
+    encoder = pipeline.create(dai.node.VideoEncoder)
     encoder_profile = dai.VideoEncoderProperties.Profile.H264_MAIN
     encoder.setDefaultProfilePreset(fps, encoder_profile)
     return encoder
@@ -162,6 +197,6 @@ def create_detecting_nn(pipeline: dai.Pipeline, model: str, source: dai.Node.Out
 
 
 def create_output(pipeline: dai.Pipeline, node: dai.Node.Output, stream_name: str):
-    xout = pipeline.createXLinkOut()
+    xout = pipeline.create(dai.node.XLinkOut)
     xout.setStreamName(stream_name)
     node.link(xout.input)
