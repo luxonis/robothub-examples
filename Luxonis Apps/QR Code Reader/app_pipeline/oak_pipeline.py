@@ -61,7 +61,7 @@ def create_pipeline(pipeline: dai.Pipeline) -> None:
 
     qr_detection_nn = create_yolo_nn(pipeline=pipeline, source=image_manip_nn_input_crop.out,
                                      model_path=nn_model_path,
-                                     confidence_threshold=0.5)
+                                     confidence_threshold=rh.CONFIGURATION.get("detection_confidence_threshold", 0.2))
     qr_detection_nn.setNumPoolFrames(10)
     qr_detection_nn.input.setBlocking(True)
     qr_detection_nn.input.setQueueSize(9)

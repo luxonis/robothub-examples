@@ -57,8 +57,6 @@ class QrCodeDecoder(host_node.BaseNode):
             crop_frame = bbox.crop.getCvFrame()
             crop_frame = crop_frame[:, :, self.DECODE_CHANNEL]
             width, height = crop_frame.shape
-            if rh.LOCAL_DEV:
-                cv2.imshow(f"crop{bbox.counter}", crop_frame)
             if width > 0 and height > 0:
                 try:
                     decoded_codes = zxingcpp.read_barcodes(crop_frame)
