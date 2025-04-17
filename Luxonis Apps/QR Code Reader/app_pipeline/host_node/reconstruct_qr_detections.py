@@ -104,7 +104,7 @@ class ReconstructQrDetections(host_node.BaseNode):
 
     @staticmethod
     def perform_nms_on_bboxes(bounding_boxes: list[BoundingBox]) -> list[BoundingBox]:
-        confidence_threshold = 0.5
+        confidence_threshold = rh.CONFIGURATION["detection_confidence_threshold"]
         overlap_threshold = 0.01
         confidences = [bbox.confidence for bbox in bounding_boxes]
         nms_boxes = [bbox.as_nms_box() for bbox in bounding_boxes]
